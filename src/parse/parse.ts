@@ -45,8 +45,12 @@ function num(v: string | undefined): number | undefined {
   return v === undefined ? undefined : Number(v);
 }
 
+function tagOf(node: any): string | undefined {
+  return Object.keys(node).find((k) => k !== ':@');
+}
+
 function parseRun(node: any, buffer: string): Run | null {
-  const tag = Object.keys(node).find((k) => k !== ':@');
+  const tag = tagOf(node);
   const a = attrsOf(node);
   const startOffset = num(a['@_startOffset']);
   const length = num(a['@_length']);
@@ -80,9 +84,29 @@ function parseParagraph(node: any, buffer: string): Paragraph {
   const a = attrsOf(node);
   const runs: Run[] = [];
   const childNodes = (node['paragraph'] as any[]) ?? [];
-  for (const child of childNodes) {
+  for (let i = 0; i < childNodes.length; i++) {
+    const child = childNodes[i];
     const run = parseRun(child, buffer);
-    if (run) runs.push(run);
+    if (!run) continue;
+    runs.push(run);
+    // An inline image occupies two adjacent buffer positions: the <image>
+    // placeholder (length 1) followed by a companion <content> (single padding
+    // space, length 1) at startOffset+1. The serializer always emits these two
+    // adjacent and in order, so skip the companion <content> here to avoid
+    // re-emitting it as a phantom TextRun (which would grow the model on every
+    // parse->serialize cycle). Only skip when it directly follows the image AND
+    // matches the offset+1 / length 1 pattern, so legitimate length-1 runs are
+    // preserved.
+    if (run.kind === 'image') {
+      const imageOffset = num(attrsOf(child)['@_startOffset']);
+      const next = childNodes[i + 1];
+      if (next && tagOf(next) === 'content') {
+        const na = attrsOf(next);
+        if (num(na['@_startOffset']) === (imageOffset as number) + 1 && num(na['@_length']) === 1) {
+          i++; // consume the companion content node
+        }
+      }
+    }
   }
   const alignmentCode = a['@_Alignment'] ?? '0';
   return {
