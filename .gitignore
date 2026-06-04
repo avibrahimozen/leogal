@@ -1,0 +1,9 @@
+# Sensitive: real UDF samples contain client PII (names, TC numbers, case data)
+Samples/
+
+# Node
+node_modules/
+dist/
+*.log
+.env
+.env.*
