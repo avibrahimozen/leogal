@@ -32,9 +32,11 @@ export function validateContentXml(xml: string): ValidationResult {
 
   let expected = 0;
   for (const span of spans) {
-    if (span.startOffset !== expected) {
+    if (span.startOffset > expected) {
+      errors.push(`Offset gap: expected ${expected} but next span starts at ${span.startOffset}`);
+    } else if (span.startOffset < expected) {
       errors.push(
-        `Offset not contiguous: expected ${expected} but found ${span.startOffset} (gap or overlap)`,
+        `Offset overlap: span starts at ${span.startOffset} but previous spans already cover through ${expected}`,
       );
     }
     expected = Math.max(expected, span.startOffset + span.length);
