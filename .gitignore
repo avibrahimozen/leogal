@@ -1,6 +1,9 @@
 # Sensitive: real UDF samples contain client PII (names, TC numbers, case data)
 Samples/
 
+# Worktrees
+.worktrees/
+
 # Node
 node_modules/
 dist/
