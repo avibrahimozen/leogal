@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { zipSync, strToU8 } from 'fflate';
 import { packUdf, unpackContentXml } from '../src/package/zip';
 
 describe('zip layer', () => {
@@ -14,5 +15,10 @@ describe('zip layer', () => {
     // A valid empty zip with no content.xml entry.
     const empty = packUdf('x').slice(0, 0); // deliberately broken
     expect(() => unpackContentXml(empty)).toThrow();
+  });
+
+  it('throws a clear error when the zip has no content.xml entry', () => {
+    const zipWithoutContent = zipSync({ 'other.txt': strToU8('hi') });
+    expect(() => unpackContentXml(zipWithoutContent)).toThrow(/content\.xml not found/);
   });
 });
