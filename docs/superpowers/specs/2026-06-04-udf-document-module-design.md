@@ -206,7 +206,19 @@ round-trip:
 
 ## Open Questions / Follow-ups
 
-- Confirm `2`=right alignment.
+- ~~Confirm `2`=right alignment.~~ **Confirmed.** Parsing the real sample
+  (`İsmail hakkı çelik dava dilekçesi son.udf`) found 3 paragraphs with
+  `Alignment="2"`, all right-aligned. Code `2` = right is correct.
 - Confirm whether some `.udf` files use separate zip entries for images (gather
-  more samples). v1 assumes inline base64.
+  more samples). v1 assumes inline base64 — verified working: the real sample's
+  single header image round-trips as inline base64.
 - `styleNumber` semantics need more samples to generalize.
+
+### Real-sample validation (Task 8)
+
+The module was exercised against the real git-ignored sample end-to-end:
+- `readUdf` parsed it without error: 79 body paragraphs, 1 header paragraph
+  (with image), 3 footer paragraphs, 213 text runs, 1 image, 15,737 chars.
+- All four alignments observed (center 6, left 26, justify 48, right 3).
+- `validate(writeUdf(doc))` passed — our re-serialized offsets are contiguous,
+  gapless, and cover the full buffer.
