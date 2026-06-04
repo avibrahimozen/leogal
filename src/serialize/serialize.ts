@@ -17,13 +17,13 @@ const ALIGNMENT_CODE: Record<Alignment, number> = {
   justify: 3,
 };
 
-// The single placeholder char UYAP uses where an inline image sits in the buffer.
+// An inline image occupies two buffer positions: the placeholder char (\u00B8) for
+// the <image> element, and a following space for its sibling <content> element.
 const IMAGE_PLACEHOLDER = '\u00B8';
 
 interface SerializeState {
   buffer: string;
   cursor: number;
-  out: string[]; // collected <paragraph> xml fragments
 }
 
 function paragraphAttrs(p: Paragraph): string {
@@ -56,6 +56,7 @@ function serializeRun(run: Run, state: SerializeState): string {
     const contentEl = `<content${attrs({ startOffset: imageOffset + 1, length: 1 })} />`;
     return imageEl + contentEl;
   }
+  if (run.text.length === 0) return '';
   const offset = state.cursor;
   state.buffer += run.text;
   state.cursor += run.text.length;
@@ -70,17 +71,16 @@ function serializeRun(run: Run, state: SerializeState): string {
   })} />`;
 }
 
-function serializeParagraph(p: Paragraph, state: SerializeState): void {
+function serializeParagraph(p: Paragraph, state: SerializeState): string {
   let inner = '';
   for (const run of p.runs) inner += serializeRun(run, state);
-  state.out.push(`<paragraph${paragraphAttrs(p)}>${inner}</paragraph>`);
+  return `<paragraph${paragraphAttrs(p)}>${inner}</paragraph>`;
 }
 
 function serializeBlocks(blocks: Block[], state: SerializeState): string {
-  const start = state.out.length;
-  for (const block of blocks) serializeParagraph(block, state);
-  const fragments = state.out.splice(start);
-  return fragments.join('');
+  let out = '';
+  for (const block of blocks) out += serializeParagraph(block, state);
+  return out;
 }
 
 function serializePageFormat(pf: PageFormat): string {
@@ -120,7 +120,7 @@ function escapeCdata(text: string): string {
 }
 
 export function serialize(doc: UdfDocument): string {
-  const state: SerializeState = { buffer: '', cursor: 0, out: [] };
+  const state: SerializeState = { buffer: '', cursor: 0 };
 
   const headerXml = doc.header ? `<header>${serializeBlocks(doc.header, state)}</header>` : '';
   const bodyXml = serializeBlocks(doc.body, state);

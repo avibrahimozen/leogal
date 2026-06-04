@@ -58,4 +58,23 @@ describe('serialize', () => {
     expect(xml).not.toContain(']]>b]]>');
     expect(xml).toContain(']]]]><![CDATA[>');
   });
+
+  it('continues offsets from header into body', () => {
+    const xml = serialize({
+      pageFormat: defaultPageFormat(),
+      styles: defaultStyles(),
+      header: [{ alignment: 'left', runs: [{ text: 'HD' }] }],
+      body: [{ alignment: 'left', runs: [{ text: 'BD' }] }],
+    });
+    expect(xml).toContain('<![CDATA[HDBD]]>');
+    expect(xml).toContain('<header>');
+    expect(xml).toContain('startOffset="0" length="2"');
+    expect(xml).toContain('<content startOffset="2" length="2"');
+  });
+
+  it('skips zero-length text runs (no length="0" content)', () => {
+    const xml = serialize(baseDoc([{ alignment: 'left', runs: [{ text: '' }, { text: 'Z' }] }]));
+    expect(xml).not.toContain('length="0"');
+    expect(xml).toContain('startOffset="0" length="1"');
+  });
 });
