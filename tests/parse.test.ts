@@ -37,4 +37,47 @@ describe('parse', () => {
   it('throws UdfParseError when the template root is missing', () => {
     expect(() => parse('<notatemplate/>')).toThrow(UdfParseError);
   });
+
+  it('round-trips an ImageRun preserving imageData, width, and height', () => {
+    // Minimal 1x1 PNG as base64
+    const imageData =
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+    const imgRun: import('../src/model/types').ImageRun = {
+      kind: 'image',
+      imageData,
+      width: 10,
+      height: 20,
+    };
+    const xml = serialize(baseDoc([{ alignment: 'left', runs: [imgRun] }]));
+    const doc = parse(xml);
+    const recovered = doc.body[0].runs[0] as import('../src/model/types').ImageRun;
+    expect(recovered.kind).toBe('image');
+    expect(recovered.imageData).toBe(imageData);
+    expect(recovered.width).toBe(10);
+    expect(recovered.height).toBe(20);
+  });
+
+  it('throws UdfParseError when an <image> element has empty imageData', () => {
+    const xml = serialize(baseDoc([{ alignment: 'left', runs: [{ text: 'x' }] }])).replace(
+      /<content /,
+      '<image startOffset="0" length="1" imageData="" width="10" height="10" /><content ',
+    );
+    expect(() => parse(xml)).toThrow(UdfParseError);
+  });
+
+  it('throws UdfParseError when the CDATA content section is missing', () => {
+    const xml = serialize(baseDoc([{ alignment: 'left', runs: [{ text: 'x' }] }])).replace(
+      /<content><!\[CDATA\[.*?\]\]><\/content>/s,
+      '<content></content>',
+    );
+    expect(() => parse(xml)).toThrow(UdfParseError);
+  });
+
+  it('throws UdfParseError when the <elements> section is missing', () => {
+    const xml = serialize(baseDoc([{ alignment: 'left', runs: [{ text: 'x' }] }])).replace(
+      /<elements[^>]*>[\s\S]*?<\/elements>/,
+      '',
+    );
+    expect(() => parse(xml)).toThrow(UdfParseError);
+  });
 });

@@ -53,9 +53,11 @@ function parseRun(node: any, buffer: string): Run | null {
   if (startOffset === undefined || length === undefined) return null;
 
   if (tag === 'image') {
+    const imageData = a['@_imageData'];
+    if (!imageData) throw new UdfParseError('<image> element missing imageData');
     const img: ImageRun = {
       kind: 'image',
-      imageData: a['@_imageData'] ?? '',
+      imageData,
       width: num(a['@_width']) ?? 0,
       height: num(a['@_height']) ?? 0,
     };
@@ -158,6 +160,8 @@ export function parse(xml: string): UdfDocument {
 
   const doc: UdfDocument = {
     pageFormat: parsePageFormat(templateChildren),
+    // v1 does not parse the <styles> block — returns default+hvl-default styles,
+    // matching what the serializer always emits.
     styles: defaultStyles(),
     body,
   };
