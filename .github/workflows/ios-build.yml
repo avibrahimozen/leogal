@@ -1,0 +1,47 @@
+name: iOS Build
+
+# Compiles the app on a macOS runner on every push so we catch Swift build
+# errors automatically (no Mac required on your side). It builds for the
+# iOS Simulator with code signing disabled — no Apple account / key needed.
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ios-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build (iOS Simulator)
+    runs-on: macos-14
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Create CI Secrets.xcconfig (no real key — build only)
+        run: cp Secrets.example.xcconfig Secrets.xcconfig
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Show build environment
+        run: xcodebuild -version
+
+      - name: Build
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project Samantha.xcodeproj \
+            -scheme Samantha \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            build
