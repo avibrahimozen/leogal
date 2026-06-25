@@ -13,6 +13,10 @@ dist/
 !.env.example
 !**/.env.example
 
+# Expo / React Native
+.expo/
+web-build/
+
 # Xcode / iOS
 Secrets.xcconfig
 *.xcodeproj/

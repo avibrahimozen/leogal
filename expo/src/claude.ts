@@ -23,6 +23,8 @@ export async function complete(system: string, history: Msg[], maxTokens = 1024)
       "content-type": "application/json",
       "x-api-key": config.anthropicKey,
       "anthropic-version": config.anthropicVersion,
+      // Allow direct calls from a browser (Mac/web target). Harmless on native.
+      "anthropic-dangerous-direct-browser-access": "true",
     },
     body: JSON.stringify({ model: config.model, max_tokens: maxTokens, system, messages }),
   });

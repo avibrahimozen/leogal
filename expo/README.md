@@ -1,65 +1,60 @@
-# Samantha — Expo Go sürümü 📱
+# Samantha — Expo sürümü (iPhone + Mac) 📱💻
 
-**Mac gerekmez.** Telefonundaki **Expo Go** uygulamasıyla QR okutup anında çalıştırırsın.
+**Mac gerekmez** (test için). Telefonundaki **Expo Go** ile QR okutup anında
+çalıştırırsın. Aynı kod **Mac'te tarayıcıda** da çalışır (`--web`).
 
 Kamerayı görür (Claude vision), sesli yanıt verir (Türkçe TTS) ve klavyenin
 mikrofon (dikte) tuşuyla ona konuşarak yazarsın.
 
-| Özellik | Expo Go'da |
+| Platform | Nasıl | Durum |
+|---|---|---|
+| **iPhone** | Expo Go ile QR okut | ✅ asıl test yolu |
+| **Mac** | Tarayıcıda `npx expo start --web` | ✅ kamera + ses (Web API'leri) |
+| **iPhone (App Store derlemesi)** | `eas build` (sonra, Mac'siz de olur) | ⏳ ileride |
+
+| Özellik | Durum |
 |---|---|
 | Kamerayı görme (vision) | ✅ expo-camera + Claude |
 | Sesli yanıt (TTS) | ✅ expo-speech (Türkçe) |
 | Ses girişi | ✅ iOS klavyesinin 🎤 dikte tuşuyla (ekstra anahtar yok) |
 | Proaktif "göz at" | ✅ 👁️ düğmesi |
-| Sürekli dinleme / barge-in | ❌ Expo Go kum havuzunda yok — native sürüm (`../Samantha`) bunu yapar |
+| Sürekli dinleme / barge-in | ❌ Expo Go'da yok — native sürüm (`../Samantha`) yapar |
 
 ---
 
-## Kurulum (5 dakika, Mac'siz)
-
-Bu klasördeki dosyalar React Native/TypeScript ile yazıldı; çalışması için bir
-Expo projesi iskeletine ihtiyaçları var. **Expo Go mağazadaki sürüm yalnızca en
-güncel SDK'yı desteklediği için**, projeyi `create-expo-app` ile üretip kaynak
-dosyaları içine kopyalamak en güvenli yoldur:
+## Çalıştırma
 
 ```bash
-# 1) Güncel SDK ile boş bir TypeScript Expo projesi oluştur
-npx create-expo-app@latest samantha-expo --template blank-typescript
-cd samantha-expo
-
-# 2) Gerekli native-uyumlu paketleri SDK'na uygun sürümlerle kur
-npx expo install expo-camera expo-speech expo-image-manipulator
-
-# 3) Bu repodaki kaynakları projeye kopyala
-#    (App.tsx, src/, .env.example — şu klasörden: leogal/expo/)
-cp -R /path/to/leogal/expo/App.tsx .
-cp -R /path/to/leogal/expo/src .
-cp /path/to/leogal/expo/.env.example .env
-
-# 4) .env içine Anthropic anahtarını yaz
-#    EXPO_PUBLIC_ANTHROPIC_API_KEY=sk-ant-...
-
-# 5) Başlat
+cd expo
+npm install
+cp .env.example .env          # içine EXPO_PUBLIC_ANTHROPIC_API_KEY=sk-ant-... yaz
 npx expo start
 ```
 
-Telefonunda **Expo Go**'yu aç (App Store / Play Store'dan ücretsiz), terminaldeki
-**QR kodu** okut. Uygulama açılır, kamera iznini ver, yazmaya/konuşmaya başla.
+- **iPhone'da test:** Telefonda **Expo Go** (App Store, ücretsiz) → terminaldeki
+  **QR kodu** okut. Kamera iznini ver, yaz/konuş.
+- **Mac'te test:** `npx expo start --web` (veya başlattıktan sonra `w`) → tarayıcı
+  açılır. Kamera/mikrofon iznini ver.
 
-> Bilgisayar yerine doğrudan telefonda dene: `npx expo start` çıktısındaki QR'ı
-> **Expo Go** ile tara. (Tarayıcı `w` modunda CORS engeli çıkar — telefonu kullan.)
+> **Expo Go sürüm uyumu:** Mağazadaki Expo Go yalnızca en güncel SDK'yı destekler.
+> `npx expo start` "SDK uyumsuz" derse, güncel SDK ile sıfırdan iskelet kurup
+> kaynakları kopyala:
+> ```bash
+> npx create-expo-app@latest samantha -t blank-typescript
+> cd samantha && npx expo install expo-camera expo-speech
+> # sonra bu repodaki App.tsx + src/ + .env'i içine kopyala
+> ```
 
 ---
 
 ## Nasıl kullanılır
 
-- **Yaz veya konuş:** Metin kutusuna yaz, ya da iOS klavyesindeki **🎤 dikte**
-  tuşuna basıp konuş (ücretsiz, cihaz-içi). "Gönder"e bas.
-- **Samantha görür:** Her mesajda kameranın o anki karesini Claude'a yollar;
-  gördüğü şeyden doğal biçimde bahseder.
+- **Yaz veya konuş:** Metin kutusuna yaz ya da iOS klavyesindeki **🎤 dikte** tuşuna
+  basıp konuş. "Gönder"e bas.
+- **Samantha görür:** Her mesajda kameranın o anki karesini Claude'a yollar.
 - **Sesli yanıt:** Cevabı Türkçe sesle okur.
-- **👁️ Göz at:** Bir soru sormadan, ortama bakıp kendiliğinden kısa bir yorum
-  yapmasını ister (söyleyecek bir şey yoksa susar).
+- **👁️ Göz at:** Soru sormadan ortama bakıp kendiliğinden kısa bir yorum yapar
+  (söyleyecek bir şey yoksa susar).
 
 ---
 
@@ -72,16 +67,15 @@ Telefonunda **Expo Go**'yu aç (App Store / Play Store'dan ücretsiz), terminald
 | `src/claude.ts` | Claude Messages API (vision), `fetch` ile |
 | `src/speech.ts` | Türkçe TTS, cümle cümle (expo-speech) |
 | `src/persona.ts` | Samantha personası + göz-at yönergesi |
+| `app.json` / `package.json` / `tsconfig.json` | Expo projesi yapılandırması |
+
+> CI: her push'ta `expo/` TypeScript ile typecheck edilir (`.github/workflows/expo-check.yml`).
 
 ---
 
-## Sonraki adımlar (Expo tarafı)
+## Sonraki adımlar
 
 - [ ] Kalıcı hafıza (AsyncStorage) — seni oturumlar arası hatırlama
 - [ ] Hold-to-talk ses kaydı + bulut STT (gerçek "konuş-bırak")
 - [ ] Otomatik proaktif aralık (timer ile düzenli göz atma)
-- [ ] Akış (streaming) ile daha hızlı sesli yanıt
-
-> Sürekli-dinleme, barge-in, Personal Voice, wake-word gibi native özellikler
-> için kök dizindeki **`../Samantha`** (Swift/iOS) sürümü kullanılır — onun için
-> bir Mac gerekir.
+- [ ] `eas build` ile bağımsız iPhone derlemesi (Mac'siz, EAS bulutunda)

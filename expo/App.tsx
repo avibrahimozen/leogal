@@ -9,7 +9,6 @@ import {
   View,
 } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
-import * as ImageManipulator from "expo-image-manipulator";
 
 import { complete, Msg } from "./src/claude";
 import { speak, stopSpeaking } from "./src/speech";
@@ -39,20 +38,15 @@ export default function App() {
   const [reply, setReply] = useState("");
   const [userEcho, setUserEcho] = useState("");
 
-  // Grab the current camera frame, downscaled to ~768px JPEG (base64).
+  // Grab the current camera frame as a compressed JPEG (base64) for Claude.
   const captureFrame = useCallback(async (): Promise<string | undefined> => {
     try {
       const photo = await cameraRef.current?.takePictureAsync({
-        quality: 0.5,
+        quality: 0.4,
+        base64: true,
         skipProcessing: true,
       });
-      if (!photo?.uri) return undefined;
-      const manip = await ImageManipulator.manipulateAsync(
-        photo.uri,
-        [{ resize: { width: 768 } }],
-        { compress: 0.5, format: ImageManipulator.SaveFormat.JPEG, base64: true }
-      );
-      return manip.base64 ?? undefined;
+      return photo?.base64 ?? undefined;
     } catch {
       return undefined;
     }

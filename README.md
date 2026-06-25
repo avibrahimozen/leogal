@@ -8,11 +8,13 @@ seni zamanla tanıyan bir yoldaş.
 > Uygulamanın ve yoldaşın adı **Samantha**. (Yalnızca git deposu tarihsel olarak `leogal`.)
 
 > ### İki sürüm var
+> - **[`expo/`](expo/README.md)** — **çapraz-platform** (iPhone + Mac) Expo sürümü.
+>   **Test için buradan başla:** telefonda Expo Go ile QR okut, Mac'te tarayıcıda
+>   `--web`. Kamera + sesli yanıt + klavye diktesiyle konuşma. CI her push'ta
+>   typecheck eder. → **Aktif geliştirme burada.**
 > - **`Samantha/`** — tam özellikli **native iOS (Swift)** sürümü: sürekli dinleme,
->   barge-in, wake-word, Personal Voice, kalıcı hafıza. **Mac + Xcode gerekir.**
-> - **[`expo/`](expo/README.md)** — **Mac gerektirmeyen** Expo Go sürümü: telefonda
->   QR okutup anında çalışır. Kamera + sesli yanıt + klavye diktesiyle konuşma.
->   Mac'in yoksa **buradan başla.**
+>   barge-in, wake-word, Personal Voice. Daha yüksek sadakat ama **Mac + Xcode
+>   gerekir**; CI'da yalnızca manuel tetiklenir.
 
 **Samantha'yı Samantha yapan üç şey:**
 - **Derin persona** — sıcak, meraklı, esprili, duygusal olarak var olan bir karakter (filmdeki gibi).

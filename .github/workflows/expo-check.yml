@@ -1,0 +1,37 @@
+name: Expo Typecheck
+
+# The primary, per-push gate: install the Expo app's deps and TypeScript
+# typecheck it. Fast, runs on Linux, and validates the path we actually test
+# (Expo Go on iPhone + web/Mac).
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: expo-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  typecheck:
+    name: Typecheck (expo/)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: expo
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: TypeScript typecheck
+        run: npx tsc --noEmit

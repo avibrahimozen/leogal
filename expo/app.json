@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "Samantha",
+    "slug": "samantha-expo",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.samantha.expo",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Samantha çevreni görebilmek için kameranı kullanır.",
+        "NSMicrophoneUsageDescription": "Samantha seni dinleyebilmek için mikrofonunu kullanır."
+      }
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Samantha çevreni görebilmek için kameranı kullanır."
+        }
+      ]
+    ]
+  }
+}
