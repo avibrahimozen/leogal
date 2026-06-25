@@ -135,11 +135,26 @@ Tamamlanan:
 - [x] **Kalıcı hafıza & ilişki** — seni oturumlar arası hatırlama
 - [x] **Ses tonu** — en iyi Türkçe sesi seçme + sıcak tonlama; ElevenLabs takılabilir
 
+- [x] **Wake-word + bekleme modu** — "Hey Samantha" ile uyanma, ay simgesiyle bekleme
+- [x] **Barge-in** — o konuşurken söze girince susup seni dinleme (akustik yankı engelleme ile)
+- [x] **Apple Personal Voice** — izin verirsen kendi sesinle konuşma (iOS 17+)
+- [x] **Düşük güç ince ayarı** — cepte/Low Power'da daha seyrek gözlem, otomatik bekleme
+
 Sıradaki adımlar:
-- [ ] **Wake-word** ("Hey Samantha") ile bekleme modundan uyanma
-- [ ] **Barge-in**: kullanıcı konuşmaya başlayınca TTS'i kesme
-- [ ] Apple **Personal Voice** entegrasyonu
-- [ ] Düşük güç / arka plan modu ince ayarı
+- [ ] Sahne yerine ses tonundan duygu sezme
+- [ ] Çoklu dil / otomatik dil algılama
+- [ ] Widget / kilit ekranı canlı aktivitesi
+
+### Yeni davranışlar nasıl çalışır?
+- **Bekleme modu:** Üstteki **ay** simgesine bas → kamera kapanır, sadece adını dinler.
+  "Hey Samantha" (veya sadece "Samantha") deyince uyanır. (Ayarlardan kapatılabilir.)
+- **Barge-in:** O konuşurken konuşmaya başlarsan anında susar ve seni dinler. Akustik
+  yankı engelleme (`setVoiceProcessingEnabled`) cihaz desteğine bağlıdır; gerçek
+  cihazda ince ayar gerekebilir.
+- **Personal Voice:** Ayarlar ▸ Erişilebilirlik ▸ Sözlü İçerik ▸ Kişisel Ses'te bir ses
+  oluşturduysan, ilk açılışta izin verince Samantha o sesle konuşur.
+- **Düşük güç:** Düşük Güç Modu'nda proaktif gözlem durur ve uzun sessizlikte otomatik
+  bekleme moduna geçer.
 
 ---
 

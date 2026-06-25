@@ -10,6 +10,7 @@ struct AmbientOrbView: View {
     private var colors: [Color] {
         switch state {
         case .offline:   return [.gray.opacity(0.4), .gray.opacity(0.1)]
+        case .standby:   return [.indigo.opacity(0.5), .purple.opacity(0.2)]
         case .listening: return [.teal, .blue]
         case .hearing:   return [.cyan, .teal]
         case .thinking:  return [.purple, .indigo]
@@ -18,7 +19,8 @@ struct AmbientOrbView: View {
         }
     }
 
-    private var animates: Bool { state.isActive }
+    /// Standby breathes too — slow and dim — to show she's still there.
+    private var animates: Bool { state.isRunning }
 
     var body: some View {
         ZStack {

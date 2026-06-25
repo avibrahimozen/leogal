@@ -44,6 +44,13 @@ struct ContentView: View {
                     .font(.caption)
                     .foregroundStyle(.white.opacity(0.6))
             }
+            // Standby / wake toggle (only while running).
+            if engine.state.isRunning {
+                Button { engine.toggleStandby() } label: {
+                    Image(systemName: engine.state == .standby ? "moon.zzz.fill" : "moon")
+                        .foregroundStyle(.white.opacity(0.8))
+                }
+            }
             Button { showSettings = true } label: {
                 Image(systemName: "gearshape")
                     .foregroundStyle(.white.opacity(0.8))
@@ -79,19 +86,20 @@ struct ContentView: View {
     }
 
     private var controlButton: some View {
-        Button {
+        let running = engine.state.isRunning
+        return Button {
             Task {
-                if engine.state.isActive { engine.stop() }
+                if running { engine.stop() }
                 else { await engine.start() }
             }
         } label: {
-            Label(engine.state.isActive ? "Durdur" : "Başlat",
-                  systemImage: engine.state.isActive ? "stop.fill" : "mic.fill")
+            Label(running ? "Durdur" : "Başlat",
+                  systemImage: running ? "stop.fill" : "mic.fill")
                 .font(.headline)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 16)
-                .background(engine.state.isActive ? Color.red.opacity(0.85) : Color.white)
-                .foregroundStyle(engine.state.isActive ? .white : .black)
+                .background(running ? Color.red.opacity(0.85) : Color.white)
+                .foregroundStyle(running ? .white : .black)
                 .clipShape(Capsule())
         }
     }

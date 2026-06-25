@@ -5,7 +5,10 @@ import Foundation
 enum ConversationState: Equatable {
     /// Not running at all.
     case offline
-    /// Ambient: mic open, waiting for the user to start speaking (or wake word).
+    /// Low-power passive mode: only listening for the wake word ("Hey Samantha").
+    /// Camera is paused; she won't respond to anything else.
+    case standby
+    /// Ambient: mic open, waiting for the user to start speaking.
     case listening
     /// User is actively speaking; we are accumulating a transcript.
     case hearing
@@ -16,9 +19,18 @@ enum ConversationState: Equatable {
     /// Something went wrong; carries a human-readable reason.
     case error(String)
 
-    var isActive: Bool {
+    /// Running at all (engine started), including passive standby.
+    var isRunning: Bool {
         switch self {
         case .offline, .error: return false
+        default: return true
+        }
+    }
+
+    /// Actively conversing (not offline, not passive standby).
+    var isActive: Bool {
+        switch self {
+        case .offline, .error, .standby: return false
         default: return true
         }
     }
@@ -27,6 +39,7 @@ enum ConversationState: Equatable {
     var label: String {
         switch self {
         case .offline:        return "Uykuda"
+        case .standby:        return "Bekliyor — \"Hey Samantha\" de"
         case .listening:      return "Dinliyor"
         case .hearing:        return "Seni duyuyor"
         case .thinking:       return "Düşünüyor"

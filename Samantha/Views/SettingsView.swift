@@ -13,8 +13,11 @@ struct SettingsView: View {
             Form {
                 Section("Davranış") {
                     Toggle("Kendiliğinden konuşsun", isOn: $engine.proactiveEnabled)
-                    Text("Açıkken Samantha, ortam değiştiğinde kendiliğinden kısa "
-                         + "yorumlar yapar — sadece soruya cevap vermez.")
+                    Toggle("Sözünü kesebileyim (barge-in)", isOn: $engine.bargeInEnabled)
+                    Toggle("\"Hey Samantha\" ile uyansın", isOn: $engine.wakeWordEnabled)
+                    Text("Kendiliğinden konuşma: ortam değişince kısa yorum yapar. "
+                         + "Barge-in: o konuşurken söze girersen susup seni dinler. "
+                         + "Bekleme modunda (ay simgesi) yalnızca adını duyunca uyanır.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }

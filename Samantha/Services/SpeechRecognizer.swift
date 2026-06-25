@@ -53,6 +53,11 @@ final class SpeechRecognizer {
         self.request = request
 
         let input = engine.inputNode
+        // Acoustic echo cancellation: lets us keep the mic open while Samantha
+        // is speaking (so the user can interrupt — "barge-in") without the
+        // recognizer hearing her own voice. Best-effort; ignored if unsupported.
+        try? input.setVoiceProcessingEnabled(true)
+
         let format = input.outputFormat(forBus: 0)
         input.removeTap(onBus: 0)
         input.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in

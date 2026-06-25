@@ -4,8 +4,14 @@ import AVFoundation
 /// Pluggable text-to-speech. Swap implementations without touching the engine.
 /// `speak` resolves when playback finishes (or is interrupted).
 protocol VoiceSynthesizer: AnyObject {
+    /// One-time setup (e.g. request Personal Voice access). Safe to call again.
+    func prepare() async
     func speak(_ text: String) async
     func stop()
+}
+
+extension VoiceSynthesizer {
+    func prepare() async {}
 }
 
 /// Factory: use the natural cloud voice when configured, else the on-device one.
@@ -21,12 +27,24 @@ final class SystemVoice: NSObject, VoiceSynthesizer, AVSpeechSynthesizerDelegate
     private let synth = AVSpeechSynthesizer()
     private var continuation: CheckedContinuation<Void, Never>?
 
-    /// Cached once: the warmest/highest-quality Turkish voice on this device.
-    private lazy var preferredVoice: AVSpeechSynthesisVoice? = Self.bestTurkishVoice()
+    /// The warmest/highest-quality voice available. Recomputed in `prepare()`
+    /// once Personal Voice authorization is known.
+    private var preferredVoice: AVSpeechSynthesisVoice? = SystemVoice.bestVoice()
 
     override init() {
         super.init()
         synth.delegate = self
+    }
+
+    /// Request Personal Voice (iOS 17+). If the user has created one and grants
+    /// access, Samantha will speak in *their* voice — the most "Her" thing of all.
+    func prepare() async {
+        let status: AVSpeechSynthesisVoice.PersonalVoiceAuthorizationStatus =
+            await withCheckedContinuation { cont in
+                AVSpeechSynthesisVoice.requestPersonalVoiceAuthorization { cont.resume(returning: $0) }
+            }
+        // Re-pick now that personal voices may be visible in the catalog.
+        preferredVoice = Self.bestVoice(allowPersonal: status == .authorized)
     }
 
     func speak(_ text: String) async {
@@ -44,11 +62,16 @@ final class SystemVoice: NSObject, VoiceSynthesizer, AVSpeechSynthesizerDelegate
         }
     }
 
-    /// Prefer premium > enhanced > any Turkish voice. Premium/enhanced voices
-    /// are downloaded by the user in Settings ▸ Accessibility ▸ Spoken Content.
-    private static func bestTurkishVoice() -> AVSpeechSynthesisVoice? {
-        let turkish = AVSpeechSynthesisVoice.speechVoices()
-            .filter { $0.language.hasPrefix("tr") }
+    /// Personal Voice (if allowed) > premium > enhanced > any Turkish voice.
+    /// Premium/enhanced voices are downloaded by the user in
+    /// Settings ▸ Accessibility ▸ Spoken Content ▸ Voices.
+    private static func bestVoice(allowPersonal: Bool = false) -> AVSpeechSynthesisVoice? {
+        let all = AVSpeechSynthesisVoice.speechVoices()
+        if allowPersonal,
+           let personal = all.first(where: { $0.voiceTraits.contains(.isPersonalVoice) }) {
+            return personal
+        }
+        let turkish = all.filter { $0.language.hasPrefix("tr") }
         return turkish.first { $0.quality == .premium }
             ?? turkish.first { $0.quality == .enhanced }
             ?? turkish.first
