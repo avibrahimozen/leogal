@@ -7,6 +7,13 @@ seni zamanla tanıyan bir yoldaş.
 
 > Uygulamanın ve yoldaşın adı **Samantha**. (Yalnızca git deposu tarihsel olarak `leogal`.)
 
+> ### İki sürüm var
+> - **`Samantha/`** — tam özellikli **native iOS (Swift)** sürümü: sürekli dinleme,
+>   barge-in, wake-word, Personal Voice, kalıcı hafıza. **Mac + Xcode gerekir.**
+> - **[`expo/`](expo/README.md)** — **Mac gerektirmeyen** Expo Go sürümü: telefonda
+>   QR okutup anında çalışır. Kamera + sesli yanıt + klavye diktesiyle konuşma.
+>   Mac'in yoksa **buradan başla.**
+
 **Samantha'yı Samantha yapan üç şey:**
 - **Derin persona** — sıcak, meraklı, esprili, duygusal olarak var olan bir karakter (filmdeki gibi).
 - **Proaktif** — sadece soruya cevap vermez; ortam değiştiğinde kendiliğinden, kısa ve doğal bir şey söyler.

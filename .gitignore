@@ -10,6 +10,8 @@ dist/
 *.log
 .env
 .env.*
+!.env.example
+!**/.env.example
 
 # Xcode / iOS
 Secrets.xcconfig
