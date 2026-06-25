@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>Leogal</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>UILaunchScreen</key>
+	<dict/>
+
+	<!-- Secrets injected from Secrets.xcconfig (never hard-coded here) -->
+	<key>ANTHROPIC_API_KEY</key>
+	<string>$(ANTHROPIC_API_KEY)</string>
+	<key>ANTHROPIC_BASE_URL</key>
+	<string>$(ANTHROPIC_BASE_URL)</string>
+	<key>ELEVENLABS_API_KEY</key>
+	<string>$(ELEVENLABS_API_KEY)</string>
+	<key>ELEVENLABS_VOICE_ID</key>
+	<string>$(ELEVENLABS_VOICE_ID)</string>
+
+	<!-- Permission usage strings (required or the app crashes on first use) -->
+	<key>NSCameraUsageDescription</key>
+	<string>Leogal, çevreni görebilmek ve seninle konuştuğun şey hakkında sohbet edebilmek için arka kameranı kullanır.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Leogal, seni dinleyip sesli yanıt verebilmek için mikrofonunu kullanır.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Leogal, söylediklerini metne çevirmek için konuşma tanımayı kullanır.</string>
+
+	<!-- Keep the mic/audio alive while the phone is in your pocket (screen off) -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+	</array>
+
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<false/>
+	</dict>
+</dict>
+</plist>

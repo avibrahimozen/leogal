@@ -10,3 +10,14 @@ dist/
 *.log
 .env
 .env.*
+
+# Xcode / iOS
+Secrets.xcconfig
+*.xcodeproj/
+*.xcworkspace/
+DerivedData/
+build/
+.swiftpm/
+xcuserdata/
+*.xcuserstate
+.DS_Store
