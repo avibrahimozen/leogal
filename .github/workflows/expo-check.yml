@@ -35,3 +35,8 @@ jobs:
 
       - name: TypeScript typecheck
         run: npx tsc --noEmit
+
+      - name: Bundle (Metro export for iOS)
+        # Confirms the app actually bundles — catches bad imports / entry point
+        # before you ever scan the QR. No device or Mac needed (JS bundle only).
+        run: npx expo export --platform ios --output-dir dist
