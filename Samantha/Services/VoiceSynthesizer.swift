@@ -21,6 +21,9 @@ final class SystemVoice: NSObject, VoiceSynthesizer, AVSpeechSynthesizerDelegate
     private let synth = AVSpeechSynthesizer()
     private var continuation: CheckedContinuation<Void, Never>?
 
+    /// Cached once: the warmest/highest-quality Turkish voice on this device.
+    private lazy var preferredVoice: AVSpeechSynthesisVoice? = Self.bestTurkishVoice()
+
     override init() {
         super.init()
         synth.delegate = self
@@ -32,14 +35,24 @@ final class SystemVoice: NSObject, VoiceSynthesizer, AVSpeechSynthesizerDelegate
         await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
             self.continuation = cont
             let utterance = AVSpeechUtterance(string: trimmed)
-            // Prefer a Turkish voice; fall back to default.
-            utterance.voice = AVSpeechSynthesisVoice(language: "tr-TR")
-                ?? AVSpeechSynthesisVoice(language: Locale.current.identifier)
-            utterance.rate = AVSpeechUtteranceDefaultSpeechRate
-            utterance.pitchMultiplier = 1.05
-            utterance.postUtteranceDelay = 0.05
+            utterance.voice = preferredVoice
+            // Slightly slower + warmer than default for a gentler, present feel.
+            utterance.rate = AVSpeechUtteranceDefaultSpeechRate * 0.95
+            utterance.pitchMultiplier = 1.07
+            utterance.postUtteranceDelay = 0.06
             synth.speak(utterance)
         }
+    }
+
+    /// Prefer premium > enhanced > any Turkish voice. Premium/enhanced voices
+    /// are downloaded by the user in Settings ▸ Accessibility ▸ Spoken Content.
+    private static func bestTurkishVoice() -> AVSpeechSynthesisVoice? {
+        let turkish = AVSpeechSynthesisVoice.speechVoices()
+            .filter { $0.language.hasPrefix("tr") }
+        return turkish.first { $0.quality == .premium }
+            ?? turkish.first { $0.quality == .enhanced }
+            ?? turkish.first
+            ?? AVSpeechSynthesisVoice(language: "tr-TR")
     }
 
     func stop() {

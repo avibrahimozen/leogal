@@ -3,9 +3,9 @@
 # (brew install xcodegen)
 #
 # This keeps the project definition in plain text so it lives in git cleanly.
-name: Leogal
+name: Samantha
 options:
-  bundleIdPrefix: com.leogal
+  bundleIdPrefix: com.samantha
   deploymentTarget:
     iOS: "17.0"
   createIntermediateGroups: true
@@ -24,7 +24,7 @@ configs:
   Release: release
 
 targets:
-  Leogal:
+  Samantha:
     type: application
     platform: iOS
     # Secrets.xcconfig is gitignored; copy Secrets.example.xcconfig to start.
@@ -32,11 +32,11 @@ targets:
       Debug: Secrets.xcconfig
       Release: Secrets.xcconfig
     sources:
-      - path: Leogal
+      - path: Samantha
     settings:
       base:
-        INFOPLIST_FILE: Leogal/App/Info.plist
-        PRODUCT_BUNDLE_IDENTIFIER: com.leogal.app
+        INFOPLIST_FILE: Samantha/App/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: com.samantha.app
         # The Anthropic key is injected from Secrets.xcconfig into Info.plist
         # so it is never committed. For production, use a backend proxy instead.
         ENABLE_USER_SCRIPT_SANDBOXING: YES

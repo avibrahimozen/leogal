@@ -1,8 +1,16 @@
-# Leogal — "Her" tarzı bir AI yoldaşı 👁️🗣️
+# Samantha — "Her" tarzı bir AI yoldaşı 👁️🗣️💜
 
 iPhone'unu gömleğinin üst cebine, **arka kamera dışa bakacak** şekilde
-yerleştir. Leogal kameradan dünyayı görür, seni dinler ve tıpkı *Her*
-filmindeki **Samantha** gibi seninle doğal, sesli bir sohbete girer.
+yerleştir. **Samantha** kameradan dünyayı görür, seni dinler ve tıpkı *Her*
+filmindeki gibi seninle doğal, sesli bir sohbete girer — bir asistan değil,
+seni zamanla tanıyan bir yoldaş.
+
+> Uygulamanın ve yoldaşın adı **Samantha**. (Yalnızca git deposu tarihsel olarak `leogal`.)
+
+**Samantha'yı Samantha yapan üç şey:**
+- **Derin persona** — sıcak, meraklı, esprili, duygusal olarak var olan bir karakter (filmdeki gibi).
+- **Proaktif** — sadece soruya cevap vermez; ortam değiştiğinde kendiliğinden, kısa ve doğal bir şey söyler.
+- **Hafıza & ilişki** — seni oturumlar arası hatırlar; isimini, sevdiklerini, devam eden konuları öğrenir ve buna göre konuşur (cihazda kalıcı, istediğinde "Beni unut" ile silinir).
 
 Beyin olarak **Claude (`claude-opus-4-8`, vision)** kullanılır — Swift için
 resmi bir Anthropic SDK olmadığından API'ye doğrudan `URLSession` ile (raw
@@ -47,7 +55,7 @@ Telefon cepteyken (yakınlık sensörü) ekran gerekmez; deneyim tamamen sesseld
 
 | Katman | Dosya | Sorumluluk |
 |---|---|---|
-| Giriş | `App/LeogalApp.swift` | SwiftUI uygulaması, motoru enjekte eder |
+| Giriş | `App/SamanthaApp.swift` | SwiftUI uygulaması, motoru enjekte eder |
 | Yapılandırma | `Config/AppConfig.swift` | Anahtarları `Info.plist`'ten okur (gizli) |
 | Orkestratör | `Core/SamanthaEngine.swift` | Durum makinesi, ses oturumu, ambient döngü |
 | Beyin | `Services/ClaudeClient.swift` | Claude Messages API (vision + SSE) |
@@ -88,7 +96,7 @@ cp Secrets.example.xcconfig Secrets.xcconfig
 
 # 3) Xcode projesini oluştur ve aç
 xcodegen generate
-open Leogal.xcodeproj
+open Samantha.xcodeproj
 ```
 
 Xcode'da:
@@ -99,7 +107,7 @@ Xcode'da:
 - **Başlat**'a bas, telefonu cebine koy ve konuş.
 
 > XcodeGen kullanmak istemiyorsan: yeni bir iOS App hedefi oluşturup
-> `Leogal/` altındaki tüm `.swift` dosyalarını ekle, `Info.plist`'i bağla ve
+> `Samantha/` altındaki tüm `.swift` dosyalarını ekle, `Info.plist`'i bağla ve
 > izin metinlerini gir.
 
 ---
@@ -119,12 +127,17 @@ Dağıtacaksan:
 
 ---
 
-## Yol haritası (sıradaki adımlar)
+## Yol haritası
 
-- [ ] **Wake-word** ("Hey Leogal") ile bekleme modundan uyanma
+Tamamlanan:
+- [x] Derin **Samantha personası** (sıcak, meraklı, esprili)
+- [x] **Proaktif** mod — sahne değişince kendiliğinden konuşma
+- [x] **Kalıcı hafıza & ilişki** — seni oturumlar arası hatırlama
+- [x] **Ses tonu** — en iyi Türkçe sesi seçme + sıcak tonlama; ElevenLabs takılabilir
+
+Sıradaki adımlar:
+- [ ] **Wake-word** ("Hey Samantha") ile bekleme modundan uyanma
 - [ ] **Barge-in**: kullanıcı konuşmaya başlayınca TTS'i kesme
-- [ ] Görüntüyü her turda değil, sahne değiştiğinde gönderme (token tasarrufu)
-- [ ] Konuşmaları kalıcı hafızaya yazma (kişiselleşme)
 - [ ] Apple **Personal Voice** entegrasyonu
 - [ ] Düşük güç / arka plan modu ince ayarı
 

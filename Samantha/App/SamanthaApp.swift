@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct LeogalApp: App {
+struct SamanthaApp: App {
     @StateObject private var engine = SamanthaEngine()
 
     var body: some Scene {

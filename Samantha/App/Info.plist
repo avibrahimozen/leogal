@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Leogal</string>
+	<string>Samantha</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -35,11 +35,11 @@
 
 	<!-- Permission usage strings (required or the app crashes on first use) -->
 	<key>NSCameraUsageDescription</key>
-	<string>Leogal, çevreni görebilmek ve seninle konuştuğun şey hakkında sohbet edebilmek için arka kameranı kullanır.</string>
+	<string>Samantha,çevreni görebilmek ve seninle konuştuğun şey hakkında sohbet edebilmek için arka kameranı kullanır.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Leogal, seni dinleyip sesli yanıt verebilmek için mikrofonunu kullanır.</string>
+	<string>Samantha,seni dinleyip sesli yanıt verebilmek için mikrofonunu kullanır.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>Leogal, söylediklerini metne çevirmek için konuşma tanımayı kullanır.</string>
+	<string>Samantha,söylediklerini metne çevirmek için konuşma tanımayı kullanır.</string>
 
 	<!-- Keep the mic/audio alive while the phone is in your pocket (screen off) -->
 	<key>UIBackgroundModes</key>

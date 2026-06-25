@@ -84,6 +84,41 @@ final class CameraService: NSObject, AVCaptureVideoDataOutputSampleBufferDelegat
         }
     }
 
+    /// A cheap perceptual fingerprint of the current frame: a `size`×`size`
+    /// grayscale thumbnail flattened to bytes. Comparing two signatures lets the
+    /// engine notice when the scene meaningfully changes (so Samantha can react
+    /// proactively) without sending every frame to the model.
+    func captureSceneSignature(size: Int = 16) async -> [UInt8]? {
+        await withCheckedContinuation { cont in
+            queue.async { [weak self] in
+                guard let self, let buffer = self.latestPixelBuffer else {
+                    cont.resume(returning: nil); return
+                }
+                cont.resume(returning: self.signature(buffer, size: size))
+            }
+        }
+    }
+
+    private func signature(_ buffer: CVPixelBuffer, size: Int) -> [UInt8]? {
+        let image = CIImage(cvPixelBuffer: buffer)
+        let extent = image.extent
+        guard extent.width > 0, extent.height > 0 else { return nil }
+        let scaled = image.transformed(by: CGAffineTransform(
+            scaleX: CGFloat(size) / extent.width,
+            y: CGFloat(size) / extent.height))
+        let rect = CGRect(x: 0, y: 0, width: size, height: size)
+        guard let cg = ciContext.createCGImage(scaled, from: rect) else { return nil }
+
+        var pixels = [UInt8](repeating: 0, count: size * size)
+        let gray = CGColorSpaceCreateDeviceGray()
+        guard let ctx = CGContext(data: &pixels, width: size, height: size,
+                                  bitsPerComponent: 8, bytesPerRow: size,
+                                  space: gray,
+                                  bitmapInfo: CGImageAlphaInfo.none.rawValue) else { return nil }
+        ctx.draw(cg, in: rect)
+        return pixels
+    }
+
     private func encode(_ buffer: CVPixelBuffer) -> String? {
         var image = CIImage(cvPixelBuffer: buffer)
         let extent = image.extent

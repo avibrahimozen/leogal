@@ -35,7 +35,7 @@ struct ContentView: View {
 
     private var header: some View {
         HStack {
-            Text("Leogal")
+            Text("Samantha")
                 .font(.system(.title2, design: .rounded).weight(.semibold))
                 .foregroundStyle(.white)
             Spacer()
