@@ -36,6 +36,23 @@ npx expo start
 - **Mac'te test:** `npx expo start --web` (veya başlattıktan sonra `w`) → tarayıcı
   açılır. Kamera/mikrofon iznini ver.
 
+### Windows PC'de (Mac gerekmez)
+
+1. **Node.js LTS** kur: https://nodejs.org (npm ile birlikte gelir).
+2. PowerShell'de:
+   ```powershell
+   cd expo
+   npm install
+   Copy-Item .env.example .env
+   notepad .env        # EXPO_PUBLIC_ANTHROPIC_API_KEY=sk-ant-... yaz, kaydet
+   npx expo start
+   ```
+3. **iPhone ile PC aynı Wi-Fi'da** olsun. Terminaldeki **QR**'ı iPhone Kamera
+   uygulaması ya da Expo Go ile okut.
+4. Telefon bağlanamazsa (güvenlik duvarı/farklı ağ): `npx expo start --tunnel`
+   (ilk seferde `@expo/ngrok` kurulumunu onayla). Windows Defender "Node.js'e
+   izin ver?" sorarsa **İzin ver**.
+
 > **Expo Go sürüm uyumu:** Mağazadaki Expo Go yalnızca en güncel SDK'yı destekler.
 > `npx expo start` "SDK uyumsuz" derse, güncel SDK ile sıfırdan iskelet kurup
 > kaynakları kopyala:
