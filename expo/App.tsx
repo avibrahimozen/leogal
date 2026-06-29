@@ -165,6 +165,18 @@ export default function App() {
     [addLog]
   );
 
+  const stopListening = useCallback(() => {
+    runningRef.current = false;
+    void stopSpeaking();
+    const rec = recordingRef.current;
+    recordingRef.current = null;
+    if (rec) {
+      rec.setOnRecordingStatusUpdate(null);
+      rec.stopAndUnloadAsync().catch(() => {});
+    }
+    setStatus("paused");
+  }, []);
+
   const loop = useCallback(async () => {
     while (runningRef.current) {
       setStatus("listening");
@@ -202,18 +214,6 @@ export default function App() {
     void loop();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loop, addLog]);
-
-  const stopListening = useCallback(() => {
-    runningRef.current = false;
-    void stopSpeaking();
-    const rec = recordingRef.current;
-    recordingRef.current = null;
-    if (rec) {
-      rec.setOnRecordingStatusUpdate(null);
-      rec.stopAndUnloadAsync().catch(() => {});
-    }
-    setStatus("paused");
-  }, []);
 
   // Text test input: pause the mic loop, send the typed line through respond().
   const sendText = useCallback(async () => {
