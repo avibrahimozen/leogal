@@ -1,98 +1,68 @@
-# Samantha — Expo sürümü (iPhone + Mac) 📱💻
+# Samantha — Expo (orb + sesli ambient) 📱🔮🗣️
 
-**Mac gerekmez** (test için). Telefonundaki **Expo Go** ile QR okutup anında
-çalıştırırsın. Aynı kod **Mac'te tarayıcıda** da çalışır (`--web`).
+**Mac gerekmez.** Telefonda **Expo Go** ile QR okutup çalıştırırsın.
 
-Kamerayı görür (Claude vision), sesli yanıt verir (Türkçe TTS) ve klavyenin
-mikrofon (dikte) tuşuyla ona konuşarak yazarsın.
+Ekranda **yalnızca canlı orb animasyonu** döner. Samantha arka kameradan dış
+dünyayı sürekli algılar, seni **sürekli dinler** ve konuşarak yanıt verir —
+gülerek, sıcak ve insani seslerle. Yalnızca sen sözlü olarak **"kapan" /
+"dinlemeyi kapat"** dediğinde durur (sonra ekrana dokunup uyandırırsın).
 
-| Platform | Nasıl | Durum |
-|---|---|---|
-| **iPhone** | Expo Go ile QR okut | ✅ asıl test yolu |
-| **Mac** | Tarayıcıda `npx expo start --web` | ✅ kamera + ses (Web API'leri) |
-| **iPhone (App Store derlemesi)** | `eas build` (sonra, Mac'siz de olur) | ⏳ ileride |
+## Nasıl çalışır
+- **Ekran:** tek bir tam ekran **Samantha Orb** (tasarım handoff'unun birebir
+  canvas portu, WebView içinde). Buton/yazı/önizleme yok.
+- **Dinleme:** sürekli kayıt + ses-seviyesi (metering) ile cümle-sonu sezimi.
+  Sustuğunda Samantha düşünür ve yanıtlar, sonra tekrar dinler.
+- **Görüş:** arka kamera arka planda hep açık; her turda o anki kareyi
+  Claude'a (vision) iletir.
+- **Ses:** **ElevenLabs** — konuşma tanıma (Scribe) + ifade dolu seslendirme
+  (v3). Samantha'nın `[laughs]`, `[giggles]`, `[warm chuckle]` gibi etiketleri
+  **gerçek gülme/insani seslere** dönüşür.
+- **Kapatma:** "kapan", "dinlemeyi kapat", "kendini kapat" dersen durur.
 
-| Özellik | Durum |
-|---|---|
-| Kamerayı görme (vision) | ✅ expo-camera + Claude |
-| Sesli yanıt (TTS) | ✅ expo-speech (Türkçe) |
-| Ses girişi | ✅ iOS klavyesinin 🎤 dikte tuşuyla (ekstra anahtar yok) |
-| Proaktif "göz at" | ✅ 👁️ düğmesi |
-| Sürekli dinleme / barge-in | ❌ Expo Go'da yok — native sürüm (`../Samantha`) yapar |
+## Gerekli anahtarlar (2 tane)
+1. **Anthropic** (beyin) — `sk-ant-api03-...` (console.anthropic.com)
+2. **ElevenLabs** (ses: konuşma + gülme) — elevenlabs.io → Profile → API key
 
----
+> ElevenLabs olmadan sesle konuşma çalışmaz (Expo Go'da yerel konuşma tanıma yok).
+> Anahtar yoksa ekranda küçük bir uyarı görürsün, orb yine de döner.
 
-## Çalıştırma
-
+## Çalıştırma (Windows/Mac/Linux — Mac şart değil)
 ```bash
 cd expo
 npm install
-cp .env.example .env          # içine EXPO_PUBLIC_ANTHROPIC_API_KEY=sk-ant-... yaz
+cp .env.example .env
+#   .env içine:
+#   EXPO_PUBLIC_ANTHROPIC_API_KEY=sk-ant-...
+#   EXPO_PUBLIC_ELEVENLABS_API_KEY=...
+#   (istersen EXPO_PUBLIC_ELEVENLABS_VOICE_ID=... ile sıcak bir ses seç)
 npx expo start
 ```
+Telefonda **Expo Go** ile QR'ı okut. Kamera + mikrofon izinlerini ver. Konuşmaya
+başla — Samantha dinler, görür ve yanıtlar.
 
-- **iPhone'da test:** Telefonda **Expo Go** (App Store, ücretsiz) → terminaldeki
-  **QR kodu** okut. Kamera iznini ver, yaz/konuş.
-- **Mac'te test:** `npx expo start --web` (veya başlattıktan sonra `w`) → tarayıcı
-  açılır. Kamera/mikrofon iznini ver.
-
-### Windows PC'de (Mac gerekmez)
-
-1. **Node.js LTS** kur: https://nodejs.org (npm ile birlikte gelir).
-2. PowerShell'de:
-   ```powershell
-   cd expo
-   npm install
-   Copy-Item .env.example .env
-   notepad .env        # EXPO_PUBLIC_ANTHROPIC_API_KEY=sk-ant-... yaz, kaydet
-   npx expo start
-   ```
-3. **iPhone ile PC aynı Wi-Fi'da** olsun. Terminaldeki **QR**'ı iPhone Kamera
-   uygulaması ya da Expo Go ile okut.
-4. Telefon bağlanamazsa (güvenlik duvarı/farklı ağ): `npx expo start --tunnel`
-   (ilk seferde `@expo/ngrok` kurulumunu onayla). Windows Defender "Node.js'e
-   izin ver?" sorarsa **İzin ver**.
-
-> **Expo Go sürüm uyumu:** Mağazadaki Expo Go yalnızca en güncel SDK'yı destekler.
-> `npx expo start` "SDK uyumsuz" derse, güncel SDK ile sıfırdan iskelet kurup
-> kaynakları kopyala:
-> ```bash
-> npx create-expo-app@latest samantha -t blank-typescript
-> cd samantha && npx expo install expo-camera expo-speech
-> # sonra bu repodaki App.tsx + src/ + .env'i içine kopyala
-> ```
-
----
-
-## Nasıl kullanılır
-
-- **Yaz veya konuş:** Metin kutusuna yaz ya da iOS klavyesindeki **🎤 dikte** tuşuna
-  basıp konuş. "Gönder"e bas.
-- **Samantha görür:** Her mesajda kameranın o anki karesini Claude'a yollar.
-- **Sesli yanıt:** Cevabı Türkçe sesle okur.
-- **👁️ Göz at:** Soru sormadan ortama bakıp kendiliğinden kısa bir yorum yapar
-  (söyleyecek bir şey yoksa susar).
-
----
+> Windows PowerShell için `.env` oluşturma:
+> `'EXPO_PUBLIC_ANTHROPIC_API_KEY=sk-ant-...' | Set-Content -Encoding ascii .env`
+> sonra `Add-Content -Encoding ascii .env 'EXPO_PUBLIC_ELEVENLABS_API_KEY=...'`
 
 ## Dosyalar
-
 | Dosya | İş |
 |---|---|
-| `App.tsx` | Ekran: kamera + sohbet + sesli yanıt + göz at |
-| `src/config.ts` | `.env`'den anahtar/temel URL/model |
-| `src/claude.ts` | Claude Messages API (vision), `fetch` ile |
-| `src/speech.ts` | Türkçe TTS, cümle cümle (expo-speech) |
-| `src/persona.ts` | Samantha personası + göz-at yönergesi |
-| `app.json` / `package.json` / `tsconfig.json` | Expo projesi yapılandırması |
+| `App.tsx` | Tam ekran orb + sürekli dinleme döngüsü + gizli kamera |
+| `src/SamanthaOrb.tsx` | Nöral-ağ orb (canvas, WebView) — tasarım birebir |
+| `src/elevenlabs.ts` | Scribe (STT) + ifade dolu TTS (gülme etiketleri) |
+| `src/voice.ts` | Ses çıkışı (ElevenLabs; yoksa cihaz sesine düşer) |
+| `src/claude.ts` | Claude Messages API (vision; API key + OAuth token destekli) |
+| `src/persona.ts` | Samantha personası + ses etiketleri yönergesi |
 
-> CI: her push'ta `expo/` TypeScript ile typecheck edilir (`.github/workflows/expo-check.yml`).
+> CI her push'ta `expo/` için typecheck **ve** Metro bundle çalıştırır.
 
----
+## Ayar (cihazda denerken)
+- **Dinleme hassasiyeti:** `App.tsx` içinde `VOICE_DB` (-38), `SILENCE_MS` (1100).
+  Erken kesiyorsa `SILENCE_MS`'i artır; geç algılıyorsa `VOICE_DB`'yi yükselt.
+- **Ses tonu:** `.env`'de `EXPO_PUBLIC_ELEVENLABS_VOICE_ID` ile değiştir.
+- **Model:** gülme için `EXPO_PUBLIC_ELEVENLABS_MODEL=eleven_v3` (varsayılan).
 
 ## Sonraki adımlar
-
-- [ ] Kalıcı hafıza (AsyncStorage) — seni oturumlar arası hatırlama
-- [ ] Hold-to-talk ses kaydı + bulut STT (gerçek "konuş-bırak")
-- [ ] Otomatik proaktif aralık (timer ile düzenli göz atma)
-- [ ] `eas build` ile bağımsız iPhone derlemesi (Mac'siz, EAS bulutunda)
+- [ ] Konuşurken araya girme (barge-in) — şu an konuşurken dinlemiyor
+- [ ] Sahne değişince proaktif yorum (kalıcı görüş)
+- [ ] Kalıcı hafıza (AsyncStorage)
