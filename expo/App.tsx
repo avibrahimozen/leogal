@@ -1,45 +1,50 @@
-import React, { useCallback, useRef, useState } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
+import { Audio } from "expo-av";
 
+import { SamanthaOrb } from "./src/SamanthaOrb";
 import { complete, Msg } from "./src/claude";
-import { speak, stopSpeaking } from "./src/speech";
-import { PERSONA, GLANCE_INSTRUCTION } from "./src/persona";
-import { isBrainConfigured } from "./src/config";
+import { speak, stop as stopSpeaking } from "./src/voice";
+import { transcribe } from "./src/elevenlabs";
+import { PERSONA } from "./src/persona";
+import { isBrainConfigured, isVoiceConfigured } from "./src/config";
 
-type Status = "idle" | "thinking" | "speaking";
+type Status = "listening" | "thinking" | "speaking" | "paused";
 
-const STATUS_LABEL: Record<Status, string> = {
-  idle: "Dinliyor",
-  thinking: "Düşünüyor",
-  speaking: "Konuşuyor",
-};
-const STATUS_COLOR: Record<Status, string> = {
-  idle: "#22d3ee",
-  thinking: "#a78bfa",
-  speaking: "#fb923c",
-};
+// Voice-activity tuning (metering is dBFS, ~0 = loud, -160 = silence).
+const VOICE_DB = -38; // above this = speech
+const SILENCE_MS = 1100; // quiet this long after speech = end of turn
+const NOSPEECH_MS = 9000; // pure silence this long = recycle the recording
+const MAXUTT_MS = 15000; // hard cap on a single utterance
 
 export default function App() {
-  const [permission, requestPermission] = useCameraPermissions();
+  const [camPermission, requestCamPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
 
-  const [messages, setMessages] = useState<Msg[]>([]);
-  const [input, setInput] = useState("");
-  const [status, setStatus] = useState<Status>("idle");
-  const [reply, setReply] = useState("");
-  const [userEcho, setUserEcho] = useState("");
+  const runningRef = useRef(false);
+  const recordingRef = useRef<Audio.Recording | null>(null);
+  const historyRef = useRef<Msg[]>([]);
 
-  // Grab the current camera frame as a compressed JPEG (base64) for Claude.
+  const [status, setStatus] = useState<Status>("paused");
+  const [micGranted, setMicGranted] = useState(false);
+
+  // Request camera (vision) + microphone (voice), then start the ambient loop.
+  useEffect(() => {
+    (async () => {
+      if (!camPermission?.granted) await requestCamPermission();
+      const mic = await Audio.requestPermissionsAsync();
+      setMicGranted(mic.granted);
+      if (mic.granted && isBrainConfigured && isVoiceConfigured) {
+        startListening();
+      }
+    })();
+    return () => stopListening();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const captureFrame = useCallback(async (): Promise<string | undefined> => {
+    if (!camPermission?.granted) return undefined;
     try {
       const photo = await cameraRef.current?.takePictureAsync({
         quality: 0.4,
@@ -50,220 +55,173 @@ export default function App() {
     } catch {
       return undefined;
     }
-  }, []);
+  }, [camPermission?.granted]);
 
-  // Build the API history: keep the image only on the newest user turn.
-  const historyForApi = useCallback(
-    (turns: Msg[]): Msg[] => turns.map((m, i) => (i === turns.length - 1 ? m : { ...m, image: undefined })),
+  // Record one utterance: resolves when the user goes quiet (end of turn),
+  // hits the max length, or pure silence recycles the buffer.
+  const recordUtterance = useCallback(
+    (): Promise<{ uri: string | null; hadSpeech: boolean }> =>
+      new Promise(async (resolve) => {
+        let done = false;
+        let hadSpeech = false;
+        let lastVoice = Date.now();
+        const start = Date.now();
+
+        const finish = async (speechHeard: boolean) => {
+          if (done) return;
+          done = true;
+          const rec = recordingRef.current;
+          recordingRef.current = null;
+          let uri: string | null = null;
+          try {
+            rec?.setOnRecordingStatusUpdate(null);
+            await rec?.stopAndUnloadAsync();
+            uri = rec?.getURI() ?? null;
+          } catch {}
+          resolve({ uri, hadSpeech: speechHeard });
+        };
+
+        try {
+          await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
+          const rec = new Audio.Recording();
+          recordingRef.current = rec;
+          await rec.prepareToRecordAsync({
+            ...Audio.RecordingOptionsPresets.HIGH_QUALITY,
+            isMeteringEnabled: true,
+          });
+          rec.setProgressUpdateInterval(150);
+          rec.setOnRecordingStatusUpdate((st) => {
+            if (!st.isRecording) return;
+            const now = Date.now();
+            const m = st.metering ?? -160;
+            if (m > VOICE_DB) {
+              hadSpeech = true;
+              lastVoice = now;
+            }
+            if (!runningRef.current) return finish(hadSpeech);
+            if (hadSpeech && now - lastVoice > SILENCE_MS) return finish(true);
+            if (!hadSpeech && now - start > NOSPEECH_MS) return finish(false);
+            if (now - start > MAXUTT_MS) return finish(hadSpeech);
+          });
+          await rec.startAsync();
+        } catch {
+          finish(false);
+        }
+      }),
     []
   );
 
-  const send = useCallback(
-    async (text: string) => {
-      const clean = text.trim();
-      if (!clean || status !== "idle") return;
-      setInput("");
-      setUserEcho(clean);
-      stopSpeaking();
+  const startListening = useCallback(() => {
+    if (runningRef.current) return;
+    runningRef.current = true;
+    setStatus("listening");
+    void loop();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-      const frame = await captureFrame();
-      const userMsg: Msg = { role: "user", text: clean, image: frame };
-      const next = [...messages, userMsg];
-      setMessages(next);
+  const stopListening = useCallback(() => {
+    runningRef.current = false;
+    void stopSpeaking();
+    const rec = recordingRef.current;
+    recordingRef.current = null;
+    if (rec) {
+      rec.setOnRecordingStatusUpdate(null);
+      rec.stopAndUnloadAsync().catch(() => {});
+    }
+    setStatus("paused");
+  }, []);
+
+  // The ambient loop: listen → (you stop talking) → think → speak → listen again.
+  const loop = useCallback(async () => {
+    while (runningRef.current) {
+      setStatus("listening");
+      const seg = await recordUtterance();
+      if (!runningRef.current) break;
+      if (!seg.hadSpeech || !seg.uri) continue; // nothing said — keep listening
+
       setStatus("thinking");
-      setReply("");
+      let text = "";
+      try {
+        text = await transcribe(seg.uri);
+      } catch {}
+      if (!text) continue;
+
+      if (isStopCommand(text)) {
+        stopListening();
+        return;
+      }
 
       try {
-        const answer = await complete(PERSONA, historyForApi(next));
-        setMessages((prev) => [...prev, { role: "assistant", text: answer }]);
-        setReply(answer);
+        const frame = await captureFrame();
+        const next = [...historyRef.current, { role: "user", text, image: frame } as Msg];
+        historyRef.current = next;
+        const apiHistory = next.map((m, i) => (i === next.length - 1 ? m : { ...m, image: undefined }));
+        const reply = await complete(PERSONA, apiHistory);
+        historyRef.current = [...historyRef.current, { role: "assistant", text: reply }];
+        if (!runningRef.current) break;
         setStatus("speaking");
-        await speak(answer);
-      } catch (e: any) {
-        setReply("Bir şeyler ters gitti: " + (e?.message ?? "bilinmeyen hata"));
-      } finally {
-        setStatus("idle");
+        await speak(reply);
+      } catch {
+        // stay quiet on errors, keep listening
       }
-    },
-    [messages, status, captureFrame, historyForApi]
-  );
-
-  // Proactive "glance": she looks and comments on her own (or stays silent).
-  const glance = useCallback(async () => {
-    if (status !== "idle") return;
-    const frame = await captureFrame();
-    if (!frame) return;
-    const probe: Msg = { role: "user", text: GLANCE_INSTRUCTION, image: frame };
-    setStatus("thinking");
-    setReply("");
-    try {
-      const answer = (await complete(PERSONA, historyForApi([...messages, probe]))).trim();
-      if (answer && !answer.includes("[SESSIZ]")) {
-        setMessages((prev) => [...prev, { role: "assistant", text: answer }]);
-        setReply(answer);
-        setStatus("speaking");
-        await speak(answer);
-      }
-    } catch {
-      // stay quiet on errors during a glance
-    } finally {
-      setStatus("idle");
     }
-  }, [messages, status, captureFrame, historyForApi]);
+    setStatus("paused");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recordUtterance, captureFrame, stopListening]);
 
-  // --- Permission gates ---
-
-  if (!permission) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator color="#fff" />
-      </View>
-    );
-  }
-  if (!permission.granted) {
-    return (
-      <View style={styles.center}>
-        <Text style={styles.title}>Samantha</Text>
-        <Text style={styles.info}>Çevreni görebilmem için kamera iznine ihtiyacım var.</Text>
-        <Pressable style={styles.primaryBtn} onPress={requestPermission}>
-          <Text style={styles.primaryBtnText}>İzin ver</Text>
-        </Pressable>
-      </View>
-    );
-  }
-
-  // --- Main UI ---
+  const notice = !isBrainConfigured
+    ? "Anthropic API anahtarı ayarlı değil (.env)"
+    : !isVoiceConfigured
+    ? "Sesle konuşmak için ElevenLabs anahtarı gerekli (.env)"
+    : !micGranted
+    ? "Mikrofon izni gerekli"
+    : null;
 
   return (
     <View style={styles.container}>
-      <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing="back" />
-      <View style={styles.scrim} />
+      {/* Hidden camera — Samantha's eyes, always perceiving. Behind the orb. */}
+      {camPermission?.granted ? (
+        <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing="back" />
+      ) : null}
 
-      <View style={styles.overlay}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Samantha</Text>
-          <View style={styles.statusPill}>
-            <View style={[styles.dot, { backgroundColor: STATUS_COLOR[status] }]} />
-            <Text style={styles.statusText}>{STATUS_LABEL[status]}</Text>
-          </View>
+      {/* The only thing on screen: the living orb, always animating. */}
+      <SamanthaOrb palette="Amber & coral" />
+
+      {/* Tap only to wake her back up after she's been told to stop. */}
+      <Pressable
+        style={StyleSheet.absoluteFill}
+        onPress={() => {
+          if (status === "paused" && !notice) startListening();
+        }}
+      />
+
+      {notice ? (
+        <View style={styles.center} pointerEvents="none">
+          <Text style={styles.notice}>{notice}</Text>
         </View>
-
-        <ScrollView style={styles.captions} contentContainerStyle={{ gap: 8, paddingBottom: 8 }}>
-          {userEcho ? <Bubble icon="🗣️" tint="#67e8f9" text={userEcho} /> : null}
-          {reply ? <Bubble icon="💬" tint="#fdba74" text={reply} /> : null}
-        </ScrollView>
-
-        {!isBrainConfigured ? (
-          <Text style={styles.warn}>⚠️ EXPO_PUBLIC_ANTHROPIC_API_KEY ayarlı değil (.env)</Text>
-        ) : null}
-
-        <View style={styles.inputRow}>
-          <Pressable style={styles.iconBtn} onPress={glance} disabled={status !== "idle"}>
-            <Text style={styles.iconBtnText}>👁️</Text>
-          </Pressable>
-          <TextInput
-            style={styles.input}
-            placeholder="Yaz ya da klavyenin 🎤 tuşuyla konuş…"
-            placeholderTextColor="#9ca3af"
-            value={input}
-            onChangeText={setInput}
-            onSubmitEditing={() => send(input)}
-            returnKeyType="send"
-            editable={status === "idle"}
-          />
-          <Pressable
-            style={[styles.sendBtn, status !== "idle" && styles.sendBtnDisabled]}
-            onPress={() => send(input)}
-            disabled={status !== "idle"}
-          >
-            <Text style={styles.sendBtnText}>Gönder</Text>
-          </Pressable>
+      ) : status === "paused" ? (
+        <View style={styles.center} pointerEvents="none">
+          <Text style={styles.paused}>Uyuyor — uyandırmak için dokun</Text>
         </View>
-      </View>
+      ) : null}
     </View>
   );
 }
 
-function Bubble({ icon, tint, text }: { icon: string; tint: string; text: string }) {
+function isStopCommand(text: string): boolean {
+  const t = text.toLocaleLowerCase("tr-TR");
   return (
-    <View style={styles.bubble}>
-      <Text style={[styles.bubbleIcon, { color: tint }]}>{icon}</Text>
-      <Text style={styles.bubbleText}>{text}</Text>
-    </View>
+    t.includes("kapan") ||
+    t.includes("dinlemeyi kapat") ||
+    t.includes("kendini kapat") ||
+    t.includes("dinlemeyi bırak") ||
+    t.includes("uyu artık")
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#000" },
-  center: {
-    flex: 1,
-    backgroundColor: "#000",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 24,
-    gap: 16,
-  },
-  scrim: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.28)" },
-  overlay: { flex: 1, justifyContent: "space-between", padding: 18, paddingTop: 60 },
-
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  title: { color: "#fff", fontSize: 24, fontWeight: "700" },
-  statusPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: "rgba(255,255,255,0.12)",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-  },
-  dot: { width: 8, height: 8, borderRadius: 4 },
-  statusText: { color: "#fff", fontSize: 13 },
-
-  captions: { flexGrow: 0, maxHeight: 260 },
-  bubble: {
-    flexDirection: "row",
-    gap: 8,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    padding: 12,
-    borderRadius: 14,
-  },
-  bubbleIcon: { fontSize: 16 },
-  bubbleText: { color: "#f3f4f6", fontSize: 16, flex: 1, lineHeight: 22 },
-
-  warn: { color: "#fca5a5", fontSize: 13, marginBottom: 8 },
-
-  inputRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  iconBtn: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.14)",
-  },
-  iconBtnText: { fontSize: 20 },
-  input: {
-    flex: 1,
-    height: 46,
-    borderRadius: 23,
-    paddingHorizontal: 16,
-    backgroundColor: "rgba(255,255,255,0.92)",
-    color: "#111",
-    fontSize: 16,
-  },
-  sendBtn: {
-    height: 46,
-    paddingHorizontal: 16,
-    borderRadius: 23,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#fff",
-  },
-  sendBtnDisabled: { opacity: 0.5 },
-  sendBtnText: { color: "#111", fontWeight: "700" },
-
-  info: { color: "#d1d5db", fontSize: 16, textAlign: "center" },
-  primaryBtn: { backgroundColor: "#fff", paddingHorizontal: 24, paddingVertical: 14, borderRadius: 999 },
-  primaryBtnText: { color: "#111", fontWeight: "700", fontSize: 16 },
+  container: { flex: 1, backgroundColor: "#050402" },
+  center: { position: "absolute", left: 24, right: 24, bottom: 64, alignItems: "center" },
+  notice: { color: "rgba(255,180,150,0.95)", fontSize: 14, textAlign: "center" },
+  paused: { color: "rgba(255,206,168,0.7)", fontSize: 15, textAlign: "center" },
 });
