@@ -43,14 +43,20 @@ async function askClaude(history) {
     content.push({ type: "text", text: m.text });
     return { role: m.role, content };
   });
+  const headers = {
+    "content-type": "application/json",
+    "anthropic-version": "2023-06-01",
+    "anthropic-dangerous-direct-browser-access": "true",
+  };
+  if (ANTHROPIC_API_KEY.startsWith("sk-ant-oat")) {
+    headers["authorization"] = "Bearer " + ANTHROPIC_API_KEY;
+    headers["anthropic-beta"] = "oauth-2025-04-20";
+  } else {
+    headers["x-api-key"] = ANTHROPIC_API_KEY;
+  }
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-api-key": ANTHROPIC_API_KEY,
-      "anthropic-version": "2023-06-01",
-      "anthropic-dangerous-direct-browser-access": "true",
-    },
+    headers,
     body: JSON.stringify({ model: MODEL, max_tokens: 1024, system: PERSONA, messages }),
   });
   if (!res.ok) throw new Error("Claude " + res.status + ": " + (await res.text()));

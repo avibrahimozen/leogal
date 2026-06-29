@@ -17,15 +17,24 @@ export async function complete(system: string, history: Msg[], maxTokens = 1024)
     return { role: m.role, content };
   });
 
+  const headers: Record<string, string> = {
+    "content-type": "application/json",
+    "anthropic-version": config.anthropicVersion,
+    // Allow direct calls from a browser (Mac/web target). Harmless on native.
+    "anthropic-dangerous-direct-browser-access": "true",
+  };
+  // OAuth access tokens (sk-ant-oat…, e.g. from Claude Code / `ant auth`) use a
+  // Bearer header + a beta flag; classic API keys (sk-ant-api…) use x-api-key.
+  if (config.anthropicKey.startsWith("sk-ant-oat")) {
+    headers["authorization"] = `Bearer ${config.anthropicKey}`;
+    headers["anthropic-beta"] = "oauth-2025-04-20";
+  } else {
+    headers["x-api-key"] = config.anthropicKey;
+  }
+
   const res = await fetch(`${config.baseUrl}/v1/messages`, {
     method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-api-key": config.anthropicKey,
-      "anthropic-version": config.anthropicVersion,
-      // Allow direct calls from a browser (Mac/web target). Harmless on native.
-      "anthropic-dangerous-direct-browser-access": "true",
-    },
+    headers,
     body: JSON.stringify({ model: config.model, max_tokens: maxTokens, system, messages }),
   });
 
