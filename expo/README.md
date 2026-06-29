@@ -20,7 +20,7 @@ gülerek, sıcak ve insani seslerle. Yalnızca sen sözlü olarak **"kapan" /
 - **Kapatma:** "kapan", "dinlemeyi kapat", "kendini kapat" dersen durur.
 
 ## Gerekli anahtarlar (2 tane)
-1. **Anthropic** (beyin) — `sk-ant-api03-...` (console.anthropic.com)
+1. **Anthropic** (beyin) — `sk-ant-...` (console.anthropic.com)
 2. **ElevenLabs** (ses: konuşma + gülme) — elevenlabs.io → Profile → API key
 
 > ElevenLabs olmadan sesle konuşma çalışmaz (Expo Go'da yerel konuşma tanıma yok).
@@ -30,24 +30,29 @@ gülerek, sıcak ve insani seslerle. Yalnızca sen sözlü olarak **"kapan" /
 ```bash
 cd expo
 npm install
-cp .env.example .env
-#   .env içine:
-#   EXPO_PUBLIC_ANTHROPIC_API_KEY=sk-ant-...
-#   EXPO_PUBLIC_ELEVENLABS_API_KEY=...
-#   (istersen EXPO_PUBLIC_ELEVENLABS_VOICE_ID=... ile sıcak bir ses seç)
 npx expo start
 ```
-Telefonda **Expo Go** ile QR'ı okut. Kamera + mikrofon izinlerini ver. Konuşmaya
-başla — Samantha dinler, görür ve yanıtlar.
+Telefonda **Expo Go** ile QR'ı okut. **`.env` GEREKMEZ** — uygulama ilk açıldığında
+bir **kurulum ekranı** çıkar; iki anahtarı oraya **yapıştır** ve **"Kaydet ve başla"**
+de. Anahtarlar cihazda saklanır (bir daha sormaz). Kamera + mikrofon izinlerini ver,
+konuşmaya başla.
 
-> Windows PowerShell için `.env` oluşturma:
-> `'EXPO_PUBLIC_ANTHROPIC_API_KEY=sk-ant-...' | Set-Content -Encoding ascii .env`
-> sonra `Add-Content -Encoding ascii .env 'EXPO_PUBLIC_ELEVENLABS_API_KEY=...'`
+> Anahtarları sonradan değiştirmek istersen **ekrana basılı tut** (long-press) →
+> kurulum ekranı yeniden açılır.
+
+### Alternatif: `.env` ile (opsiyonel)
+İstersen anahtarları yine de `.env` ile verebilirsin (uygulama içi giriş bunu ezer):
+```bash
+cp .env.example .env
+#   EXPO_PUBLIC_ANTHROPIC_API_KEY=sk-ant-...
+#   EXPO_PUBLIC_ELEVENLABS_API_KEY=...
+```
 
 ## Dosyalar
 | Dosya | İş |
 |---|---|
 | `App.tsx` | Tam ekran orb + sürekli dinleme döngüsü + gizli kamera |
+| `src/SetupCard.tsx` | İlk açılışta anahtar girişi (cihazda saklanır) |
 | `src/SamanthaOrb.tsx` | Nöral-ağ orb (canvas, WebView) — tasarım birebir |
 | `src/elevenlabs.ts` | Scribe (STT) + ifade dolu TTS (gülme etiketleri) |
 | `src/voice.ts` | Ses çıkışı (ElevenLabs; yoksa cihaz sesine düşer) |

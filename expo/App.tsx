@@ -13,11 +13,12 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import { Audio } from "expo-av";
 
 import { SamanthaOrb } from "./src/SamanthaOrb";
+import { SetupCard } from "./src/SetupCard";
 import { complete, Msg } from "./src/claude";
 import { speak, stop as stopSpeaking } from "./src/voice";
 import { transcribe } from "./src/elevenlabs";
 import { PERSONA } from "./src/persona";
-import { config, isBrainConfigured, isVoiceConfigured } from "./src/config";
+import { config, loadKeys, isBrainConfigured, isVoiceConfigured } from "./src/config";
 
 type Status = "listening" | "thinking" | "speaking" | "paused";
 
@@ -42,6 +43,7 @@ export default function App() {
   const [status, setStatus] = useState<Status>("paused");
   const [micGranted, setMicGranted] = useState(false);
   const [input, setInput] = useState("");
+  const [showSetup, setShowSetup] = useState(false);
 
   // Diagnostics
   const [log, setLog] = useState<string[]>([]);
@@ -53,18 +55,33 @@ export default function App() {
 
   useEffect(() => {
     (async () => {
-      addLog("açılış… izinler isteniyor");
+      addLog("açılış… anahtarlar yükleniyor");
+      await loadKeys();
       if (!camPermission?.granted) await requestCamPermission();
       const mic = await Audio.requestPermissionsAsync();
       setMicGranted(mic.granted);
-      addLog("mic=" + mic.granted + " brain=" + isBrainConfigured + " voice=" + isVoiceConfigured);
+      addLog("mic=" + mic.granted + " brain=" + isBrainConfigured() + " voice=" + isVoiceConfigured());
       addLog("anthropic=" + maskKey(config.anthropicKey) + " eleven=" + maskKey(config.elevenLabsKey));
-      if (mic.granted && isBrainConfigured && isVoiceConfigured) startListening();
-      else addLog("SES DÖNGÜSÜ BAŞLAMADI (izin/anahtar eksik) — yazarak test edebilirsin");
+      if (!isBrainConfigured()) {
+        addLog("anahtar yok — kurulum ekranı açılıyor");
+        setShowSetup(true);
+        return;
+      }
+      beginIfReady(mic.granted);
     })();
     return () => stopListening();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Start the voice loop when mic + keys are ready; otherwise note why.
+  const beginIfReady = useCallback(
+    (mic: boolean) => {
+      if (mic && isBrainConfigured() && isVoiceConfigured()) startListening();
+      else addLog("SES DÖNGÜSÜ BAŞLAMADI (izin/ses anahtarı eksik) — yazarak test edebilirsin");
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [addLog]
+  );
 
   const captureFrame = useCallback(async (): Promise<string | undefined> => {
     if (!camPermission?.granted) return undefined;
@@ -226,9 +243,16 @@ export default function App() {
     setStatus("paused");
   }, [input, respond, stopListening, addLog]);
 
-  const notice = !isBrainConfigured
-    ? "Anthropic API anahtarı ayarlı değil (.env)"
-    : !isVoiceConfigured
+  const onSetupSaved = useCallback(() => {
+    setShowSetup(false);
+    addLog("anahtarlar kaydedildi");
+    addLog("anthropic=" + maskKey(config.anthropicKey) + " eleven=" + maskKey(config.elevenLabsKey));
+    beginIfReady(micGranted);
+  }, [addLog, beginIfReady, micGranted]);
+
+  const notice = !isBrainConfigured()
+    ? "Anthropic anahtarı yok — ekrana basılı tutup gir"
+    : !isVoiceConfigured()
     ? "Sesli konuşma için ElevenLabs anahtarı gerekli — yazarak test edebilirsin"
     : !micGranted
     ? "Mikrofon izni gerekli — yazarak test edebilirsin"
@@ -245,8 +269,13 @@ export default function App() {
       <Pressable
         style={StyleSheet.absoluteFill}
         onPress={() => {
-          if (status === "paused" && micGranted && isVoiceConfigured && isBrainConfigured) startListening();
+          if (status === "paused" && micGranted && isVoiceConfigured() && isBrainConfigured()) startListening();
         }}
+        onLongPress={() => {
+          stopListening();
+          setShowSetup(true);
+        }}
+        delayLongPress={600}
       />
 
       {DEBUG ? (
@@ -289,6 +318,8 @@ export default function App() {
           </Pressable>
         </KeyboardAvoidingView>
       ) : null}
+
+      {showSetup ? <SetupCard onSaved={onSetupSaved} /> : null}
     </View>
   );
 }

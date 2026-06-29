@@ -5,7 +5,7 @@ import * as Eleven from "./elevenlabs";
 /// Speak Samantha's reply. Prefers ElevenLabs (expressive, can laugh); falls
 /// back to the on-device voice — stripping audio tags so they aren't read aloud.
 export async function speak(text: string): Promise<void> {
-  if (isVoiceConfigured) {
+  if (isVoiceConfigured()) {
     try {
       await Eleven.speak(text);
       return;
