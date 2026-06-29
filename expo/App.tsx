@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
     padding: 24,
     gap: 16,
   },
-  scrim: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.28)" },
+  scrim: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.28)" },
   overlay: { flex: 1, justifyContent: "space-between", padding: 18, paddingTop: 60 },
 
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
