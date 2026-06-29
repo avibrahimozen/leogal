@@ -1,5 +1,14 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { Audio } from "expo-av";
 
@@ -12,7 +21,7 @@ import { config, isBrainConfigured, isVoiceConfigured } from "./src/config";
 
 type Status = "listening" | "thinking" | "speaking" | "paused";
 
-// Set false once everything works to hide the on-screen diagnostics.
+// Set false once everything works to hide diagnostics + the test text input.
 const DEBUG = true;
 
 // Voice-activity tuning (metering is dBFS, ~0 = loud, -160 = silence).
@@ -32,6 +41,7 @@ export default function App() {
 
   const [status, setStatus] = useState<Status>("paused");
   const [micGranted, setMicGranted] = useState(false);
+  const [input, setInput] = useState("");
 
   // Diagnostics
   const [log, setLog] = useState<string[]>([]);
@@ -47,13 +57,10 @@ export default function App() {
       if (!camPermission?.granted) await requestCamPermission();
       const mic = await Audio.requestPermissionsAsync();
       setMicGranted(mic.granted);
-      addLog("mikrofon=" + mic.granted + " brain=" + isBrainConfigured + " voice=" + isVoiceConfigured);
-      addLog("anthropic key=" + maskKey(config.anthropicKey) + " eleven=" + maskKey(config.elevenLabsKey));
-      if (mic.granted && isBrainConfigured && isVoiceConfigured) {
-        startListening();
-      } else {
-        addLog("LOOP BAŞLAMADI — eksik izin/anahtar");
-      }
+      addLog("mic=" + mic.granted + " brain=" + isBrainConfigured + " voice=" + isVoiceConfigured);
+      addLog("anthropic=" + maskKey(config.anthropicKey) + " eleven=" + maskKey(config.elevenLabsKey));
+      if (mic.granted && isBrainConfigured && isVoiceConfigured) startListening();
+      else addLog("SES DÖNGÜSÜ BAŞLAMADI (izin/anahtar eksik) — yazarak test edebilirsin");
     })();
     return () => stopListening();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -72,6 +79,28 @@ export default function App() {
       return undefined;
     }
   }, [camPermission?.granted]);
+
+  // Shared: turn a user message into a spoken reply. Used by both voice + text.
+  const respond = useCallback(
+    async (text: string) => {
+      setStatus("thinking");
+      try {
+        const frame = await captureFrame();
+        const next = [...historyRef.current, { role: "user", text, image: frame } as Msg];
+        historyRef.current = next;
+        const apiHistory = next.map((m, i) => (i === next.length - 1 ? m : { ...m, image: undefined }));
+        const reply = await complete(PERSONA, apiHistory);
+        historyRef.current = [...historyRef.current, { role: "assistant", text: reply }];
+        addLog("yanıt: " + reply.slice(0, 70));
+        setStatus("speaking");
+        await speak(reply);
+        addLog("seslendirme bitti");
+      } catch (e) {
+        addLog("yanıt/ses HATASI: " + String(e));
+      }
+    },
+    [captureFrame, addLog]
+  );
 
   const recordUtterance = useCallback(
     (): Promise<{ uri: string | null; hadSpeech: boolean; maxMeter: number }> =>
@@ -136,27 +165,6 @@ export default function App() {
     [addLog]
   );
 
-  const startListening = useCallback(() => {
-    if (runningRef.current) return;
-    runningRef.current = true;
-    setStatus("listening");
-    addLog("dinleme başladı");
-    void loop();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const stopListening = useCallback(() => {
-    runningRef.current = false;
-    void stopSpeaking();
-    const rec = recordingRef.current;
-    recordingRef.current = null;
-    if (rec) {
-      rec.setOnRecordingStatusUpdate(null);
-      rec.stopAndUnloadAsync().catch(() => {});
-    }
-    setStatus("paused");
-  }, []);
-
   const loop = useCallback(async () => {
     while (runningRef.current) {
       setStatus("listening");
@@ -171,42 +179,59 @@ export default function App() {
         text = await transcribe(seg.uri);
         addLog("duydum: " + (text || "(boş)"));
       } catch (e) {
-        addLog("STT hatası: " + String(e));
+        addLog("STT HATASI: " + String(e));
         continue;
       }
       if (!text) continue;
-
       if (isStopCommand(text)) {
         addLog("kapatma komutu");
         stopListening();
         return;
       }
-
-      try {
-        const frame = await captureFrame();
-        const next = [...historyRef.current, { role: "user", text, image: frame } as Msg];
-        historyRef.current = next;
-        const apiHistory = next.map((m, i) => (i === next.length - 1 ? m : { ...m, image: undefined }));
-        const reply = await complete(PERSONA, apiHistory);
-        historyRef.current = [...historyRef.current, { role: "assistant", text: reply }];
-        addLog("yanıt: " + reply.slice(0, 60));
-        if (!runningRef.current) break;
-        setStatus("speaking");
-        await speak(reply);
-      } catch (e) {
-        addLog("yanıt/ses hatası: " + String(e));
-      }
+      await respond(text);
     }
     setStatus("paused");
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [recordUtterance, captureFrame, stopListening, addLog]);
+  }, [recordUtterance, respond, stopListening, addLog]);
+
+  const startListening = useCallback(() => {
+    if (runningRef.current) return;
+    runningRef.current = true;
+    setStatus("listening");
+    addLog("dinleme başladı");
+    void loop();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loop, addLog]);
+
+  const stopListening = useCallback(() => {
+    runningRef.current = false;
+    void stopSpeaking();
+    const rec = recordingRef.current;
+    recordingRef.current = null;
+    if (rec) {
+      rec.setOnRecordingStatusUpdate(null);
+      rec.stopAndUnloadAsync().catch(() => {});
+    }
+    setStatus("paused");
+  }, []);
+
+  // Text test input: pause the mic loop, send the typed line through respond().
+  const sendText = useCallback(async () => {
+    const t = input.trim();
+    if (!t) return;
+    setInput("");
+    stopListening();
+    addLog("yazı: " + t);
+    await respond(t);
+    setStatus("paused");
+  }, [input, respond, stopListening, addLog]);
 
   const notice = !isBrainConfigured
     ? "Anthropic API anahtarı ayarlı değil (.env)"
     : !isVoiceConfigured
-    ? "Sesle konuşmak için ElevenLabs anahtarı gerekli (.env)"
+    ? "Sesli konuşma için ElevenLabs anahtarı gerekli — yazarak test edebilirsin"
     : !micGranted
-    ? "Mikrofon izni gerekli"
+    ? "Mikrofon izni gerekli — yazarak test edebilirsin"
     : null;
 
   return (
@@ -220,19 +245,9 @@ export default function App() {
       <Pressable
         style={StyleSheet.absoluteFill}
         onPress={() => {
-          if (status === "paused" && !notice) startListening();
+          if (status === "paused" && micGranted && isVoiceConfigured && isBrainConfigured) startListening();
         }}
       />
-
-      {notice ? (
-        <View style={styles.center} pointerEvents="none">
-          <Text style={styles.notice}>{notice}</Text>
-        </View>
-      ) : status === "paused" ? (
-        <View style={styles.center} pointerEvents="none">
-          <Text style={styles.paused}>Uyuyor — uyandırmak için dokun</Text>
-        </View>
-      ) : null}
 
       {DEBUG ? (
         <View style={styles.hud} pointerEvents="none">
@@ -247,6 +262,32 @@ export default function App() {
             ))}
           </ScrollView>
         </View>
+      ) : null}
+
+      {notice ? (
+        <View style={styles.noticeWrap} pointerEvents="none">
+          <Text style={styles.notice}>{notice}</Text>
+        </View>
+      ) : null}
+
+      {DEBUG ? (
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          style={styles.inputBar}
+        >
+          <TextInput
+            style={styles.input}
+            placeholder="Test: Samantha'ya yaz…"
+            placeholderTextColor="#9ca3af"
+            value={input}
+            onChangeText={setInput}
+            onSubmitEditing={sendText}
+            returnKeyType="send"
+          />
+          <Pressable style={styles.send} onPress={sendText}>
+            <Text style={styles.sendText}>Gönder</Text>
+          </Pressable>
+        </KeyboardAvoidingView>
       ) : null}
     </View>
   );
@@ -270,9 +311,8 @@ function maskKey(k: string): string {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#050402" },
-  center: { position: "absolute", left: 24, right: 24, bottom: 64, alignItems: "center" },
-  notice: { color: "rgba(255,180,150,0.95)", fontSize: 14, textAlign: "center" },
-  paused: { color: "rgba(255,206,168,0.7)", fontSize: 15, textAlign: "center" },
+  noticeWrap: { position: "absolute", left: 24, right: 24, bottom: 84, alignItems: "center" },
+  notice: { color: "rgba(255,180,150,0.95)", fontSize: 13, textAlign: "center" },
   hud: {
     position: "absolute",
     top: 50,
@@ -284,4 +324,31 @@ const styles = StyleSheet.create({
   },
   hudTitle: { color: "#ffd68e", fontSize: 12, fontWeight: "700", marginBottom: 4 },
   hudLine: { color: "#e8e8e8", fontSize: 11, lineHeight: 15 },
+  inputBar: {
+    position: "absolute",
+    left: 12,
+    right: 12,
+    bottom: 24,
+    flexDirection: "row",
+    gap: 8,
+    alignItems: "center",
+  },
+  input: {
+    flex: 1,
+    height: 46,
+    borderRadius: 23,
+    paddingHorizontal: 16,
+    backgroundColor: "rgba(255,255,255,0.92)",
+    color: "#111",
+    fontSize: 16,
+  },
+  send: {
+    height: 46,
+    paddingHorizontal: 16,
+    borderRadius: 23,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#fff",
+  },
+  sendText: { color: "#111", fontWeight: "700" },
 });
