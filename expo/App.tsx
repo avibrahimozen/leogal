@@ -17,8 +17,8 @@ import { SetupCard } from "./src/SetupCard";
 import { complete, Msg } from "./src/claude";
 import { speak, stop as stopSpeaking } from "./src/voice";
 import { transcribe } from "./src/elevenlabs";
-import { PERSONA } from "./src/persona";
-import { config, loadKeys, isBrainConfigured, isVoiceConfigured } from "./src/config";
+import { setLog as installLogSink } from "./src/log";
+import { activeCharacter, config, loadKeys, isBrainConfigured, isVoiceConfigured } from "./src/config";
 
 type Status = "listening" | "thinking" | "speaking" | "paused";
 
@@ -26,7 +26,14 @@ type Status = "listening" | "thinking" | "speaking" | "paused";
 const DEBUG = true;
 
 // Voice-activity tuning (metering is dBFS, ~0 = loud, -160 = silence).
-const VOICE_DB = -38;
+// The speech threshold ADAPTS to the ambient noise floor sampled at the start
+// of each utterance (floor + margin), clamped to a sane range. A fixed -38 was
+// too strict — conversational speech often averages ~-45/-50 dBFS, so nothing
+// was ever detected and no audio was sent to the APIs.
+const VOICE_MARGIN_DB = 12; // how far above the noise floor counts as speech
+const VOICE_DB_MIN = -55; // quietest threshold we'll ever require (still rooms)
+const VOICE_DB_MAX = -30; // loudest threshold we'll ever require (noisy rooms)
+const FLOOR_CALIBRATION_MS = 600; // sample ambient level before listening for speech
 const SILENCE_MS = 1100;
 const NOSPEECH_MS = 9000;
 const MAXUTT_MS = 15000;
@@ -54,6 +61,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    installLogSink(addLog); // route lower-level (TTS/STT) errors to the HUD
     (async () => {
       addLog("açılış… anahtarlar yükleniyor");
       await loadKeys();
@@ -62,6 +70,9 @@ export default function App() {
       setMicGranted(mic.granted);
       addLog("mic=" + mic.granted + " brain=" + isBrainConfigured() + " voice=" + isVoiceConfigured());
       addLog("anthropic=" + maskKey(config.anthropicKey) + " eleven=" + maskKey(config.elevenLabsKey));
+      if (config.anthropicKey.startsWith("sk-ant-oat")) {
+        addLog("UYARI: OAuth (sk-ant-oat) token'ı genelde çalışmaz — console.anthropic.com'dan sk-ant-api anahtarı kullan");
+      }
       if (!isBrainConfigured()) {
         addLog("anahtar yok — kurulum ekranı açılıyor");
         setShowSetup(true);
@@ -106,7 +117,7 @@ export default function App() {
         const next = [...historyRef.current, { role: "user", text, image: frame } as Msg];
         historyRef.current = next;
         const apiHistory = next.map((m, i) => (i === next.length - 1 ? m : { ...m, image: undefined }));
-        const reply = await complete(PERSONA, apiHistory);
+        const reply = await complete(activeCharacter().persona, apiHistory);
         historyRef.current = [...historyRef.current, { role: "assistant", text: reply }];
         addLog("yanıt: " + reply.slice(0, 70));
         setStatus("speaking");
@@ -127,6 +138,12 @@ export default function App() {
         let maxMeter = -160;
         let lastVoice = Date.now();
         const start = Date.now();
+
+        // Adaptive threshold: sample the ambient floor first, then require
+        // speech to exceed floor + margin (clamped).
+        let calibrating = true;
+        let floor = 0; // running minimum during calibration
+        let threshold = VOICE_DB_MIN;
 
         const finish = async (speechHeard: boolean) => {
           if (done) return;
@@ -163,7 +180,14 @@ export default function App() {
                 meterShownAt.current = now;
                 setMeter(Math.round(m));
               }
-              if (m > VOICE_DB) {
+              if (calibrating) {
+                floor = Math.min(floor, m);
+                if (now - start >= FLOOR_CALIBRATION_MS) {
+                  calibrating = false;
+                  threshold = Math.max(VOICE_DB_MIN, Math.min(VOICE_DB_MAX, floor + VOICE_MARGIN_DB));
+                  addLog("eşik: taban=" + Math.round(floor) + " → konuşma>" + Math.round(threshold) + "dB");
+                }
+              } else if (m > threshold) {
                 hadSpeech = true;
                 lastVoice = now;
               }
@@ -200,7 +224,12 @@ export default function App() {
       const seg = await recordUtterance();
       if (!runningRef.current) break;
       addLog("segment: konuşma=" + seg.hadSpeech + " maxMeter=" + Math.round(seg.maxMeter) + " uri=" + (seg.uri ? "var" : "yok"));
-      if (!seg.hadSpeech || !seg.uri) continue;
+      if (!seg.uri) {
+        // recording failed to produce a file — back off so we don't busy-loop
+        await new Promise((r) => setTimeout(r, 400));
+        continue;
+      }
+      if (!seg.hadSpeech) continue;
 
       setStatus("thinking");
       let text = "";
@@ -264,7 +293,7 @@ export default function App() {
         <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing="back" />
       ) : null}
 
-      <RomeoOrb palette="Amber & coral" />
+      <RomeoOrb key={config.characterId} palette={activeCharacter().palette} />
 
       <Pressable
         style={StyleSheet.absoluteFill}
@@ -306,7 +335,7 @@ export default function App() {
         >
           <TextInput
             style={styles.input}
-            placeholder="Test: Romeo'ya yaz…"
+            placeholder={"Test: " + activeCharacter().name + "'a yaz…"}
             placeholderTextColor="#9ca3af"
             value={input}
             onChangeText={setInput}

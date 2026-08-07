@@ -12,22 +12,27 @@ import {
 } from "react-native";
 
 import { config, saveKeys } from "./config";
+import { CHARACTERS, CharacterId, getCharacter } from "./characters";
 
-/// One-time setup: paste the two API keys directly in the app. This avoids the
-/// fragile `.env` / Windows env-var path entirely — the keys are saved on the
-/// device (AsyncStorage) and used immediately.
+/// One-time setup: pick a companion (Romeo or Juliette) and paste the two API
+/// keys directly in the app. This avoids the fragile `.env` / Windows env-var
+/// path entirely — everything is saved on the device (AsyncStorage).
 export function SetupCard({ onSaved }: { onSaved: () => void }) {
+  const [character, setCharacter] = useState<CharacterId>(config.characterId);
   const [anthropic, setAnthropic] = useState(config.anthropicKey);
   const [eleven, setEleven] = useState(config.elevenLabsKey);
-  const [voiceId, setVoiceId] = useState(config.elevenLabsVoiceId);
+  const [voiceId, setVoiceId] = useState(config.voiceOverride);
   const [saving, setSaving] = useState(false);
 
-  const canSave = anthropic.trim().length > 0 && !saving;
+  // Both keys are required: the always-on voice loop needs ElevenLabs for
+  // speech-to-text (Expo Go has no on-device STT), not just for the voice.
+  const canSave = anthropic.trim().length > 0 && eleven.trim().length > 0 && !saving;
+  const active = getCharacter(character);
 
   const save = async () => {
     if (!canSave) return;
     setSaving(true);
-    await saveKeys({ anthropicKey: anthropic, elevenLabsKey: eleven, voiceId });
+    await saveKeys({ anthropicKey: anthropic, elevenLabsKey: eleven, voiceId, characterId: character });
     setSaving(false);
     onSaved();
   };
@@ -39,10 +44,32 @@ export function SetupCard({ onSaved }: { onSaved: () => void }) {
     >
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <View style={styles.card}>
-          <Text style={styles.title}>Romeo'yı uyandır</Text>
+          <Text style={styles.title}>{active.name}'ı uyandır</Text>
           <Text style={styles.sub}>
-            Anahtarları buraya yapıştır — kayıtlı kalır, `.env` gerekmez.
+            Yoldaşını seç, anahtarları yapıştır — kayıtlı kalır, `.env` gerekmez.
           </Text>
+
+          <Text style={styles.label}>Yoldaş</Text>
+          <View style={styles.picker}>
+            {(Object.keys(CHARACTERS) as CharacterId[]).map((id) => {
+              const c = CHARACTERS[id];
+              const selected = id === character;
+              return (
+                <Pressable
+                  key={id}
+                  style={[styles.chip, selected && styles.chipSelected]}
+                  onPress={() => setCharacter(id)}
+                >
+                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                    {c.name}
+                  </Text>
+                  <Text style={[styles.chipSub, selected && styles.chipTextSelected]}>
+                    {c.gender === "male" ? "erkek" : "kadın"}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
 
           <Text style={styles.label}>Anthropic anahtarı (beyin) *</Text>
           <TextInput
@@ -56,12 +83,12 @@ export function SetupCard({ onSaved }: { onSaved: () => void }) {
             secureTextEntry
           />
 
-          <Text style={styles.label}>ElevenLabs anahtarı (ses + gülme)</Text>
+          <Text style={styles.label}>ElevenLabs anahtarı (konuşma + ses) *</Text>
           <TextInput
             style={styles.input}
             value={eleven}
             onChangeText={setEleven}
-            placeholder="(opsiyonel — yoksa cihaz sesi kullanılır)"
+            placeholder="xi-… (seni duyabilmek için gerekli)"
             placeholderTextColor="#7d7468"
             autoCapitalize="none"
             autoCorrect={false}
@@ -73,7 +100,7 @@ export function SetupCard({ onSaved }: { onSaved: () => void }) {
             style={styles.input}
             value={voiceId}
             onChangeText={setVoiceId}
-            placeholder="21m00Tcm4TlvDq8ikWAM"
+            placeholder={"boş = " + active.name + " için varsayılan (" + active.defaultVoiceId + ")"}
             placeholderTextColor="#7d7468"
             autoCapitalize="none"
             autoCorrect={false}
@@ -125,6 +152,20 @@ const styles = StyleSheet.create({
   title: { color: "#ffd68e", fontSize: 22, fontWeight: "700", marginBottom: 4 },
   sub: { color: "#cfc4b6", fontSize: 13, marginBottom: 16, lineHeight: 18 },
   label: { color: "#e8ddcf", fontSize: 12, fontWeight: "600", marginBottom: 6, marginTop: 12 },
+  picker: { flexDirection: "row", gap: 10 },
+  chip: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 14,
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.14)",
+  },
+  chipSelected: { backgroundColor: "rgba(255,179,122,0.22)", borderColor: "#ffb37a" },
+  chipText: { color: "#e8ddcf", fontSize: 16, fontWeight: "700" },
+  chipSub: { color: "#9c9488", fontSize: 11, marginTop: 2 },
+  chipTextSelected: { color: "#ffd6a8" },
   input: {
     height: 46,
     borderRadius: 12,

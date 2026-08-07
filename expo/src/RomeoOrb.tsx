@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { StyleSheet, View } from "react-native";
+import { Platform, StyleSheet, View } from "react-native";
 import { WebView } from "react-native-webview";
 
 /// Romeo's "listening" presence — a living neural-net orb. This is a faithful
@@ -25,6 +25,20 @@ export function RomeoOrb({
     () => buildHtml({ palette, density, asymmetry, breath }),
     [palette, density, asymmetry, breath]
   );
+
+  // react-native-webview has no web implementation (renders an error box), so
+  // on the Mac/web target we embed the same HTML in an <iframe> instead.
+  if (Platform.OS === "web") {
+    return (
+      <View style={styles.container} pointerEvents="none">
+        {React.createElement("iframe", {
+          srcDoc: html,
+          style: { width: "100%", height: "100%", border: "0", background: "#050402" },
+          scrolling: "no",
+        })}
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container} pointerEvents="none">

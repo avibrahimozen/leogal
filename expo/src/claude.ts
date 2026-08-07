@@ -13,7 +13,10 @@ export async function complete(system: string, history: Msg[], maxTokens = 1024)
         source: { type: "base64", media_type: "image/jpeg", data: m.image },
       });
     }
-    content.push({ type: "text", text: m.text });
+    // Anthropic rejects empty text blocks (400). Only add text when present,
+    // and guarantee at least one content block.
+    if (m.text) content.push({ type: "text", text: m.text });
+    if (content.length === 0) content.push({ type: "text", text: "(…)" });
     return { role: m.role, content };
   });
 

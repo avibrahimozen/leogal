@@ -1,6 +1,7 @@
 import * as Speech from "expo-speech";
 import { isVoiceConfigured } from "./config";
 import * as Eleven from "./elevenlabs";
+import { log } from "./log";
 
 /// Speak Romeo's reply. Prefers ElevenLabs (expressive, can laugh); falls
 /// back to the on-device voice — stripping audio tags so they aren't read aloud.
@@ -9,8 +10,10 @@ export async function speak(text: string): Promise<void> {
     try {
       await Eleven.speak(text);
       return;
-    } catch {
-      // fall through to the system voice
+    } catch (e) {
+      // Surface why the expressive voice failed before falling back — otherwise
+      // a 4xx (bad key/model) looks like "no spoken reply" with no diagnostics.
+      log("Eleven sesi düştü, cihaz sesine geçiliyor: " + String(e).slice(0, 140));
     }
   }
   const clean = text.replace(/\[[^\]]*\]/g, " ").replace(/\s+/g, " ").trim();

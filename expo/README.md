@@ -1,8 +1,11 @@
-# Romeo — Expo (orb + sesli ambient) 📱🔮🗣️
+# Romeo & Juliette — Expo (orb + sesli ambient) 📱🔮🗣️
 
 **Mac gerekmez.** Telefonda **Expo Go** ile QR okutup çalıştırırsın.
 
-Ekranda **yalnızca canlı orb animasyonu** döner. Romeo arka kameradan dış
+İki yoldaş: **Romeo** (erkek) ve **Juliette** (kadın). İlk açılışta hangisiyle
+konuşacağını seçersin — her birinin kendi personası, sesi ve orb rengi vardır.
+
+Ekranda **yalnızca canlı orb animasyonu** döner. Yoldaşın arka kameradan dış
 dünyayı sürekli algılar, seni **sürekli dinler** ve konuşarak yanıt verir —
 gülerek, sıcak ve insani seslerle. Yalnızca sen sözlü olarak **"kapan" /
 "dinlemeyi kapat"** dediğinde durur (sonra ekrana dokunup uyandırırsın).
@@ -33,9 +36,15 @@ npm install
 npx expo start
 ```
 Telefonda **Expo Go** ile QR'ı okut. **`.env` GEREKMEZ** — uygulama ilk açıldığında
-bir **kurulum ekranı** çıkar; iki anahtarı oraya **yapıştır** ve **"Kaydet ve başla"**
-de. Anahtarlar cihazda saklanır (bir daha sormaz). Kamera + mikrofon izinlerini ver,
-konuşmaya başla.
+bir **kurulum ekranı** çıkar: **yoldaşını seç** (Romeo / Juliette), iki anahtarı
+**yapıştır** ve **"Kaydet ve başla"** de. Seçim + anahtarlar cihazda saklanır (bir
+daha sormaz). Kamera + mikrofon izinlerini ver, konuşmaya başla.
+
+> **Anthropic anahtarı:** klasik `sk-ant-api...` anahtarı kullan (console.anthropic.com).
+> Claude Code / `sk-ant-oat...` OAuth token'ları Messages API'de özel persona ile
+> genelde **reddedilir** (401/403) — bunu kullanma.
+> **ElevenLabs anahtarı zorunlu:** seni duymak (konuşma tanıma) için gerekli;
+> Expo Go'da cihaz-içi konuşma tanıma yoktur.
 
 > Anahtarları sonradan değiştirmek istersen **ekrana basılı tut** (long-press) →
 > kurulum ekranı yeniden açılır.
@@ -51,21 +60,26 @@ cp .env.example .env
 ## Dosyalar
 | Dosya | İş |
 |---|---|
-| `App.tsx` | Tam ekran orb + sürekli dinleme döngüsü + gizli kamera |
-| `src/SetupCard.tsx` | İlk açılışta anahtar girişi (cihazda saklanır) |
-| `src/RomeoOrb.tsx` | Nöral-ağ orb (canvas, WebView) — tasarım birebir |
-| `src/elevenlabs.ts` | Scribe (STT) + ifade dolu TTS (gülme etiketleri) |
+| `App.tsx` | Tam ekran orb + sürekli dinleme döngüsü (adaptif VAD) + gizli kamera |
+| `src/characters.ts` | Romeo & Juliette: ad, persona, ses, orb rengi |
+| `src/SetupCard.tsx` | İlk açılışta yoldaş seçimi + anahtar girişi (cihazda saklanır) |
+| `src/RomeoOrb.tsx` | Nöral-ağ orb (canvas; WebView, web'de iframe) — tasarım birebir |
+| `src/elevenlabs.ts` | Scribe (STT) + ifade dolu TTS (gülme; v3→multilingual yedeği) |
 | `src/voice.ts` | Ses çıkışı (ElevenLabs; yoksa cihaz sesine düşer) |
-| `src/claude.ts` | Claude Messages API (vision; API key + OAuth token destekli) |
-| `src/persona.ts` | Romeo personası + ses etiketleri yönergesi |
+| `src/claude.ts` | Claude Messages API (vision) |
+| `src/config.ts` / `src/log.ts` | Anahtar/karakter yönetimi · HUD'a hata aktaran logger |
 
 > CI her push'ta `expo/` için typecheck **ve** Metro bundle çalıştırır.
 
 ## Ayar (cihazda denerken)
-- **Dinleme hassasiyeti:** `App.tsx` içinde `VOICE_DB` (-38), `SILENCE_MS` (1100).
-  Erken kesiyorsa `SILENCE_MS`'i artır; geç algılıyorsa `VOICE_DB`'yi yükselt.
-- **Ses tonu:** `.env`'de `EXPO_PUBLIC_ELEVENLABS_VOICE_ID` ile değiştir.
-- **Model:** gülme için `EXPO_PUBLIC_ELEVENLABS_MODEL=eleven_v3` (varsayılan).
+- **Dinleme hassasiyeti:** eşik artık **otomatik** ayarlanır (ortam gürültüsü +
+  `VOICE_MARGIN_DB`, `App.tsx`). Erken kesiyorsa `SILENCE_MS`'i (1100) artır;
+  hiç duymuyorsa `VOICE_MARGIN_DB`'yi (12) düşür. HUD'da `eşik: taban=… → konuşma>…dB`
+  satırından canlı takip edebilirsin.
+- **Ses tonu:** kurulum ekranındaki **Voice ID** ile (ya da her karakter için
+  `src/characters.ts` içindeki `defaultVoiceId`).
+- **Model:** gülme için `eleven_v3` denenir; anahtarında yoksa otomatik
+  `eleven_multilingual_v2`'ye düşer (etiketler ayıklanır).
 
 ## Sonraki adımlar
 - [ ] Konuşurken araya girme (barge-in) — şu an konuşurken dinlemiyor
