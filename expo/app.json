@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Romeo & Juliette",
+    "name": "Romeo",
     "slug": "romeo-expo",
     "version": "0.1.0",
     "orientation": "portrait",
@@ -10,8 +10,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.romeo.expo",
       "infoPlist": {
-        "NSCameraUsageDescription": "Romeo çevreni görebilmek için kameranı kullanır.",
-        "NSMicrophoneUsageDescription": "Romeo seni dinleyip konuşabilmek için mikrofonunu kullanır.",
+        "CFBundleDisplayName": "Romeo & Juliette",
+        "NSCameraUsageDescription": "Romeo & Juliette çevreni görebilmek için kameranı kullanır.",
+        "NSMicrophoneUsageDescription": "Romeo & Juliette seni dinleyip konuşabilmek için mikrofonunu kullanır.",
         "UIBackgroundModes": ["audio"]
       }
     },
@@ -22,7 +23,13 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Romeo çevreni görebilmek için kameranı kullanır."
+          "cameraPermission": "Romeo & Juliette çevreni görebilmek için kameranı kullanır."
+        }
+      ],
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Romeo & Juliette seni dinleyebilmek için mikrofonunu kullanır."
         }
       ]
     ]

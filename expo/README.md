@@ -29,16 +29,47 @@ gülerek, sıcak ve insani seslerle. Yalnızca sen sözlü olarak **"kapan" /
 > ElevenLabs olmadan sesle konuşma çalışmaz (Expo Go'da yerel konuşma tanıma yok).
 > Anahtar yoksa ekranda küçük bir uyarı görürsün, orb yine de döner.
 
-## Çalıştırma (Windows/Mac/Linux — Mac şart değil)
+## Kurulum: iPhone'a **native uygulama** olarak (Expo Go değil)
+
+iPhone Air'e gerçek bir iOS uygulaması olarak kurmak için **Mac + Xcode** gerekir
+(native iOS derlemenin başka yolu yoktur). Uygulama, `expo prebuild` ile üretilen
+native iOS projesi üzerinden derlenir — Expo Go'ya gerek kalmaz.
+
 ```bash
+# Mac'te, bir kez: Xcode'u App Store'dan kur, aç, Command Line Tools'u kabul et.
+brew install node watchman cocoapods git   # yoksa
+
+git clone https://github.com/avibrahimozen/leogal.git
+cd leogal && git checkout claude/iphone-ar-shirt-pocket-bzovuo
 cd expo
 npm install
-npx expo start
+
+# iPhone'u kabloyla bağla, kilidini aç, "Bu bilgisayara güven" de.
+npx expo run:ios --device
 ```
-Telefonda **Expo Go** ile QR'ı okut. **`.env` GEREKMEZ** — uygulama ilk açıldığında
-bir **kurulum ekranı** çıkar: **yoldaşını seç** (Romeo / Juliette), iki anahtarı
-**yapıştır** ve **"Kaydet ve başla"** de. Seçim + anahtarlar cihazda saklanır (bir
-daha sormaz). Kamera + mikrofon izinlerini ver, konuşmaya başla.
+`run:ios` native projeyi üretir (`expo prebuild`), pod'ları kurar, derler ve
+seçtiğin iPhone Air'e yükler.
+
+**İmzalama (ilk sefer):** fiziksel cihaza kurarken bir kez Xcode'da imza gerekir:
+```bash
+open ios/Romeo.xcworkspace
+```
+Xcode'da hedefi seç → **Signing & Capabilities** → **Team** olarak kendi Apple
+kimliğini seç (ücretsiz hesap yeter, kişisel cihazda 7 günde bir yenilenir) →
+tekrar `npx expo run:ios --device`. iPhone'da *Ayarlar → Genel → VPN & Cihaz
+Yönetimi*'nden geliştirici sertifikana **güven** demen gerekebilir.
+
+> **Alternatif (Mac yoksa):** EAS Build ile bulutta derleyip kurabilirsin, ama
+> cihaza yüklemek Apple Developer üyeliği ister. Mac + ücretsiz Apple kimliği en
+> ucuz yoldur.
+
+İlk açılışta **kurulum ekranı** çıkar: **yoldaşını seç** (Romeo / Juliette), iki
+anahtarı **yapıştır**, **"Kaydet ve başla"** de. Seçim + anahtarlar cihazda saklanır.
+Kamera + mikrofon izinlerini ver, konuşmaya başla.
+
+## Hızlı deneme: Expo Go (opsiyonel)
+Native derlemeden önce hızlıca görmek istersen `npx expo start` ile QR'ı Expo Go'da
+okutabilirsin — ama kalıcı hedef native iOS uygulamasıdır.
 
 > **Anthropic anahtarı:** klasik `sk-ant-api...` anahtarı kullan (console.anthropic.com).
 > Claude Code / `sk-ant-oat...` OAuth token'ları Messages API'de özel persona ile
