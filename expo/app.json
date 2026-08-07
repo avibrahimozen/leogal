@@ -1,17 +1,17 @@
 {
   "expo": {
-    "name": "Samantha",
-    "slug": "samantha-expo",
+    "name": "Romeo",
+    "slug": "romeo-expo",
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.samantha.expo",
+      "bundleIdentifier": "com.romeo.expo",
       "infoPlist": {
-        "NSCameraUsageDescription": "Samantha çevreni görebilmek için kameranı kullanır.",
-        "NSMicrophoneUsageDescription": "Samantha seni dinleyip konuşabilmek için mikrofonunu kullanır.",
+        "NSCameraUsageDescription": "Romeo çevreni görebilmek için kameranı kullanır.",
+        "NSMicrophoneUsageDescription": "Romeo seni dinleyip konuşabilmek için mikrofonunu kullanır.",
         "UIBackgroundModes": ["audio"]
       }
     },
@@ -22,7 +22,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Samantha çevreni görebilmek için kameranı kullanır."
+          "cameraPermission": "Romeo çevreni görebilmek için kameranı kullanır."
         }
       ]
     ]

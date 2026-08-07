@@ -39,7 +39,7 @@ export function SetupCard({ onSaved }: { onSaved: () => void }) {
     >
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <View style={styles.card}>
-          <Text style={styles.title}>Samantha'yı uyandır</Text>
+          <Text style={styles.title}>Romeo'yı uyandır</Text>
           <Text style={styles.sub}>
             Anahtarları buraya yapıştır — kayıtlı kalır, `.env` gerekmez.
           </Text>

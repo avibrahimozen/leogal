@@ -12,7 +12,7 @@ import {
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { Audio } from "expo-av";
 
-import { SamanthaOrb } from "./src/SamanthaOrb";
+import { RomeoOrb } from "./src/RomeoOrb";
 import { SetupCard } from "./src/SetupCard";
 import { complete, Msg } from "./src/claude";
 import { speak, stop as stopSpeaking } from "./src/voice";
@@ -49,7 +49,7 @@ export default function App() {
   const [log, setLog] = useState<string[]>([]);
   const [meter, setMeter] = useState(-160);
   const addLog = useCallback((m: string) => {
-    console.log("[Samantha]", m);
+    console.log("[Romeo]", m);
     setLog((prev) => [...prev.slice(-7), m]);
   }, []);
 
@@ -264,7 +264,7 @@ export default function App() {
         <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing="back" />
       ) : null}
 
-      <SamanthaOrb palette="Amber & coral" />
+      <RomeoOrb palette="Amber & coral" />
 
       <Pressable
         style={StyleSheet.absoluteFill}
@@ -306,7 +306,7 @@ export default function App() {
         >
           <TextInput
             style={styles.input}
-            placeholder="Test: Samantha'ya yaz…"
+            placeholder="Test: Romeo'ya yaz…"
             placeholderTextColor="#9ca3af"
             value={input}
             onChangeText={setInput}

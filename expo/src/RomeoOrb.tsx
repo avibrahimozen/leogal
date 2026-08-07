@@ -2,8 +2,8 @@ import React, { useMemo } from "react";
 import { StyleSheet, View } from "react-native";
 import { WebView } from "react-native-webview";
 
-/// Samantha's "listening" presence — a living neural-net orb. This is a faithful
-/// port of the design handoff (Samantha Orb.dc.html): the exact canvas algorithm
+/// Romeo's "listening" presence — a living neural-net orb. This is a faithful
+/// port of the design handoff (Romeo Orb.dc.html): the exact canvas algorithm
 /// runs inside a WebView (works in Expo Go), with the DesignComponent wrapper
 /// dropped as the handoff instructs. Tunables map 1:1 to the design tokens.
 export type OrbPalette = "Amber & coral" | "Cyan glow" | "Iridescent";
@@ -15,7 +15,7 @@ type Props = {
   breath?: number; // speed 0.4–2 (default 0.9)
 };
 
-export function SamanthaOrb({
+export function RomeoOrb({
   palette = "Amber & coral",
   density = 160,
   asymmetry = 25,

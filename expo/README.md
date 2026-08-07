@@ -1,21 +1,21 @@
-# Samantha — Expo (orb + sesli ambient) 📱🔮🗣️
+# Romeo — Expo (orb + sesli ambient) 📱🔮🗣️
 
 **Mac gerekmez.** Telefonda **Expo Go** ile QR okutup çalıştırırsın.
 
-Ekranda **yalnızca canlı orb animasyonu** döner. Samantha arka kameradan dış
+Ekranda **yalnızca canlı orb animasyonu** döner. Romeo arka kameradan dış
 dünyayı sürekli algılar, seni **sürekli dinler** ve konuşarak yanıt verir —
 gülerek, sıcak ve insani seslerle. Yalnızca sen sözlü olarak **"kapan" /
 "dinlemeyi kapat"** dediğinde durur (sonra ekrana dokunup uyandırırsın).
 
 ## Nasıl çalışır
-- **Ekran:** tek bir tam ekran **Samantha Orb** (tasarım handoff'unun birebir
+- **Ekran:** tek bir tam ekran **Romeo Orb** (tasarım handoff'unun birebir
   canvas portu, WebView içinde). Buton/yazı/önizleme yok.
 - **Dinleme:** sürekli kayıt + ses-seviyesi (metering) ile cümle-sonu sezimi.
-  Sustuğunda Samantha düşünür ve yanıtlar, sonra tekrar dinler.
+  Sustuğunda Romeo düşünür ve yanıtlar, sonra tekrar dinler.
 - **Görüş:** arka kamera arka planda hep açık; her turda o anki kareyi
   Claude'a (vision) iletir.
 - **Ses:** **ElevenLabs** — konuşma tanıma (Scribe) + ifade dolu seslendirme
-  (v3). Samantha'nın `[laughs]`, `[giggles]`, `[warm chuckle]` gibi etiketleri
+  (v3). Romeo'nın `[laughs]`, `[giggles]`, `[warm chuckle]` gibi etiketleri
   **gerçek gülme/insani seslere** dönüşür.
 - **Kapatma:** "kapan", "dinlemeyi kapat", "kendini kapat" dersen durur.
 
@@ -53,11 +53,11 @@ cp .env.example .env
 |---|---|
 | `App.tsx` | Tam ekran orb + sürekli dinleme döngüsü + gizli kamera |
 | `src/SetupCard.tsx` | İlk açılışta anahtar girişi (cihazda saklanır) |
-| `src/SamanthaOrb.tsx` | Nöral-ağ orb (canvas, WebView) — tasarım birebir |
+| `src/RomeoOrb.tsx` | Nöral-ağ orb (canvas, WebView) — tasarım birebir |
 | `src/elevenlabs.ts` | Scribe (STT) + ifade dolu TTS (gülme etiketleri) |
 | `src/voice.ts` | Ses çıkışı (ElevenLabs; yoksa cihaz sesine düşer) |
 | `src/claude.ts` | Claude Messages API (vision; API key + OAuth token destekli) |
-| `src/persona.ts` | Samantha personası + ses etiketleri yönergesi |
+| `src/persona.ts` | Romeo personası + ses etiketleri yönergesi |
 
 > CI her push'ta `expo/` için typecheck **ve** Metro bundle çalıştırır.
 

@@ -3,7 +3,7 @@ import * as FileSystem from "expo-file-system/legacy";
 import { config } from "./config";
 
 /// ElevenLabs: speech-to-text (Scribe) for the user's voice, and expressive
-/// text-to-speech (v3) for Samantha — which renders audio tags like [laughs],
+/// text-to-speech (v3) for Romeo — which renders audio tags like [laughs],
 /// [giggles], [warm chuckle] as real human sounds.
 
 // --- Speech to text (Scribe) ---
@@ -55,7 +55,7 @@ export async function speak(text: string): Promise<void> {
   if (!res.ok) throw new Error("TTS " + res.status + ": " + (await res.text()));
 
   const base64 = await blobToBase64(await res.blob());
-  const path = (FileSystem.cacheDirectory || "") + "samantha_tts.mp3";
+  const path = (FileSystem.cacheDirectory || "") + "romeo_tts.mp3";
   await FileSystem.writeAsStringAsync(path, base64, { encoding: FileSystem.EncodingType.Base64 });
 
   await stop();

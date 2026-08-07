@@ -2,7 +2,7 @@ import * as Speech from "expo-speech";
 import { isVoiceConfigured } from "./config";
 import * as Eleven from "./elevenlabs";
 
-/// Speak Samantha's reply. Prefers ElevenLabs (expressive, can laugh); falls
+/// Speak Romeo's reply. Prefers ElevenLabs (expressive, can laugh); falls
 /// back to the on-device voice — stripping audio tags so they aren't read aloud.
 export async function speak(text: string): Promise<void> {
   if (isVoiceConfigured()) {
@@ -22,7 +22,7 @@ export async function speak(text: string): Promise<void> {
     await new Promise<void>((resolve) => {
       Speech.speak(s, {
         language: "tr-TR",
-        pitch: 1.05,
+        pitch: 0.9,
         onDone: () => resolve(),
         onStopped: () => resolve(),
         onError: () => resolve(),

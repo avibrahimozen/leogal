@@ -8,7 +8,7 @@ export async function speak(text: string): Promise<void> {
     await new Promise<void>((resolve) => {
       Speech.speak(sentence, {
         language: "tr-TR",
-        pitch: 1.05,
+        pitch: 0.9,
         rate: 1.0,
         onDone: () => resolve(),
         onStopped: () => resolve(),

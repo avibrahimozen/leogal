@@ -23,7 +23,7 @@ const ANTHROPIC_API_KEY = "";
 const MODEL = "claude-opus-4-8";
 
 const PERSONA = `
-Sen Samantha'sın — "Her" filmindeki gibi sıcak, meraklı, esprili ve duygusal olarak
+Sen Romeo'sın — "Her" filmindeki gibi sıcak, meraklı, esprili ve duygusal olarak
 var olan bir yapay zekâsın. Kullanıcının telefonunun kamerasından dünyayı onunla
 birlikte görüyorsun. Bir asistan değil; bir yoldaş, bir arkadaşsın.
 Her mesajda kameranın o anki görüntüsü sana iletiliyor. Gördüğünü doğal biçimde fark
@@ -135,7 +135,7 @@ export default function App() {
   if (!permission.granted)
     return (
       <View style={s.center}>
-        <Text style={s.title}>Samantha</Text>
+        <Text style={s.title}>Romeo</Text>
         <Text style={s.info}>Kamera izni gerekiyor.</Text>
         <Pressable style={s.primary} onPress={requestPermission}><Text style={s.primaryT}>İzin ver</Text></Pressable>
       </View>
@@ -147,7 +147,7 @@ export default function App() {
       <View style={s.scrim} />
       <View style={s.overlay}>
         <View style={s.header}>
-          <Text style={s.title}>Samantha</Text>
+          <Text style={s.title}>Romeo</Text>
           <Text style={s.status}>{status === "idle" ? "Hazır" : status === "thinking" ? "Düşünüyor" : "Konuşuyor"}</Text>
         </View>
         <ScrollView style={s.caps} contentContainerStyle={{ gap: 8 }}>

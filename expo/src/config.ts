@@ -8,11 +8,11 @@
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const KEY_ANTHROPIC = "samantha.anthropicKey";
-const KEY_ELEVEN = "samantha.elevenKey";
-const KEY_VOICE = "samantha.voiceId";
+const KEY_ANTHROPIC = "romeo.anthropicKey";
+const KEY_ELEVEN = "romeo.elevenKey";
+const KEY_VOICE = "romeo.voiceId";
 
-const DEFAULT_VOICE_ID = "21m00Tcm4TlvDq8ikWAM"; // a warm default
+const DEFAULT_VOICE_ID = "pNInz6obpgDQGcFmaJgB"; // "Adam" — a warm male voice
 
 // Mutable runtime config. claude.ts / elevenlabs.ts read these live, so
 // updating the fields here takes effect immediately after the user saves keys.
