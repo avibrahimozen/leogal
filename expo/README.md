@@ -67,6 +67,31 @@ Yönetimi*'nden geliştirici sertifikana **güven** demen gerekebilir.
 anahtarı **yapıştır**, **"Kaydet ve başla"** de. Seçim + anahtarlar cihazda saklanır.
 Kamera + mikrofon izinlerini ver, konuşmaya başla.
 
+## TestFlight ile test (EAS Build + Submit)
+
+TestFlight **Apple Developer Program üyeliği ($99/yıl) ister** — bu olmadan
+TestFlight kullanılamaz. Üyelik varsa bulutta derleyip App Store Connect'e
+yüklemek en temiz yol:
+
+```bash
+npm i -g eas-cli
+eas login                       # ücretsiz Expo hesabı (expo.dev)
+
+# 1) Bulutta imzalı bir Release derlemesi (EAS imzalamayı otomatik halleder;
+#    Apple hesabınla giriş yapmanı ister, sertifika/profili kendi üretir)
+eas build -p ios --profile production
+
+# 2) Derlemeyi App Store Connect'e / TestFlight'a yükle
+eas submit -p ios --profile production --latest
+```
+Sonra **App Store Connect → TestFlight** sekmesinde derleme birkaç dakikada
+işlenir; kendini **Internal Tester** olarak ekle, iPhone Air'de **TestFlight**
+uygulamasından kur ve test et. (İlk `submit`'te EAS, `com.romeo.expo` için
+App Store Connect kaydını oluşturmayı teklif eder.)
+
+> Bundle id: `com.romeo.expo` · sürüm/derleme numarası EAS tarafından uzaktan
+> yönetilir (`eas.json` → `appVersionSource: remote`, `production.autoIncrement`).
+
 ## Hızlı deneme: Expo Go (opsiyonel)
 Native derlemeden önce hızlıca görmek istersen `npx expo start` ile QR'ı Expo Go'da
 okutabilirsin — ama kalıcı hedef native iOS uygulamasıdır.
