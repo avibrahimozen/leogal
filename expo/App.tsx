@@ -18,6 +18,7 @@ import { complete, Msg } from "./src/claude";
 import { speak, stop as stopSpeaking } from "./src/voice";
 import { transcribe } from "./src/elevenlabs";
 import { setLog as installLogSink } from "./src/log";
+import { loadMemory, saveMemory, MAX_TURNS } from "./src/memory";
 import { activeCharacter, config, loadKeys, isBrainConfigured, isVoiceConfigured } from "./src/config";
 
 type Status = "listening" | "thinking" | "speaking" | "paused";
@@ -38,6 +39,10 @@ const SILENCE_MS = 1100;
 const NOSPEECH_MS = 9000;
 const MAXUTT_MS = 15000;
 
+// Proactive commenting: during a silent stretch, occasionally look through the
+// camera and remark unprompted if the scene meaningfully changed.
+const PROACTIVE_MIN_MS = 60000;
+
 export default function App() {
   const [camPermission, requestCamPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
@@ -46,6 +51,7 @@ export default function App() {
   const recordingRef = useRef<Audio.Recording | null>(null);
   const historyRef = useRef<Msg[]>([]);
   const meterShownAt = useRef(0);
+  const lastProactiveRef = useRef(0);
 
   const [status, setStatus] = useState<Status>("paused");
   const [micGranted, setMicGranted] = useState(false);
@@ -65,6 +71,8 @@ export default function App() {
     (async () => {
       addLog("açılış… anahtarlar yükleniyor");
       await loadKeys();
+      historyRef.current = await loadMemory(config.characterId);
+      if (historyRef.current.length) addLog("hafıza: " + historyRef.current.length + " mesaj yüklendi");
       if (!camPermission?.granted) await requestCamPermission();
       const mic = await Audio.requestPermissionsAsync();
       setMicGranted(mic.granted);
@@ -115,10 +123,15 @@ export default function App() {
       try {
         const frame = await captureFrame();
         const next = [...historyRef.current, { role: "user", text, image: frame } as Msg];
-        historyRef.current = next;
+        // Only the latest turn carries the image to the API.
         const apiHistory = next.map((m, i) => (i === next.length - 1 ? m : { ...m, image: undefined }));
         const reply = await complete(activeCharacter().persona, apiHistory);
-        historyRef.current = [...historyRef.current, { role: "assistant", text: reply }];
+        // Store text-only, capped — keeps RAM + persisted memory bounded.
+        historyRef.current = [
+          ...next.map((m) => ({ role: m.role, text: m.text } as Msg)),
+          { role: "assistant", text: reply } as Msg,
+        ].slice(-MAX_TURNS);
+        void saveMemory(config.characterId, historyRef.current);
         addLog("yanıt: " + reply.slice(0, 70));
         setStatus("speaking");
         await speak(reply);
@@ -218,6 +231,47 @@ export default function App() {
     setStatus("paused");
   }, []);
 
+  // During a silent stretch, glance through the camera and remark unprompted
+  // only if something new/notable appeared (the model gates this via NOCHANGE).
+  const proactiveComment = useCallback(async () => {
+    if (!camPermission?.granted) return;
+    lastProactiveRef.current = Date.now();
+    try {
+      const frame = await captureFrame();
+      if (!frame) return;
+      setStatus("thinking");
+      const probe: Msg = {
+        role: "user",
+        text:
+          "[SESSİZLİK ANI] Kameradan şu anki görüntüye bak. Önceki konuşmaya göre YENİ, " +
+          "ilginç ya da dikkat çekici bir şey varsa kendiliğinden, çok kısa (tek cümle) ve " +
+          "sıcak bir laf et. Yeni/önemli bir şey yoksa SADECE 'NOCHANGE' yaz, başka hiçbir şey yazma.",
+        image: frame,
+      };
+      const apiHistory = [...historyRef.current, probe].map((m, i, a) =>
+        i === a.length - 1 ? m : { ...m, image: undefined }
+      );
+      const reply = (await complete(activeCharacter().persona, apiHistory)).trim();
+      if (!runningRef.current) return;
+      if (!reply || /nochange/i.test(reply)) {
+        addLog("proaktif: değişiklik yok");
+        setStatus("listening");
+        return;
+      }
+      historyRef.current = [
+        ...historyRef.current,
+        { role: "user", text: "(çevreye baktın)" } as Msg,
+        { role: "assistant", text: reply } as Msg,
+      ].slice(-MAX_TURNS);
+      void saveMemory(config.characterId, historyRef.current);
+      addLog("proaktif: " + reply.slice(0, 60));
+      setStatus("speaking");
+      await speak(reply);
+    } catch (e) {
+      addLog("proaktif HATA: " + String(e));
+    }
+  }, [camPermission?.granted, captureFrame, addLog]);
+
   const loop = useCallback(async () => {
     while (runningRef.current) {
       setStatus("listening");
@@ -229,7 +283,13 @@ export default function App() {
         await new Promise((r) => setTimeout(r, 400));
         continue;
       }
-      if (!seg.hadSpeech) continue;
+      if (!seg.hadSpeech) {
+        // user is quiet — maybe make a spontaneous remark about the scene
+        if (Date.now() - lastProactiveRef.current > PROACTIVE_MIN_MS) {
+          await proactiveComment();
+        }
+        continue;
+      }
 
       setStatus("thinking");
       let text = "";
@@ -250,11 +310,12 @@ export default function App() {
     }
     setStatus("paused");
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [recordUtterance, respond, stopListening, addLog]);
+  }, [recordUtterance, respond, proactiveComment, stopListening, addLog]);
 
   const startListening = useCallback(() => {
     if (runningRef.current) return;
     runningRef.current = true;
+    lastProactiveRef.current = Date.now(); // don't comment right after waking
     setStatus("listening");
     addLog("dinleme başladı");
     void loop();
@@ -272,10 +333,12 @@ export default function App() {
     setStatus("paused");
   }, [input, respond, stopListening, addLog]);
 
-  const onSetupSaved = useCallback(() => {
+  const onSetupSaved = useCallback(async () => {
     setShowSetup(false);
     addLog("anahtarlar kaydedildi");
     addLog("anthropic=" + maskKey(config.anthropicKey) + " eleven=" + maskKey(config.elevenLabsKey));
+    // Character may have changed — load that companion's own memory.
+    historyRef.current = await loadMemory(config.characterId);
     beginIfReady(micGranted);
   }, [addLog, beginIfReady, micGranted]);
 
@@ -298,6 +361,13 @@ export default function App() {
       <Pressable
         style={StyleSheet.absoluteFill}
         onPress={() => {
+          // Barge-in: a tap while speaking cuts the reply and goes back to
+          // listening (true talk-over needs echo cancellation → dev build).
+          if (status === "speaking") {
+            void stopSpeaking();
+            addLog("araya girildi");
+            return;
+          }
           if (status === "paused" && micGranted && isVoiceConfigured() && isBrainConfigured()) startListening();
         }}
         onLongPress={() => {

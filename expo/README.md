@@ -124,6 +124,7 @@ cp .env.example .env
 | `src/voice.ts` | Ses çıkışı (ElevenLabs; yoksa cihaz sesine düşer) |
 | `src/claude.ts` | Claude Messages API (vision) |
 | `src/config.ts` / `src/log.ts` | Anahtar/karakter yönetimi · HUD'a hata aktaran logger |
+| `src/memory.ts` | Karakter başına kalıcı konuşma hafızası (AsyncStorage) |
 
 > CI her push'ta `expo/` için typecheck **ve** Metro bundle çalıştırır.
 
@@ -137,7 +138,18 @@ cp .env.example .env
 - **Model:** gülme için `eleven_v3` denenir; anahtarında yoksa otomatik
   `eleven_multilingual_v2`'ye düşer (etiketler ayıklanır).
 
+## Yeni özellikler
+- **Kalıcı hafıza:** her yoldaş (Romeo/Juliette) konuşmayı hatırlar; uygulama
+  kapansa da kaldığın yerden devam eder (`src/memory.ts`, AsyncStorage, son
+  ~40 mesaj; görüntüler saklanmaz). Karakteri değiştirince o karakterin kendi
+  hafızası yüklenir.
+- **Araya girme (barge-in):** yoldaşın konuşurken **ekrana dokun** → sözünü
+  keser, hemen tekrar dinlemeye geçer. (Gerçek "üstüne konuşma" ekran-yankı
+  bastırma gerektirir → ileride dev build ile.)
+- **Proaktif yorum:** sen sustuğunda (~60 sn'de bir) kameradan bakar; sahnede
+  **yeni/ilginç bir şey** varsa kendiliğinden kısa bir laf eder, yoksa susar
+  (`NOCHANGE` ile modelden geçer).
+
 ## Sonraki adımlar
-- [ ] Konuşurken araya girme (barge-in) — şu an konuşurken dinlemiyor
-- [ ] Sahne değişince proaktif yorum (kalıcı görüş)
-- [ ] Kalıcı hafıza (AsyncStorage)
+- [ ] Gerçek sesli barge-in (üstüne konuşma) — dev build + yankı bastırma
+- [ ] Hafızayı ekrandan sıfırlama (`clearMemory` hazır, arayüz eklenecek)

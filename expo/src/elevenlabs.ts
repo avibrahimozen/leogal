@@ -104,6 +104,7 @@ async function playBlob(blob: Blob): Promise<void> {
 
   await new Promise<void>((resolve) => {
     let settled = false;
+    let started = false; // becomes true once the sound has actually loaded
     const done = () => {
       if (settled) return;
       settled = true;
@@ -116,16 +117,23 @@ async function playBlob(blob: Blob): Promise<void> {
       { uri },
       { shouldPlay: true },
       (st) => {
-        if (st.isLoaded && st.didJustFinish) done();
-        else if (!st.isLoaded && (st as any).error) {
-          log("oynatma durumu hatası: " + String((st as any).error));
-          done();
+        if (st.isLoaded) {
+          started = true;
+          if (st.didJustFinish) done();
+        } else {
+          if ((st as any).error) log("oynatma durumu hatası: " + String((st as any).error));
+          // Unloaded AFTER it started playing = finished or stopped (barge-in);
+          // resolve so the loop resumes. Ignore pre-load !isLoaded ticks.
+          if (started) done();
         }
       }
     )
       .then(({ sound, status }) => {
         current = sound;
-        if (status.isLoaded && status.didJustFinish) done();
+        if (status.isLoaded) {
+          started = true;
+          if (status.didJustFinish) done();
+        }
       })
       .catch((e) => {
         log("oynatma hatası: " + String(e));
