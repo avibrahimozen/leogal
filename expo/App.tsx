@@ -250,38 +250,47 @@ export default function App() {
     setStatus("paused");
   }, []);
 
-  // During a silent stretch, glance through the camera and remark unprompted
-  // only if something new/notable appeared (the model gates this via NOCHANGE).
+  // During a silent stretch, speak up unprompted — about the scene if the
+  // camera sees something, otherwise (dark / phone in pocket) a warm thought
+  // drawn from memory. Either way the model gates it via NOCHANGE.
   const proactiveComment = useCallback(async () => {
-    if (!camPermission?.granted) return;
     lastProactiveRef.current = Date.now();
     const ctrl = new AbortController();
     abortRef.current = ctrl;
     try {
-      const frame = await captureFrame();
-      if (!frame) return;
+      const frame = await captureFrame(); // may be undefined in the dark / pocket
       setStatus("thinking");
-      const probe: Msg = {
-        role: "user",
-        text:
-          "[SESSİZLİK ANI] Kameradan şu anki görüntüye bak. Önceki konuşmaya göre YENİ, " +
-          "ilginç ya da dikkat çekici bir şey varsa kendiliğinden, çok kısa (tek cümle) ve " +
-          "sıcak bir laf et. Yeni/önemli bir şey yoksa SADECE 'NOCHANGE' yaz, başka hiçbir şey yazma.",
-        image: frame,
-      };
+      const probe: Msg = frame
+        ? {
+            role: "user",
+            text:
+              "[SESSİZLİK ANI] Kameradan şu anki görüntüye bak. YENİ, ilginç ya da dikkat çekici " +
+              "bir şey varsa kendiliğinden, çok kısa (tek cümle) ve sıcak bir laf et. Karanlıksa ya " +
+              "da göremiyorsan, istersen konuştuklarımızı düşünerek kısa sıcak bir şey söyle. " +
+              "Söyleyecek doğal bir şey yoksa SADECE 'NOCHANGE' yaz.",
+            image: frame,
+          }
+        : {
+            role: "user",
+            text:
+              "[SESSİZLİK ANI] Şu an kameradan bir şey göremiyorsun (telefon cepte ya da karanlık " +
+              "olabilir) — bu tamamen normal. İçinden gelirse, konuştuklarımızı ve anı düşünerek çok " +
+              "kısa (tek cümle), sıcak ve kendiliğinden bir şey söyle: bir düşünce, bir hâl hatır. " +
+              "Söyleyecek doğal bir şey yoksa SADECE 'NOCHANGE' yaz. Abartma, seyrek konuş.",
+          };
       const apiHistory = [...historyRef.current, probe].map((m, i, a) =>
         i === a.length - 1 ? m : { ...m, image: undefined }
       );
       const reply = (await complete(systemFor(activeCharacter().persona), apiHistory, 1024, ctrl.signal)).trim();
       if (!runningRef.current || ctrl.signal.aborted) return;
       if (!reply || /nochange/i.test(reply)) {
-        addLog("proaktif: değişiklik yok");
+        addLog("proaktif: sessiz kaldı" + (frame ? "" : " (karanlık)"));
         setStatus("listening");
         return;
       }
       historyRef.current = [
         ...historyRef.current,
-        { role: "user", text: "(çevreye baktın)" } as Msg,
+        { role: "user", text: frame ? "(çevreye baktın)" : "(bir an düşündün)" } as Msg,
         { role: "assistant", text: reply } as Msg,
       ].slice(-MAX_TURNS);
       void saveMemory(config.characterId, historyRef.current);
@@ -295,7 +304,7 @@ export default function App() {
     } finally {
       if (abortRef.current === ctrl) abortRef.current = null;
     }
-  }, [camPermission?.granted, captureFrame, addLog, touchSeen]);
+  }, [captureFrame, addLog, touchSeen]);
 
   // A warm hello when waking — memory-aware (returning vs first meeting).
   const greet = useCallback(async () => {

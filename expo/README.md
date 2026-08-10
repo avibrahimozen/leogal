@@ -152,9 +152,10 @@ cp .env.example .env
 - **Araya girme (barge-in):** yoldaşın **konuşurken ekrana dokun** → sözünü
   keser, hemen dinlemeye geçer. **Düşünürken dokun** → yanıtı iptal eder.
   (Gerçek "üstüne konuşma" ekran-yankı bastırma gerektirir → dev build ile.)
-- **Proaktif yorum:** sen sustuğunda (~60 sn'de bir) kameradan bakar; sahnede
-  **yeni/ilginç bir şey** varsa kendiliğinden kısa bir laf eder, yoksa susar
-  (`NOCHANGE` ile modelden geçer).
+- **Proaktif yorum (karanlıkta da):** sen sustuğunda (~60 sn'de bir) konuşabilir.
+  Kamera bir şey görüyorsa sahne hakkında; **karanlıkta ya da telefon cepteyken**
+  ise hafızadan/andan kendiliğinden sıcak bir şey söyler. Söyleyecek doğal bir
+  şey yoksa susar (`NOCHANGE`).
 
 ## Sonraki adımlar
 - [ ] Gerçek sesli barge-in (üstüne konuşma) — dev build + yankı bastırma
