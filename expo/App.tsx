@@ -18,7 +18,8 @@ import { complete, Msg } from "./src/claude";
 import { speak, stop as stopSpeaking } from "./src/voice";
 import { transcribe } from "./src/elevenlabs";
 import { setLog as installLogSink } from "./src/log";
-import { loadMemory, saveMemory, MAX_TURNS } from "./src/memory";
+import { loadMemory, saveMemory, getLastSeen, setLastSeen, MAX_TURNS } from "./src/memory";
+import { systemFor, gapNote } from "./src/context";
 import { activeCharacter, config, loadKeys, isBrainConfigured, isVoiceConfigured } from "./src/config";
 
 type Status = "listening" | "thinking" | "speaking" | "paused";
@@ -54,6 +55,14 @@ export default function App() {
   const lastProactiveRef = useRef(0);
   const abortRef = useRef<AbortController | null>(null); // cancels an in-flight reply
   const greetedRef = useRef(false);
+  const lastSeenRef = useRef<number | null>(null);
+
+  // Remember "now" as the last time this companion was talked to.
+  const touchSeen = useCallback(() => {
+    const now = Date.now();
+    lastSeenRef.current = now;
+    void setLastSeen(config.characterId, now);
+  }, []);
 
   const [status, setStatus] = useState<Status>("paused");
   const [micGranted, setMicGranted] = useState(false);
@@ -74,6 +83,7 @@ export default function App() {
       addLog("açılış… anahtarlar yükleniyor");
       await loadKeys();
       historyRef.current = await loadMemory(config.characterId);
+      lastSeenRef.current = await getLastSeen(config.characterId);
       if (historyRef.current.length) addLog("hafıza: " + historyRef.current.length + " mesaj yüklendi");
       if (!camPermission?.granted) await requestCamPermission();
       const mic = await Audio.requestPermissionsAsync();
@@ -129,13 +139,14 @@ export default function App() {
         const next = [...historyRef.current, { role: "user", text, image: frame } as Msg];
         // Only the latest turn carries the image to the API.
         const apiHistory = next.map((m, i) => (i === next.length - 1 ? m : { ...m, image: undefined }));
-        const reply = await complete(activeCharacter().persona, apiHistory, 1024, ctrl.signal);
+        const reply = await complete(systemFor(activeCharacter().persona), apiHistory, 1024, ctrl.signal);
         // Store text-only, capped — keeps RAM + persisted memory bounded.
         historyRef.current = [
           ...next.map((m) => ({ role: m.role, text: m.text } as Msg)),
           { role: "assistant", text: reply } as Msg,
         ].slice(-MAX_TURNS);
         void saveMemory(config.characterId, historyRef.current);
+        touchSeen();
         addLog("yanıt: " + reply.slice(0, 70));
         setStatus("speaking");
         await speak(reply);
@@ -147,7 +158,7 @@ export default function App() {
         if (abortRef.current === ctrl) abortRef.current = null;
       }
     },
-    [captureFrame, addLog]
+    [captureFrame, addLog, touchSeen]
   );
 
   const recordUtterance = useCallback(
@@ -261,7 +272,7 @@ export default function App() {
       const apiHistory = [...historyRef.current, probe].map((m, i, a) =>
         i === a.length - 1 ? m : { ...m, image: undefined }
       );
-      const reply = (await complete(activeCharacter().persona, apiHistory, 1024, ctrl.signal)).trim();
+      const reply = (await complete(systemFor(activeCharacter().persona), apiHistory, 1024, ctrl.signal)).trim();
       if (!runningRef.current || ctrl.signal.aborted) return;
       if (!reply || /nochange/i.test(reply)) {
         addLog("proaktif: değişiklik yok");
@@ -274,6 +285,7 @@ export default function App() {
         { role: "assistant", text: reply } as Msg,
       ].slice(-MAX_TURNS);
       void saveMemory(config.characterId, historyRef.current);
+      touchSeen();
       addLog("proaktif: " + reply.slice(0, 60));
       setStatus("speaking");
       await speak(reply);
@@ -283,7 +295,7 @@ export default function App() {
     } finally {
       if (abortRef.current === ctrl) abortRef.current = null;
     }
-  }, [camPermission?.granted, captureFrame, addLog]);
+  }, [camPermission?.granted, captureFrame, addLog, touchSeen]);
 
   // A warm hello when waking — memory-aware (returning vs first meeting).
   const greet = useCallback(async () => {
@@ -301,7 +313,8 @@ export default function App() {
       const apiHistory = [...historyRef.current, probe].map((m, i, a) =>
         i === a.length - 1 ? m : { ...m, image: undefined }
       );
-      const reply = (await complete(activeCharacter().persona, apiHistory, 512, ctrl.signal)).trim();
+      const system = systemFor(activeCharacter().persona, gapNote(lastSeenRef.current));
+      const reply = (await complete(system, apiHistory, 512, ctrl.signal)).trim();
       if (!reply || !runningRef.current) return;
       historyRef.current = [
         ...historyRef.current,
@@ -309,6 +322,7 @@ export default function App() {
         { role: "assistant", text: reply } as Msg,
       ].slice(-MAX_TURNS);
       void saveMemory(config.characterId, historyRef.current);
+      touchSeen();
       addLog("selam: " + reply.slice(0, 60));
       setStatus("speaking");
       await speak(reply);
@@ -318,7 +332,7 @@ export default function App() {
     } finally {
       if (abortRef.current === ctrl) abortRef.current = null;
     }
-  }, [captureFrame, addLog]);
+  }, [captureFrame, addLog, touchSeen]);
 
   const loop = useCallback(async () => {
     if (!greetedRef.current) {
@@ -389,8 +403,9 @@ export default function App() {
     setShowSetup(false);
     addLog("anahtarlar kaydedildi");
     addLog("anthropic=" + maskKey(config.anthropicKey) + " eleven=" + maskKey(config.elevenLabsKey));
-    // Character may have changed — load that companion's own memory.
+    // Character may have changed — load that companion's own memory + history.
     historyRef.current = await loadMemory(config.characterId);
+    lastSeenRef.current = await getLastSeen(config.characterId);
     beginIfReady(micGranted);
   }, [addLog, beginIfReady, micGranted]);
 

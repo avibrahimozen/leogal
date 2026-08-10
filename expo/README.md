@@ -146,6 +146,9 @@ cp .env.example .env
   "… hafızasını temizle".
 - **Açılış selamı:** uygulama açılınca yoldaşın kısa ve sıcak bir merhaba der —
   seni tanıyorsa (hafıza varsa) "tekrar merhaba" tonunda, ilk kezse tanışarak.
+- **Zaman & bağlam farkındalığı:** günün saatine göre ton/selam ("günaydın" /
+  "iyi geceler") ve seni en son ne zaman gördüğünü hatırlama ("epeydir yoktun")
+  (`src/context.ts`; `memory.ts` içinde son-görüşme zamanı).
 - **Araya girme (barge-in):** yoldaşın **konuşurken ekrana dokun** → sözünü
   keser, hemen dinlemeye geçer. **Düşünürken dokun** → yanıtı iptal eder.
   (Gerçek "üstüne konuşma" ekran-yankı bastırma gerektirir → dev build ile.)

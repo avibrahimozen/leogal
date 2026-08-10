@@ -12,6 +12,29 @@ function key(id: CharacterId): string {
   return "romeo.memory." + id;
 }
 
+function seenKey(id: CharacterId): string {
+  return "romeo.lastseen." + id;
+}
+
+// When this companion was last talked to (epoch ms), or null if never.
+export async function getLastSeen(id: CharacterId): Promise<number | null> {
+  try {
+    const v = await AsyncStorage.getItem(seenKey(id));
+    const n = v ? parseInt(v, 10) : NaN;
+    return Number.isFinite(n) ? n : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function setLastSeen(id: CharacterId, ms: number): Promise<void> {
+  try {
+    await AsyncStorage.setItem(seenKey(id), String(ms));
+  } catch {
+    // non-fatal
+  }
+}
+
 function sanitize(history: Msg[]): Msg[] {
   return history
     .filter((m) => m && (m.role === "user" || m.role === "assistant") && typeof m.text === "string")
