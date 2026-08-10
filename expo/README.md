@@ -142,14 +142,17 @@ cp .env.example .env
 - **Kalıcı hafıza:** her yoldaş (Romeo/Juliette) konuşmayı hatırlar; uygulama
   kapansa da kaldığın yerden devam eder (`src/memory.ts`, AsyncStorage, son
   ~40 mesaj; görüntüler saklanmaz). Karakteri değiştirince o karakterin kendi
-  hafızası yüklenir.
-- **Araya girme (barge-in):** yoldaşın konuşurken **ekrana dokun** → sözünü
-  keser, hemen tekrar dinlemeye geçer. (Gerçek "üstüne konuşma" ekran-yankı
-  bastırma gerektirir → ileride dev build ile.)
+  hafızası yüklenir. **Temizlemek için:** ekrana basılı tut → kurulum ekranında
+  "… hafızasını temizle".
+- **Açılış selamı:** uygulama açılınca yoldaşın kısa ve sıcak bir merhaba der —
+  seni tanıyorsa (hafıza varsa) "tekrar merhaba" tonunda, ilk kezse tanışarak.
+- **Araya girme (barge-in):** yoldaşın **konuşurken ekrana dokun** → sözünü
+  keser, hemen dinlemeye geçer. **Düşünürken dokun** → yanıtı iptal eder.
+  (Gerçek "üstüne konuşma" ekran-yankı bastırma gerektirir → dev build ile.)
 - **Proaktif yorum:** sen sustuğunda (~60 sn'de bir) kameradan bakar; sahnede
   **yeni/ilginç bir şey** varsa kendiliğinden kısa bir laf eder, yoksa susar
   (`NOCHANGE` ile modelden geçer).
 
 ## Sonraki adımlar
 - [ ] Gerçek sesli barge-in (üstüne konuşma) — dev build + yankı bastırma
-- [ ] Hafızayı ekrandan sıfırlama (`clearMemory` hazır, arayüz eklenecek)
+- [ ] Karakteri kurulum ekranı olmadan hızlı değiştirme

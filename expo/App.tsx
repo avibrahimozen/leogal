@@ -52,6 +52,8 @@ export default function App() {
   const historyRef = useRef<Msg[]>([]);
   const meterShownAt = useRef(0);
   const lastProactiveRef = useRef(0);
+  const abortRef = useRef<AbortController | null>(null); // cancels an in-flight reply
+  const greetedRef = useRef(false);
 
   const [status, setStatus] = useState<Status>("paused");
   const [micGranted, setMicGranted] = useState(false);
@@ -120,12 +122,14 @@ export default function App() {
   const respond = useCallback(
     async (text: string) => {
       setStatus("thinking");
+      const ctrl = new AbortController();
+      abortRef.current = ctrl;
       try {
         const frame = await captureFrame();
         const next = [...historyRef.current, { role: "user", text, image: frame } as Msg];
         // Only the latest turn carries the image to the API.
         const apiHistory = next.map((m, i) => (i === next.length - 1 ? m : { ...m, image: undefined }));
-        const reply = await complete(activeCharacter().persona, apiHistory);
+        const reply = await complete(activeCharacter().persona, apiHistory, 1024, ctrl.signal);
         // Store text-only, capped — keeps RAM + persisted memory bounded.
         historyRef.current = [
           ...next.map((m) => ({ role: m.role, text: m.text } as Msg)),
@@ -137,7 +141,10 @@ export default function App() {
         await speak(reply);
         addLog("seslendirme bitti");
       } catch (e) {
-        addLog("yanıt/ses HATASI: " + String(e));
+        if (ctrl.signal.aborted) addLog("yanıt iptal edildi");
+        else addLog("yanıt/ses HATASI: " + String(e));
+      } finally {
+        if (abortRef.current === ctrl) abortRef.current = null;
       }
     },
     [captureFrame, addLog]
@@ -221,6 +228,7 @@ export default function App() {
 
   const stopListening = useCallback(() => {
     runningRef.current = false;
+    abortRef.current?.abort();
     void stopSpeaking();
     const rec = recordingRef.current;
     recordingRef.current = null;
@@ -236,6 +244,8 @@ export default function App() {
   const proactiveComment = useCallback(async () => {
     if (!camPermission?.granted) return;
     lastProactiveRef.current = Date.now();
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
     try {
       const frame = await captureFrame();
       if (!frame) return;
@@ -251,8 +261,8 @@ export default function App() {
       const apiHistory = [...historyRef.current, probe].map((m, i, a) =>
         i === a.length - 1 ? m : { ...m, image: undefined }
       );
-      const reply = (await complete(activeCharacter().persona, apiHistory)).trim();
-      if (!runningRef.current) return;
+      const reply = (await complete(activeCharacter().persona, apiHistory, 1024, ctrl.signal)).trim();
+      if (!runningRef.current || ctrl.signal.aborted) return;
       if (!reply || /nochange/i.test(reply)) {
         addLog("proaktif: değişiklik yok");
         setStatus("listening");
@@ -268,11 +278,53 @@ export default function App() {
       setStatus("speaking");
       await speak(reply);
     } catch (e) {
-      addLog("proaktif HATA: " + String(e));
+      if (ctrl.signal.aborted) addLog("proaktif iptal");
+      else addLog("proaktif HATA: " + String(e));
+    } finally {
+      if (abortRef.current === ctrl) abortRef.current = null;
     }
   }, [camPermission?.granted, captureFrame, addLog]);
 
+  // A warm hello when waking — memory-aware (returning vs first meeting).
+  const greet = useCallback(async () => {
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
+    try {
+      setStatus("thinking");
+      const frame = await captureFrame();
+      const returning = historyRef.current.length > 0;
+      const promptText = returning
+        ? "[UYGULAMA YENİDEN AÇILDI] Beni tanıyorsun. Çok kısa (1-2 cümle), sıcak bir 'tekrar merhaba' " +
+          "de; istersen gördüğün ya da hatırladığın bir şeye ufak bir değini. Soru yağmuruna boğma."
+        : "[İLK KEZ AÇILDI] Kendini çok kısa tanıt ve sıcacık bir merhaba de (1-2 cümle). Soru yağmuru yok.";
+      const probe: Msg = { role: "user", text: promptText, image: frame };
+      const apiHistory = [...historyRef.current, probe].map((m, i, a) =>
+        i === a.length - 1 ? m : { ...m, image: undefined }
+      );
+      const reply = (await complete(activeCharacter().persona, apiHistory, 512, ctrl.signal)).trim();
+      if (!reply || !runningRef.current) return;
+      historyRef.current = [
+        ...historyRef.current,
+        { role: "user", text: "(uygulamayı açtın)" } as Msg,
+        { role: "assistant", text: reply } as Msg,
+      ].slice(-MAX_TURNS);
+      void saveMemory(config.characterId, historyRef.current);
+      addLog("selam: " + reply.slice(0, 60));
+      setStatus("speaking");
+      await speak(reply);
+    } catch (e) {
+      if (ctrl.signal.aborted) addLog("selam iptal");
+      else addLog("selam HATA: " + String(e));
+    } finally {
+      if (abortRef.current === ctrl) abortRef.current = null;
+    }
+  }, [captureFrame, addLog]);
+
   const loop = useCallback(async () => {
+    if (!greetedRef.current) {
+      greetedRef.current = true;
+      await greet();
+    }
     while (runningRef.current) {
       setStatus("listening");
       const seg = await recordUtterance();
@@ -310,7 +362,7 @@ export default function App() {
     }
     setStatus("paused");
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [recordUtterance, respond, proactiveComment, stopListening, addLog]);
+  }, [recordUtterance, respond, proactiveComment, greet, stopListening, addLog]);
 
   const startListening = useCallback(() => {
     if (runningRef.current) return;
@@ -366,6 +418,12 @@ export default function App() {
           if (status === "speaking") {
             void stopSpeaking();
             addLog("araya girildi");
+            return;
+          }
+          // A tap while thinking cancels the in-flight reply.
+          if (status === "thinking") {
+            abortRef.current?.abort();
+            addLog("düşünme iptal edildi");
             return;
           }
           if (status === "paused" && micGranted && isVoiceConfigured() && isBrainConfigured()) startListening();

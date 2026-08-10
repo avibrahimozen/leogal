@@ -4,7 +4,12 @@ export type Msg = { role: "user" | "assistant"; text: string; image?: string };
 
 /// Call the Claude Messages API directly (vision-capable). Native fetch works
 /// on Expo Go (it's not a browser, so no CORS). Returns the full reply text.
-export async function complete(system: string, history: Msg[], maxTokens = 1024): Promise<string> {
+export async function complete(
+  system: string,
+  history: Msg[],
+  maxTokens = 1024,
+  signal?: AbortSignal
+): Promise<string> {
   const messages = history.map((m) => {
     const content: any[] = [];
     if (m.image) {
@@ -39,6 +44,7 @@ export async function complete(system: string, history: Msg[], maxTokens = 1024)
     method: "POST",
     headers,
     body: JSON.stringify({ model: config.model, max_tokens: maxTokens, system, messages }),
+    signal,
   });
 
   if (!res.ok) {

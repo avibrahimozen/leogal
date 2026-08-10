@@ -13,6 +13,7 @@ import {
 
 import { config, saveKeys } from "./config";
 import { CHARACTERS, CharacterId, getCharacter } from "./characters";
+import { clearMemory } from "./memory";
 
 /// One-time setup: pick a companion (Romeo or Juliette) and paste the two API
 /// keys directly in the app. This avoids the fragile `.env` / Windows env-var
@@ -23,6 +24,7 @@ export function SetupCard({ onSaved }: { onSaved: () => void }) {
   const [eleven, setEleven] = useState(config.elevenLabsKey);
   const [voiceId, setVoiceId] = useState(config.voiceOverride);
   const [saving, setSaving] = useState(false);
+  const [cleared, setCleared] = useState(false);
 
   // Both keys are required: the always-on voice loop needs ElevenLabs for
   // speech-to-text (Expo Go has no on-device STT), not just for the voice.
@@ -35,6 +37,11 @@ export function SetupCard({ onSaved }: { onSaved: () => void }) {
     await saveKeys({ anthropicKey: anthropic, elevenLabsKey: eleven, voiceId, characterId: character });
     setSaving(false);
     onSaved();
+  };
+
+  const clearMem = async () => {
+    await clearMemory(character);
+    setCleared(true);
   };
 
   return (
@@ -58,7 +65,10 @@ export function SetupCard({ onSaved }: { onSaved: () => void }) {
                 <Pressable
                   key={id}
                   style={[styles.chip, selected && styles.chipSelected]}
-                  onPress={() => setCharacter(id)}
+                  onPress={() => {
+                    setCharacter(id);
+                    setCleared(false);
+                  }}
                 >
                   <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
                     {c.name}
@@ -112,6 +122,12 @@ export function SetupCard({ onSaved }: { onSaved: () => void }) {
             disabled={!canSave}
           >
             <Text style={styles.buttonText}>{saving ? "Kaydediliyor…" : "Kaydet ve başla"}</Text>
+          </Pressable>
+
+          <Pressable style={styles.clear} onPress={clearMem}>
+            <Text style={styles.clearText}>
+              {cleared ? active.name + " hafızası temizlendi ✓" : active.name + " hafızasını temizle"}
+            </Text>
           </Pressable>
 
           <View style={styles.links}>
@@ -186,6 +202,8 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: { backgroundColor: "rgba(255,179,122,0.35)" },
   buttonText: { color: "#1a1208", fontSize: 16, fontWeight: "700" },
+  clear: { marginTop: 12, alignItems: "center", paddingVertical: 6 },
+  clearText: { color: "#c98b6a", fontSize: 13, textDecorationLine: "underline" },
   links: { marginTop: 16, alignItems: "center" },
   linkRow: { color: "#9c9488", fontSize: 12 },
   link: { color: "#ffb37a", textDecorationLine: "underline" },
