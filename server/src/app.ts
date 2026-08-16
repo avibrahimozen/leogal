@@ -1,3 +1,4 @@
+import path from 'node:path';
 import express, { type Express } from 'express';
 import cors from 'cors';
 import bcrypt from 'bcryptjs';
@@ -35,6 +36,9 @@ export function createApp(db: Db, options: { offerTimeoutMs?: number } = {}): Ap
   app.use('/api/rides', rideRoutes(db, hub, matcher));
   app.use('/api/driver', driverRoutes(db, hub));
   app.use('/api/admin', adminRoutes(db, hub));
+
+  // Yönetim paneli: /admin altında statik olarak sunulur (giriş panel içinde yapılır)
+  app.use('/admin', express.static(path.join(import.meta.dirname, '..', 'public', 'admin')));
 
   app.use((_req, res) => {
     res.status(404).json({ error: 'Bulunamadı' });

@@ -26,7 +26,7 @@ export function adminRoutes(db: Db, hub: Hub): Router {
     const status = typeof req.query.status === 'string' ? req.query.status : null;
     const rows = db
       .prepare(
-        `SELECT u.id, u.name, u.phone, u.created_at, d.license_no, d.vehicle_plate, d.vehicle_model, d.city, d.status, d.is_online, d.rating_sum, d.rating_count,
+        `SELECT u.id, u.name, u.phone, u.created_at, d.license_no, d.vehicle_plate, d.vehicle_model, d.city, d.status, d.is_online, d.rating_sum, d.rating_count, d.lat, d.lng, d.location_at,
            (SELECT COALESCE(SUM(CASE WHEN l.type = 'commission' THEN l.amount ELSE -l.amount END), 0) FROM ledger l WHERE l.driver_id = u.id) AS commission_due
          FROM users u JOIN drivers d ON d.user_id = u.id
          WHERE (? IS NULL OR d.status = ?)
@@ -44,12 +44,49 @@ export function adminRoutes(db: Db, hub: Hub): Router {
         city: r.city,
         status: r.status,
         isOnline: r.is_online === 1,
+        lat: r.lat,
+        lng: r.lng,
+        locationAt: r.location_at,
         rating:
           (r.rating_count as number) > 0
             ? Math.round(((r.rating_sum as number) / (r.rating_count as number)) * 10) / 10
             : null,
         commissionDue: r.commission_due,
         createdAt: r.created_at,
+      })),
+    });
+  });
+
+  /** Son yolculuklar — panelin yolculuk tablosu için. */
+  router.get('/rides', (req, res) => {
+    const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 200);
+    const rows = db
+      .prepare(
+        `SELECT r.id, r.status, r.pickup_address, r.drop_address, r.est_distance_km, r.est_fare, r.final_fare, r.commission, r.cancel_reason, r.requested_at, r.completed_at,
+           pu.name AS passenger_name, du.name AS driver_name, d.vehicle_plate
+         FROM rides r
+         JOIN users pu ON pu.id = r.passenger_id
+         LEFT JOIN users du ON du.id = r.driver_id
+         LEFT JOIN drivers d ON d.user_id = r.driver_id
+         ORDER BY r.id DESC LIMIT ?`,
+      )
+      .all(limit) as unknown as Array<Record<string, unknown>>;
+    res.json({
+      rides: rows.map((r) => ({
+        id: r.id,
+        status: r.status,
+        pickupAddress: r.pickup_address,
+        dropAddress: r.drop_address,
+        estDistanceKm: r.est_distance_km,
+        estFare: r.est_fare,
+        finalFare: r.final_fare,
+        commission: r.commission,
+        cancelReason: r.cancel_reason,
+        requestedAt: r.requested_at,
+        completedAt: r.completed_at,
+        passengerName: r.passenger_name,
+        driverName: r.driver_name,
+        vehiclePlate: r.vehicle_plate,
       })),
     });
   });

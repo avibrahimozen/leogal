@@ -316,3 +316,36 @@ describe('ayarlar ve kenar durumlar', () => {
     expect(res.status).toBe(401);
   });
 });
+
+describe('yönetim paneli', () => {
+  it('panel /admin altında sunulur', async () => {
+    const res = await request(app).get('/admin/');
+    expect(res.status).toBe(200);
+    expect(res.text).toContain('Ulak Yönetim Paneli');
+  });
+
+  it('admin son yolculukları listeler', async () => {
+    const res = await request(app).get('/api/admin/rides').set('Authorization', `Bearer ${adminToken}`);
+    expect(res.status).toBe(200);
+    expect(res.body.rides.length).toBeGreaterThanOrEqual(2);
+    const completed = res.body.rides.find((r: { status: string }) => r.status === 'completed');
+    expect(completed.driverName).toBe('Mehmet Şoför');
+    expect(completed.commission).toBeGreaterThan(0);
+  });
+
+  it('sürücü listesi konum alanlarını içerir', async () => {
+    const res = await request(app)
+      .get('/api/admin/drivers?status=approved')
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(res.status).toBe(200);
+    const driver = res.body.drivers.find((d: { name: string }) => d.name === 'Mehmet Şoför');
+    expect(driver.lat).toBeCloseTo(35.19, 2);
+    expect(driver.lng).toBeCloseTo(33.38, 2);
+    expect(driver.locationAt).toBeTruthy();
+  });
+
+  it('yolculuk listesi yetkisiz erişime kapalı', async () => {
+    const res = await request(app).get('/api/admin/rides').set('Authorization', `Bearer ${driverToken}`);
+    expect(res.status).toBe(403);
+  });
+});

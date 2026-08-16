@@ -43,12 +43,29 @@ Ortam değişkenleri (hepsi opsiyonel):
 | `ULAK_ADMIN_PHONE` | `+903920000000` | İlk açılışta oluşturulan yönetici |
 | `ULAK_ADMIN_PASSWORD` | `ulak-admin` | **Üretimde mutlaka değiştirin** |
 
-## Mobil uygulamayı çalıştırma
+## Yönetim paneli
+
+Sunucu çalışırken tarayıcıdan **`http://localhost:4000/admin`** adresini açın ve
+yönetici hesabıyla giriş yapın. Panelden yapabilecekleriniz:
+
+- **Genel Bakış** — yolcu/sürücü/yolculuk sayıları, brüt hacim, toplam komisyon ve
+  çevrimiçi sürücülerin **canlı haritası** (10 sn'de bir güncellenir)
+- **Sürücüler** — onay bekleyen başvuruları onaylama/reddetme, onaylı sürücüyü
+  askıya alma, komisyon borcu görüntüleme ve **tahsilat kaydetme**
+- **Yolculuklar** — son 100 yolculuk: güzergâh, yolcu, sürücü, ücret, komisyon
+- **Tarife & Komisyon** — açılış/km/asgari ücret ve komisyon oranını anında değiştirme
+
+## Mobil uygulama (iOS + Android)
+
+Uygulama **tek kod tabanından hem iOS hem Android** için derlenir (Expo / React
+Native). Her iki platformun paketlemesi de doğrulanmıştır.
+
+### Geliştirme (Expo Go ile)
 
 ```bash
 cd mobile
 npm install
-npx expo start                # Expo Go ile QR kodu okutun
+npx expo start                # iPhone veya Android'de Expo Go ile QR kodu okutun
 ```
 
 Gerçek cihazda test ederken API adresini bilgisayarınızın yerel ağ IP'siyle verin:
@@ -56,6 +73,25 @@ Gerçek cihazda test ederken API adresini bilgisayarınızın yerel ağ IP'siyle
 ```bash
 EXPO_PUBLIC_API_URL=http://192.168.1.20:4000 npx expo start
 ```
+
+### Mağaza derlemeleri (EAS Build)
+
+`mobile/eas.json` içinde üç profil hazır: `development`, `preview` (Android APK +
+iOS internal), `production` (App Store / Play Store). Derlemeden önce
+`eas.json` içindeki `EXPO_PUBLIC_API_URL` değerini kendi sunucu adresinizle değiştirin.
+
+```bash
+cd mobile
+npm install -g eas-cli
+eas login                          # ücretsiz Expo hesabı yeterli
+eas build --platform android --profile preview    # test için APK
+eas build --platform ios --profile production     # App Store (Apple Developer hesabı gerekir)
+eas build --platform all --profile production     # ikisi birden
+```
+
+> iOS derlemesi için Apple Developer üyeliği (99 $/yıl), Play Store için tek
+> seferlik 25 $ geliştirici kaydı gerekir. Android'de `preview` profili APK
+> üretir; bunu mağazasız doğrudan telefona kurup dağıtabilirsiniz.
 
 Aynı uygulama iki modda çalışır: **yolcu** hesabıyla girince harita + çağrı ekranı,
 **sürücü** hesabıyla girince çağrı kabul + kazanç ekranları açılır.
@@ -104,8 +140,9 @@ curl -s -X POST localhost:4000/api/admin/drivers/2/approve -H "Authorization: Be
 
 ## Yol haritası
 
+- [x] Yönetici web paneli (onay, tahsilat, canlı harita) — `/admin`
+- [x] iOS + Android derleme profilleri (EAS Build)
 - [ ] SMS ile telefon doğrulama (OTP)
-- [ ] Yönetici web paneli (onay, tahsilat, canlı harita)
 - [ ] Kart ile ödeme + otomatik komisyon kesintisi
 - [ ] Gerçek yol rotası ve süre tahmini (OSRM / Google Directions)
 - [ ] Anlık bildirimler (Expo Push)
