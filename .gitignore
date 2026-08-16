@@ -10,3 +10,13 @@ dist/
 *.log
 .env
 .env.*
+
+# Ulak
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+.expo/
+.export-test/
+mobile/android/
+mobile/ios/
