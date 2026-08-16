@@ -19,6 +19,15 @@ let driverId = 0;
 let driver2Id = 0;
 let rideId = 0;
 
+/** SMS doğrulama akışını tamamlayıp kayıt için gereken token'ı döner. */
+async function verifyPhone(phone: string): Promise<string> {
+  const req = await request(app).post('/api/auth/otp/request').send({ phone });
+  const ver = await request(app)
+    .post('/api/auth/otp/verify')
+    .send({ phone, code: req.body.devCode });
+  return ver.body.verificationToken as string;
+}
+
 beforeAll(async () => {
   const admin = await request(app)
     .post('/api/auth/login')
@@ -27,19 +36,25 @@ beforeAll(async () => {
 });
 
 describe('kayıt ve giriş', () => {
-  it('yolcu kaydolur', async () => {
-    const res = await request(app)
-      .post('/api/auth/register')
-      .send({ phone: '+905428111111', name: 'Ayşe Yolcu', password: 'gizli123' });
+  it('yolcu SMS doğrulamasıyla kaydolur', async () => {
+    const res = await request(app).post('/api/auth/register').send({
+      phone: '+905428111111',
+      name: 'Ayşe Yolcu',
+      password: 'gizli123',
+      verificationToken: await verifyPhone('+905428111111'),
+    });
     expect(res.status).toBe(201);
     expect(res.body.user.role).toBe('passenger');
     passengerToken = res.body.token;
   });
 
   it('aynı telefonla ikinci kayıt reddedilir', async () => {
-    const res = await request(app)
-      .post('/api/auth/register')
-      .send({ phone: '+905428111111', name: 'Kopya', password: 'gizli123' });
+    const res = await request(app).post('/api/auth/register').send({
+      phone: '+905428111111',
+      name: 'Kopya',
+      password: 'gizli123',
+      verificationToken: await verifyPhone('+905428111111'),
+    });
     expect(res.status).toBe(409);
   });
 
@@ -52,6 +67,7 @@ describe('kayıt ve giriş', () => {
       vehiclePlate: 'gm 001',
       vehicleModel: 'Toyota Corolla',
       city: 'Lefkoşa',
+      verificationToken: await verifyPhone('+905428222222'),
     });
     expect(res.status).toBe(201);
     expect(res.body.user.driver.status).toBe('pending');
@@ -69,6 +85,7 @@ describe('kayıt ve giriş', () => {
       vehiclePlate: 'GM 002',
       vehicleModel: 'Honda Civic',
       city: 'Lefkoşa',
+      verificationToken: await verifyPhone('+905428333333'),
     });
     expect(res.status).toBe(201);
     driver2Token = res.body.token;

@@ -1,8 +1,10 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
+import { config } from '../config.js';
 import type { Db } from '../db.js';
 import { requireAuth, signToken, type Role } from '../lib/auth.js';
+import { OtpError, verifyPhoneToken, type OtpService } from '../otp.js';
 
 const phoneSchema = z
   .string()
@@ -12,6 +14,13 @@ const registerSchema = z.object({
   phone: phoneSchema,
   name: z.string().min(2, 'İsim en az 2 karakter olmalı').max(80),
   password: z.string().min(6, 'Şifre en az 6 karakter olmalı').max(100),
+  verificationToken: z.string().optional(),
+});
+
+const otpRequestSchema = z.object({ phone: phoneSchema });
+const otpVerifySchema = z.object({
+  phone: phoneSchema,
+  code: z.string().regex(/^[0-9]{6}$/, 'Kod 6 haneli olmalı'),
 });
 
 const driverRegisterSchema = registerSchema.extend({
@@ -74,8 +83,57 @@ function normalizePhone(phone: string): string {
   return phone.startsWith('+') ? phone : `+${phone}`;
 }
 
-export function authRoutes(db: Db): Router {
+export function authRoutes(db: Db, otp: OtpService): Router {
   const router = Router();
+
+  /** Kayıt öncesi telefon doğrulaması: SMS kodu iste. */
+  router.post('/otp/request', async (req, res) => {
+    const parsed = otpRequestSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.issues[0]?.message ?? 'Geçersiz istek' });
+      return;
+    }
+    try {
+      const result = await otp.request(normalizePhone(parsed.data.phone));
+      res.json(result);
+    } catch (e) {
+      if (e instanceof OtpError) {
+        res.status(e.status).json({ error: e.message });
+        return;
+      }
+      console.error('SMS gönderim hatası:', e);
+      res.status(502).json({ error: 'SMS gönderilemedi. Lütfen tekrar deneyin' });
+    }
+  });
+
+  /** SMS kodunu doğrula; kayıtta kullanılacak doğrulama token'ı döner. */
+  router.post('/otp/verify', (req, res) => {
+    const parsed = otpVerifySchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.issues[0]?.message ?? 'Geçersiz istek' });
+      return;
+    }
+    try {
+      const verificationToken = otp.verify(normalizePhone(parsed.data.phone), parsed.data.code);
+      res.json({ verificationToken });
+    } catch (e) {
+      if (e instanceof OtpError) {
+        res.status(e.status).json({ error: e.message });
+        return;
+      }
+      throw e;
+    }
+  });
+
+  /** Kayıt isteğindeki doğrulama token'ının bu telefona ait olduğunu denetler. */
+  function checkPhoneVerification(phone: string, verificationToken: string | undefined): string | null {
+    if (!config.otpRequired) return null;
+    const verifiedPhone = verificationToken ? verifyPhoneToken(verificationToken) : null;
+    if (verifiedPhone !== phone) {
+      return 'Telefon doğrulaması gerekli. Önce SMS ile gelen kodu doğrulayın';
+    }
+    return null;
+  }
 
   router.post('/register', (req, res) => {
     const parsed = registerSchema.safeParse(req.body);
@@ -85,6 +143,11 @@ export function authRoutes(db: Db): Router {
     }
     const { name, password } = parsed.data;
     const phone = normalizePhone(parsed.data.phone);
+    const verificationError = checkPhoneVerification(phone, parsed.data.verificationToken);
+    if (verificationError) {
+      res.status(403).json({ error: verificationError });
+      return;
+    }
     const exists = db.prepare('SELECT id FROM users WHERE phone = ?').get(phone);
     if (exists) {
       res.status(409).json({ error: 'Bu telefon numarası zaten kayıtlı' });
@@ -92,8 +155,10 @@ export function authRoutes(db: Db): Router {
     }
     const hash = bcrypt.hashSync(password, 10);
     const result = db
-      .prepare("INSERT INTO users (phone, name, password_hash, role) VALUES (?, ?, ?, 'passenger')")
-      .run(phone, name, hash);
+      .prepare(
+        "INSERT INTO users (phone, name, password_hash, role, phone_verified_at) VALUES (?, ?, ?, 'passenger', ?)",
+      )
+      .run(phone, name, hash, config.otpRequired ? new Date().toISOString() : null);
     const user: UserRow = { id: Number(result.lastInsertRowid), phone, name, password_hash: hash, role: 'passenger' };
     res.status(201).json({ token: signToken({ id: user.id, role: 'passenger' }), user: publicUser(user) });
   });
@@ -106,6 +171,11 @@ export function authRoutes(db: Db): Router {
     }
     const { name, password, licenseNo, vehiclePlate, vehicleModel, city } = parsed.data;
     const phone = normalizePhone(parsed.data.phone);
+    const verificationError = checkPhoneVerification(phone, parsed.data.verificationToken);
+    if (verificationError) {
+      res.status(403).json({ error: verificationError });
+      return;
+    }
     const exists = db.prepare('SELECT id FROM users WHERE phone = ?').get(phone);
     if (exists) {
       res.status(409).json({ error: 'Bu telefon numarası zaten kayıtlı' });
@@ -113,8 +183,10 @@ export function authRoutes(db: Db): Router {
     }
     const hash = bcrypt.hashSync(password, 10);
     const result = db
-      .prepare("INSERT INTO users (phone, name, password_hash, role) VALUES (?, ?, ?, 'driver')")
-      .run(phone, name, hash);
+      .prepare(
+        "INSERT INTO users (phone, name, password_hash, role, phone_verified_at) VALUES (?, ?, ?, 'driver', ?)",
+      )
+      .run(phone, name, hash, config.otpRequired ? new Date().toISOString() : null);
     const userId = Number(result.lastInsertRowid);
     db.prepare(
       'INSERT INTO drivers (user_id, license_no, vehicle_plate, vehicle_model, city) VALUES (?, ?, ?, ?, ?)',

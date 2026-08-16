@@ -10,7 +10,19 @@ CREATE TABLE IF NOT EXISTS users (
   name TEXT NOT NULL,
   password_hash TEXT NOT NULL,
   role TEXT NOT NULL CHECK (role IN ('passenger','driver','admin')),
+  phone_verified_at TEXT,
   created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+
+-- SMS doğrulama kodları (telefon başına tek aktif kod)
+CREATE TABLE IF NOT EXISTS otp_codes (
+  phone TEXT PRIMARY KEY,
+  code_hash TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  send_count INTEGER NOT NULL DEFAULT 0,
+  window_started_at TEXT NOT NULL,
+  last_sent_at TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS drivers (
@@ -82,11 +94,20 @@ export function createDb(path: string = config.dbPath): Db {
   db.exec('PRAGMA journal_mode = WAL;');
   db.exec('PRAGMA foreign_keys = ON;');
   db.exec(SCHEMA);
+  migrate(db);
   const insertSetting = db.prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)');
   for (const [key, value] of Object.entries(defaultSettings)) {
     insertSetting.run(key, value);
   }
   return db;
+}
+
+/** Eski veritabanlarına sonradan eklenen sütunları uygular. */
+function migrate(db: Db): void {
+  const userCols = db.prepare('PRAGMA table_info(users)').all() as unknown as Array<{ name: string }>;
+  if (!userCols.some((c) => c.name === 'phone_verified_at')) {
+    db.exec('ALTER TABLE users ADD COLUMN phone_verified_at TEXT');
+  }
 }
 
 export function getSetting(db: Db, key: SettingKey): number {

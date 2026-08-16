@@ -4,7 +4,9 @@ import cors from 'cors';
 import bcrypt from 'bcryptjs';
 import { config } from './config.js';
 import type { Db } from './db.js';
+import { createSmsSender, type SmsSender } from './lib/sms.js';
 import { Matcher } from './matching.js';
+import { OtpService } from './otp.js';
 import { Hub } from './realtime.js';
 import { adminRoutes } from './routes/admin.js';
 import { authRoutes } from './routes/auth.js';
@@ -18,11 +20,15 @@ export interface AppContext {
 }
 
 /** Express uygulamasını kurar. Test ve prod aynı yolu kullanır. */
-export function createApp(db: Db, options: { offerTimeoutMs?: number } = {}): AppContext {
+export function createApp(
+  db: Db,
+  options: { offerTimeoutMs?: number; smsSender?: SmsSender } = {},
+): AppContext {
   ensureAdmin(db);
 
   const hub = new Hub(db);
   const matcher = new Matcher(db, hub, options.offerTimeoutMs);
+  const otp = new OtpService(db, options.smsSender ?? createSmsSender());
 
   const app = express();
   app.use(cors());
@@ -32,7 +38,7 @@ export function createApp(db: Db, options: { offerTimeoutMs?: number } = {}): Ap
     res.json({ ok: true, service: 'ulak', time: new Date().toISOString() });
   });
 
-  app.use('/api/auth', authRoutes(db));
+  app.use('/api/auth', authRoutes(db, otp));
   app.use('/api/rides', rideRoutes(db, hub, matcher));
   app.use('/api/driver', driverRoutes(db, hub));
   app.use('/api/admin', adminRoutes(db, hub));

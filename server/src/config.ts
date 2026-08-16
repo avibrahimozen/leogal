@@ -15,6 +15,20 @@ export const config = {
   roadFactor: 1.3,
   adminPhone: process.env.ULAK_ADMIN_PHONE ?? '+903920000000',
   adminPassword: process.env.ULAK_ADMIN_PASSWORD ?? 'ulak-admin',
+  // SMS / OTP telefon doğrulama
+  smsProvider: (process.env.SMS_PROVIDER ?? 'console') as 'console' | 'twilio',
+  // false yapılırsa kayıt sırasında SMS doğrulaması istenmez (yalnızca yerel geliştirme için)
+  otpRequired: (process.env.ULAK_OTP_REQUIRED ?? 'true') !== 'false',
+  otpTtlMs: 5 * 60_000,
+  otpResendCooldownMs: 45_000,
+  otpMaxAttempts: 5,
+  otpMaxSendsPerHour: 5,
+  otpVerifiedTokenTtl: '15m',
+  twilio: {
+    accountSid: process.env.TWILIO_ACCOUNT_SID ?? '',
+    authToken: process.env.TWILIO_AUTH_TOKEN ?? '',
+    from: process.env.TWILIO_FROM ?? '',
+  },
 } as const;
 
 /** Ücret ve komisyon varsayılanları (TL). Çalışma anında settings tablosundan okunur. */

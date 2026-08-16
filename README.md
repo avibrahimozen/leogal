@@ -42,6 +42,27 @@ Ortam değişkenleri (hepsi opsiyonel):
 | `ULAK_DB_PATH` | `ulak.db` | SQLite dosya yolu |
 | `ULAK_ADMIN_PHONE` | `+903920000000` | İlk açılışta oluşturulan yönetici |
 | `ULAK_ADMIN_PASSWORD` | `ulak-admin` | **Üretimde mutlaka değiştirin** |
+| `SMS_PROVIDER` | `console` | `console` (kod loga + yanıta yazılır) veya `twilio` |
+| `ULAK_OTP_REQUIRED` | `true` | `false` yapılırsa kayıtta SMS doğrulaması istenmez |
+| `TWILIO_ACCOUNT_SID` | — | Twilio hesap SID (yalnızca `SMS_PROVIDER=twilio`) |
+| `TWILIO_AUTH_TOKEN` | — | Twilio auth token |
+| `TWILIO_FROM` | — | SMS gönderen numara (Twilio'dan alınan) |
+
+## SMS ile telefon doğrulama (OTP)
+
+Kayıt, SMS doğrulaması gerektirir: uygulama forma girilen numaraya 6 haneli kod
+gönderir (`POST /api/auth/otp/request`), kullanıcı kodu girer
+(`POST /api/auth/otp/verify`) ve dönen kısa ömürlü `verificationToken` ile kayıt
+tamamlanır. Kurallar: kod 5 dakika geçerli, 45 sn'den önce yeniden gönderilemez,
+telefon başına saatte en çok 5 kod, 5 hatalı denemede kod geçersizleşir.
+
+- **Geliştirme** (`SMS_PROVIDER=console`, varsayılan): gerçek SMS gitmez; kod
+  sunucu loguna yazılır ve API yanıtında `devCode` olarak döner — mobil uygulama
+  bu kodu ekranda ipucu olarak gösterir.
+- **Üretim** (`SMS_PROVIDER=twilio`): Twilio hesabı açıp üç `TWILIO_*`
+  değişkenini ayarlayın; KKTC (+90) numaralarına gönderim desteklenir. Farklı bir
+  sağlayıcı (örn. NetGSM) için `server/src/lib/sms.ts` içindeki `SmsSender`
+  arayüzünü uygulamak yeterlidir.
 
 ## Yönetim paneli
 
@@ -142,7 +163,7 @@ curl -s -X POST localhost:4000/api/admin/drivers/2/approve -H "Authorization: Be
 
 - [x] Yönetici web paneli (onay, tahsilat, canlı harita) — `/admin`
 - [x] iOS + Android derleme profilleri (EAS Build)
-- [ ] SMS ile telefon doğrulama (OTP)
+- [x] SMS ile telefon doğrulama (OTP) — console/Twilio sağlayıcılı
 - [ ] Kart ile ödeme + otomatik komisyon kesintisi
 - [ ] Gerçek yol rotası ve süre tahmini (OSRM / Google Directions)
 - [ ] Anlık bildirimler (Expo Push)
