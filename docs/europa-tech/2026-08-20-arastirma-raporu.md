@@ -250,4 +250,100 @@ Tokenizasyon altyapısı: Blocksquare **$5.990/ihraç + $69/ay** (resmi liste); 
 - **Faz 2 (€10–30M/yıl, çok ülke):** €12M AB-genel tavan bağlayıcı olur → **onaylı AB izahnamesi** (pasaportlanabilir, tutarsız, retail'e uygun; self-placement yine lisanssız) + gereken pazarlarda umbrella. Kendi MiFID lisansı (€75k katmanı) ancak ~€20–30M+/yıl hacimde, ~€500k/yıl overhead'i taşıyınca.
 - **Faz 3 (ikincil piyasa):** İlan panosu → umbrella broker → DLT TSS kotasyonu merdiveni.
 
-*(Kalan bölüm: tam vergi haritası — son ajan tamamlandığında eklenecek; ardından yönetici özeti ve model etkileri.)*
+---
+
+## 7. Vergi Haritası: Zincirin Tamamı, Oranlarla (2026 teyitli)
+
+**Sonuç:** Yapının ölümcül risk noktası bir oran değil, iki nitelendirme sorusu: (1) **İtalya'nın, kârı sözleşmeyle token sahiplerine geçirmekle yükümlü Estonya OÜ'ye PSD %0 stopajı tanımaması riski** (Yargıtay 32149/32467-2025: "beneficial owner" testleri — pass-through yapı bu testin tam düştüğü yer; Danimarka davaları C-116/16, C-117/16 emsal örüntüsü); (2) **Estonya'nın token ödemesini gider-benzeri faiz (%0) mi, kâr dağıtımı (22/78) mı sayacağı**. İkisi de yerel danışman + mümkünse bağlayıcı ön karar gerektirir.
+
+### 7.1 İtalya — PropCo seviyesi
+
+| Kalem | Oran | Not |
+| --- | --- | --- |
+| IRES | **%24** | "IRES premiale" %20 yalnız 2025'e özeldi, 2026'ya uzatılmadı |
+| IRAP | **%3,9** (bölgesel ±0,92 pp → Lazio/Campania vb. %4,82) | Otele özel oran yok |
+| IMU (otel, kadastral kat. D/2) | **%0,86–1,06** (kadastral değer = rendita ×1,05×65) | IRES'ten %100 indirilebilir; IRAP'tan indirilemez |
+| KDV (konaklama/restoran) | **%10** indirimli | Standart %22 |
+| Kira modeli | Kira geliri IRES %24 + IRAP %3,9; bina kirası varsayılan KDV istisnalı (opsiyonla %22) + tescil vergisi ~%1 | Affitto d'azienda (işletme kirası) yeniden nitelendirme riskiyle — danışman şart |
+
+### 7.2 İtalya → Estonya dağıtım stopajı
+
+| Rota | Stopaj | Şartlar / Risk |
+| --- | --- | --- |
+| Varsayılan (AB dışı) | **%26** | — |
+| AB şirketi indirimli (Art. 27(3-ter)) | **%1,2** | AB'de kurumlar vergisine tabi olmak; asgari pay şartı yok — **güvenli çalışma varsayımı bu** |
+| Ana Ortaklık Direktifi (PSD) | **%0** | ≥%10 pay + ≥1 yıl + subject-to-tax + beneficial ownership + GAAR. **Yüksek red riski:** Cass. 32149 & 32467/2025 üç test uyguluyor (gerçek faaliyet, tasarruf yetkisi "dominion", ticari amaç) — kârı token sahiplerine geçirmeye sözleşmeyle mecbur OÜ, dominion testinden düşer |
+| Faiz (kredi) rotası | %26; IRD ile **%0** (≥%25 ortaklık + 1 yıl + BO) | **Ama:** kâr katılımlı faiz IRD kapsamı dışında bırakılabiliyor (Dir. 2003/49 Md. 4(1)(b)); Art. 44(2)(a) TUIR tamamen kâr-bağlı enstrümanı hisseye çevirir; Art. 109(9) kâr-bağlı kısmı gider yazdırmaz; Art. 96 %30 EBITDA faiz tavanı; ATAD 2 hibrit riski |
+
+Kritik ayrım (Art. 109(9)): kâra bağlılık **tutarı (quantum)** belirliyorsa gider yazılamaz; yalnızca **ödeme şartını (an)** belirliyorsa (tutar sabit, ödeme kâr varsa) indirim korunur. Enstrüman tasarımında bu ayrım para eder.
+
+### 7.3 Estonya — OÜ seviyesi
+
+| Kalem | Oran |
+| --- | --- |
+| Dağıtılan kâr | **22/78** (netin %22'si); dağıtılmayan **%0**; savunma vergisi iptal, %24 artışı iptal |
+| Temettü stopajı (yurt dışına) | **%0** |
+| Faiz stopajı (yurt dışına) | **%0** (emsallere uygunsa; Estonya mukimi bireye %22) |
+| Yeniden dağıtım istisnası | AB/AEA/İsviçre iştirakinden (≥%10) alınan temettü **temettü olarak** yeniden dağıtılırsa Estonya CIT **%0** — İtalyan temettüsü zincirinde köşe taşı |
+| Token ödemesi nitelendirmesi | **AÇIK SORU:** borç kuponu sayılırsa CIT yok + stopaj yok; kâr dağıtımı/örtülü dağıtım sayılırsa **22/78**. Hissedar olmayan token sahiplerine "diğer kâr dağıtımı"nda yeniden dağıtım istisnasının çalışıp çalışmadığı test edilmemiş → **EMTA bağlayıcı ön karar (siduv eelotsus)** |
+| Yabancı retail yatırımcıya stopaj yükümlülüğü | **Yok** (temettü %0, faiz %0; kapalı listede değil) |
+
+### 7.4 Yatırımcı seviyesi (örnek)
+
+| Mukimlik | Vergi |
+| --- | --- |
+| İtalya | **%26** düz ikame vergi |
+| Almanya | **%26,375** (25 + dayanışma; kilise vergisiyle ~%27,8–28) — €1.000 tasarruf istisnası |
+| Estonya | **%22**; OÜ 22/78 ödediyse temettüde ek vergi yok |
+
+### 7.5 Türkiye mukimi kurucular
+
+| Kalem | Oran / Kural |
+| --- | --- |
+| Estonya→Türkiye temettü stopajı | **%0** (Estonya iç hukuku); ÇVÖA (2003) azami %10 — pratikte akademik |
+| TR gelir vergisi (yabancı temettü) | Artan oranlı **%15–40** |
+| %50 istisna | Ödenmiş sermayenin **≥%20'sine** sahiplik (eşik 30 Nisan 2026'da %50'den %20'ye indi, CB Kararı 11257) + kazancın beyanname tarihine dek Türkiye'ye getirilmesi → efektif tepe yük ≈ **%20** |
+| **CFC (kontrol edilen yabancı kurum) — YÜKSEK OLASILIKLA YAKALANIR** | Şartlar: TR mukimlerinin ≥%50 payı ✓; pasif gelir ≥%25 ✓ (PropCo temettüsü); efektif vergi <%10 ✓ (Estonya dağıtılmamış kârda %0); hasılat > TRY 100k ✓. Sonuç: **OÜ'de kâr biriktirmek Türk kurucular için vergisiz değil** — dönem kapandığı yıl dağıtılmış sayılıp Türkiye'de vergilenir (GVK 75(2)). Fiili dağıtımda mükerrer vergileme mekaniği yerel danışmanla netleştirilmeli |
+| Araya TR şirketi koyma | Klasik %100 iştirak istisnası Estonya'nın <%15 vergi yükü şartında takılır; **yeni alternatif: %80 istisna** (≥%20 pay + repatriasyon; vergi yükü ve süre şartı yok) → TR KV %25 ile efektif ≈ **%5** |
+
+### 7.6 Uçtan uca örnek: İtalya'da €100 otel kârı → yatırımcının cebi
+
+*(Varsayımlar: IRAP tabanı ≈ IRES tabanı; IMU sabit maliyet sayılıp hariç; yatırımcı İtalya mukimi retail %26; OÜ tahsilatın tamamını geçiriyor.)*
+
+| Senaryo | İtalya vergisi | Stopaj | Estonya | Yatırımcıya net | **Toplam kayıp** |
+| --- | --- | --- | --- | --- | --- |
+| (a) Temettü zinciri, PSD %0 + Estonya istisnası | 27,9 | 0 | 0 | **53,4** | **%46,7** |
+| (a′) PSD %0 ama Estonya 22/78 uygularsa | 27,9 | 0 | 15,9 | 41,6 | %58,4 |
+| (b) Temettü zinciri, %1,2 stopaj + Estonya istisnası | 27,9 | 0,9 | 0 | **52,7** | **%47,3** |
+| (c) Kâr katılımlı kredi (kısmi %30 EBITDA süpürme, IRD %0 tutarsa) | 20,7 | 0 | 0 | **58,7** | **%41,3** — en iyi ama en kırılgan |
+| (d) Kötü senaryo: tam kâr-bağlı "kredi" → hisse sayılır, PSD/1,2 de yok | 27,9 | 18,8 | 0 | ~39,5 | **~%60,5** |
+
+**Model etkisi:** Yatırımcıya brüt %8–12 hedef getiri sunabilmek için (Bölüm 1.5), varlığın vergi öncesi bu getirinin kabaca **1,7–2,4 katını** üretmesi gerekiyor. Senaryo (b) (%1,2 stopaj + Estonya istisnası) planlama tabanı olmalı; (a) upside, (c) yalnız güçlü hukuki görüşle, (d) kaçınılacak tasarım.
+
+---
+
+## 8. Yönetici Özeti ve Aksiyon Listesi
+
+### Ana kararlar için bulgular
+
+1. **Eşik büyüdü ama tavan AB-geneli:** Estonya ve İtalya eşiği €12M (5 Haz 2026'dan itibaren); ancak yeni rejimde €12M **AB genelinde toplam** sayılıyor — "ülke başına €12M" diye plan yapılamaz. Çok ülkeli muafiyetli teklif mekaniği (yeni Md. 3(2)) danışman teyidi istiyor.
+2. **Lisans:** Launch'ta lisanssız self-issuance doğru; **ECSPR kendi varlıklarımıza kapalı (Md. 8(2))**; Almanya için umbrella zorunlu ve hızlı (8–16 hafta); kendi MiFID lisansı ancak €20–30M+/yıl hacimde.
+3. **İtalya'ya satış fiilen kapalı tutulmalı:** İtalyanca içerik + İtalyan kaydına açıklık = CONSOB'a göre İtalya'ya teklif (1.522+ site karartıldı). Platform İtalyan yatırımcıya dönük olmayacak şekilde tasarlanmalı (dil, pazarlama, geo-engel).
+4. **Vergi planlama tabanı:** %24 IRES + %1,2 stopaj + Estonya'da istisna → **~%47 uçtan uca kayıp** (yatırımcı vergisi dahil). PSD %0 varsayılmamalı. İki nitelendirme sorusu (İtalya BO, Estonya token ödemesi) launch öncesi hukuki görüş/ön karar istiyor.
+5. **Ücret modeli doğrulandı:** %5–6 başarı ücreti savunulabilir; €15k listeleme ücreti pazar dışı (paket gerekçesiyle savunulmalı); %0,75 servis ücreti tutarlı. Kârlı emsaller (EstateGuru, La Première Brique) yalın + borç bazlı + tek pazarlı.
+6. **Getiri gerçekliği:** Retail'in alternatifi %8–14; Baltık bilgi belgesi tahvilleri %7,75–8,5 kuponla 2–3x talep topluyor. Ürün %8+ net getiri vaat edebilmeli → varlık seçimi ve vergi optimizasyonu birbirine bağlı.
+7. **Pazar uyarısı:** İtalyan crowdinvesting -%36,8 (Tem 25–Haz 26); Rendity kapandı, Recrowd askıda, EV Digital Invest iflasta. Konsolidasyon çağında lansman = temerrütsüz ilk ihraç her şeyden önemli.
+
+### Launch öncesi aksiyonlar (öncelik sırasıyla)
+
+1. **Enstrüman sınıflandırma görüşü** (MiFID menkul kıymeti mi?) — tüm lisans/vergi analizinin ön şartı.
+2. **Estonya:** EMTA bağlayıcı ön karar (token ödemesi nitelendirmesi); VPTS §15 nihai metninin danışman teyidi.
+3. **İtalya:** PropCo çıkış yapısı için vergi görüşü (temettü vs kısmi faiz; %1,2 rotası; Art. 109(9)/44 tasarım sınırları); D.Lgs. 86/2026 sonrası CONSOB uygulama yönetmeliğinin takibi.
+4. **Türkiye:** CFC pozisyonu ve %80 istisnalı TR holding alternatifinin karşılaştırmalı analizi.
+5. **PSP RFQ:** Lemonway + secupay + Mangopay + ConnectPay + Treezor'a Bölüm 3.4'teki soru setiyle teklif talebi.
+6. **Almanya kararı:** Pazarlanacaksa Effecta/DonauCapital/Concedus'tan umbrella teklifi (8–16 hafta öncesinden).
+7. **Finansal modele revizyon:** €12M AB-geneli tavan, %47 vergi kaybı tabanı, CAC ≥ €200 gerçekçi varsayımı ve %8+ net yatırımcı getirisi şartıyla senaryoların yeniden koşulması.
+
+---
+
+*Metodoloji: 7 paralel derin araştırma ajanı, 300+ kaynak taraması (20 Ağustos 2026). Kaynak siteleri kısmen proxy engeline takıldığından bazı birincil metinler arama özetlerinden doğrulandı; her bölümde doğrulanamayanlar açıkça işaretlendi. Bu rapor hukuki veya vergisel danışmanlık değildir; launch öncesi ilgili yerel danışman teyitleri zorunludur.*
