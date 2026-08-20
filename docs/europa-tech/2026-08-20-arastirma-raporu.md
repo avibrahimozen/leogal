@@ -217,4 +217,37 @@ Tokenizasyon altyapısı: Blocksquare **$5.990/ihraç + $69/ay** (resmi liste); 
 - Altyapı hazır: Decreto Fintech (L. 52/2023) + CONSOB kayıt rejimi (CDP, Fleap, Weltix, Commercio.Network kayıtlı). İlk dijital tahvil: CDP-Polygon (Tem 2024) — kurumsal, retail değil.
 - **CONSOB-uyumlu retail tokenize otel/spa kâr katılımı ihracı emsali YOK** (doğrulanamadı). En yakın ticari örnekler: MetaWealth (Roma'da €11,3M konut tokenizasyonu — ama VASP/kripto lisansı rotası, düzenleyici olarak tartışmalı; şablon alınmamalı), Black Manta × BoxDepo (Sardinya, depo tesisi tahvili), Caroni Capital (Venedik yakını Hotel Garibaldi gelir payı — hukuki yapısı doğrulanamadı). **İlk hareket avantajı gerçek, ama emsalsizlik aynı zamanda regülatör testinden geçmemişlik demek.**
 
-*(Kalan bölümler: lisans seçenekleri karşılaştırması ve tam vergi haritası — son iki ajan tamamlandığında eklenecek; ardından yönetici özeti ve model etkileri.)*
+---
+
+## 6. Lisans Seçenekleri: Karşılaştırma ve Faz Önerisi
+
+**Sonuç:** Launch fazı için mevcut plan (lisanssız self-issuance + lisanslı PSP/escrow) doğru. **En önemli bulgu: ECSPR kitle fonlaması lisansı, kendi grubumuzun varlıklarını listelemek için yapısal olarak kullanılamaz** — ECSPR Md. 8(2), platformun ≥%20 hissedarlarına ve onların kontrol ettiği kişilere (yani bizim İtalyan PropCo'ya) proje sahibi olmayı yasaklıyor. İkinci kritik bulgu: **Almanya'da €1M üzeri muafiyetli satış yalnızca lisanslı aracı üzerinden yapılabilir** — Almanya hedeflenecekse liability umbrella zorunlu. MiCA CASP güvenle kapsam dışı (teyit).
+
+*Ön şart: Tüm analiz, tokenın MiFID II devredilebilir menkul kıymeti sayılmasına dayanıyor — enstrüman sınıflandırma görüşü her şeyden önce alınmalı.*
+
+### 6.1 Karşılaştırma tablosu
+
+| Rota | Sermaye | Tek seferlik maliyet | Süre | Yıllık maliyet | Pasaport | Kendi grup varlığı? | Hacim tavanı |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| **Lisanssız self-issuance (mevcut)** | €0 | ülke başına ~€5–30k doküman/danışman | hemen | PSP ~%0,5–1,5 | Hayır (ülke ülke); 5 Haz 2026'dan sonra AB genelinde €12M ama ülke dokümanları sürüyor | **Evet** | **€12M/yıl AB genelinde toplam** (ülke başına değil!) |
+| **ECSP lisansı (LT/EE)** | €25k (sigortalanabilir) | harç €710–1.000 + ~€20–100k danışman | LT/EE 4–6 ay; IT 6–12 ay | ~€100–300k | Evet (10 iş günü bildirimle AB) | **HAYIR — Md. 8(2)** | Proje sahibi başına €5M/12 ay (muafiyetli ihraçlar dahil sayılıyor!) |
+| **MiFID firması (€75k katmanı)** | €75k | ~€100–300k + harçlar | 9–15 ay | ~€300–700k | Evet | Evet (çıkar çatışması açıklamasıyla) | Yok (teklif tarafı kuralları ayrı) |
+| **Liability umbrella (DE)** | €0 | ~düşük beş haneli kurulum | **8–16 hafta** (Concedus yayımlı) | ~€18–30k taban + €10–60k değişken + hacimden ~%0,5–3 (doğrulanmamış) | Umbrella'nın pasaportuyla (üçgen pasaportlama, ESMA 7 Tem 2026) | Evet | Yok |
+| **MiCA CASP** | — | — | — | — | — | — | **Gerekmiyor** (MiFID enstrümanı MiCA Md. 2(4)(a) ile hariç) |
+| **MTF / DLT TSS** | €150k+ | çok yüksek | 12–24 ay (AB'de sadece 4 DLT TSS lisansı var) | yüksek | Evet | Tarafsızlık beklenir | — |
+
+### 6.2 Kritik ayrıntılar
+
+- **ECSPR Md. 8(2) yasağı:** Platform, (a) ≥%20 hissedarlarını, (b) yönetici/çalışanlarını, (c) bunlarla kontrol ilişkisi olan her kişiyi proje sahibi olarak **kabul edemez**. Kurucuların hem platformu hem PropCo'yu kontrol ettiği yapı doğrudan kapsamda. Hisseleri %20 altında tutma "workaround"u kırılgan — NCA'lar ekonomik gerçekliğe bakıyor (ESMA Q&A 2502). ECSPR yalnızca **üçüncü taraf varlıklarına açık gerçek pazar yeri** stratejisinde anlamlı. Ayrıca ECSPR'de umbrella/tied-agent modeli yok — lisans "kiralanamaz".
+- **€5M tavanının tuzağı:** ECSPR tavanı, proje sahibinin **muafiyetli ihraçlarını da içerecek şekilde** hesaplanıyor (ESMA Q&A 2437/2438) — ECSPR + muafiyet rotaları aynı PropCo için üst üste konulamaz.
+- **Almanya özel durumu:** €8M→€12M muafiyeti var ama €100k üzeri WIB (BaFin'e dosyalanır) + **€1M üzeri satış yalnızca lisanslı aracı üzerinden** (yatırımcı başına €1k/€10k/€25k limitlerini aracı denetler, §§ 3c/6 WpPG). Umbrella'lar tam bu iş için var: Effecta (70+ şirket, crowdinvesting odaklı), DonauCapital (STOKR/tokenstreet'in tercihi; aynı zamanda MiCA CASP), Concedus (MiFID+MiCAR kombine; 8–16 hafta go-live).
+- **Listing Act cross-border belirsizliği:** Yeni Md. 3(2)'nin çok ülkeli eşzamanlı muafiyetli teklife tam olarak nasıl izin verdiği konusunda hukuk büroları arasında okuma farkı var — nihai metin üzerinden danışman teyidi şart (launch planını değiştirebilir).
+- **İkincil piyasa merdiveni:** (1) Pasif ilan panosu (eşleştirme yok, referans fiyat yok — hukuki görüşle); (2) infaz edilen işlemleri umbrella/broker üzerinden geçirme (Exporo modeli: kendi WpIG lisanslı grup şirketiyle brokered bilateral işlem); (3) hacim oluşunca kendi MTF'i kurmak yerine **mevcut bir DLT TSS'e kotasyon** (21X — ilk lisans Oca 2025, Axiology — dijital tahvil odaklı, Litvanya).
+
+### 6.3 Faz önerisi
+
+- **Faz 1 (launch → ~€12M/yıl, kendi varlıklar, 1–2 ülke):** Lisanssız self-issuance + PSP/escrow devam. Almanya pazarlanacaksa umbrella tied-agent eklenir (zaten €1M üzeri zorunlu). ECSPR'ye kendi varlıklar için girilmez.
+- **Faz 2 (€10–30M/yıl, çok ülke):** €12M AB-genel tavan bağlayıcı olur → **onaylı AB izahnamesi** (pasaportlanabilir, tutarsız, retail'e uygun; self-placement yine lisanssız) + gereken pazarlarda umbrella. Kendi MiFID lisansı (€75k katmanı) ancak ~€20–30M+/yıl hacimde, ~€500k/yıl overhead'i taşıyınca.
+- **Faz 3 (ikincil piyasa):** İlan panosu → umbrella broker → DLT TSS kotasyonu merdiveni.
+
+*(Kalan bölüm: tam vergi haritası — son ajan tamamlandığında eklenecek; ardından yönetici özeti ve model etkileri.)*
