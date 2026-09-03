@@ -18,6 +18,7 @@ export function Button({
   loading,
   textColor,
   borderColor,
+  backgroundColor,
 }: {
   title: string;
   onPress: () => void;
@@ -28,15 +29,18 @@ export function Button({
   textColor?: string;
   /** Outline kenarlık rengini geçersiz kıl */
   borderColor?: string;
+  /** Zemin rengini geçersiz kıl */
+  backgroundColor?: string;
 }) {
   const bg =
-    variant === 'primary'
+    backgroundColor ??
+    (variant === 'primary'
       ? colors.primary
       : variant === 'dark'
         ? colors.ink
         : variant === 'danger'
           ? colors.danger
-          : 'transparent';
+          : 'transparent');
   const fg = textColor ?? (variant === 'primary' ? colors.ink : variant === 'outline' ? colors.ink : '#fff');
   return (
     <Pressable

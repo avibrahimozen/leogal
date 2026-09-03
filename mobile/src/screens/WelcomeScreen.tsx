@@ -21,7 +21,12 @@ export default function WelcomeScreen({ navigation }: Props) {
         </Text>
       </View>
       <View style={styles.actions}>
-        <Button title="Yakındaki Taksileri Gör" onPress={() => navigation.navigate('GuestMap')} />
+        <Button
+          title="Yakındaki Taksileri Gör"
+          backgroundColor="#FFFFFF"
+          textColor={colors.orange}
+          onPress={() => navigation.navigate('GuestMap')}
+        />
         <View style={{ height: spacing(3) }} />
         <Button
           title="Giriş Yap"
