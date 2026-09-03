@@ -8,7 +8,10 @@ import { OtpError, verifyPhoneToken, type OtpService } from '../otp.js';
 
 const phoneSchema = z
   .string()
-  .regex(/^\+?[0-9]{10,15}$/, 'Geçerli bir telefon numarası girin (örn. +905428123456)');
+  .min(7, 'Geçerli bir telefon numarası girin (örn. 05428123456)')
+  .max(25)
+  .transform(normalizePhone)
+  .refine((p) => /^\+[0-9]{10,15}$/.test(p), 'Geçerli bir telefon numarası girin (örn. 05428123456)');
 
 const registerSchema = z.object({
   phone: phoneSchema,
@@ -79,8 +82,20 @@ export function getDriverRow(db: Db, userId: number): DriverRow | null {
   return (db.prepare('SELECT * FROM drivers WHERE user_id = ?').get(userId) as unknown as DriverRow) ?? null;
 }
 
-function normalizePhone(phone: string): string {
-  return phone.startsWith('+') ? phone : `+${phone}`;
+/**
+ * Telefonu E.164 biçimine getirir. Kabul edilen girdiler:
+ *   +905428123456 · 905428123456 · 05428123456 · 5428123456 · 0090 542 812 34 56
+ * Boşluk, tire ve parantezler yok sayılır; ülke kodu yoksa +90 (Türkiye/KKTC) varsayılır.
+ */
+export function normalizePhone(raw: string): string {
+  const trimmed = raw.trim();
+  const hasPlus = trimmed.startsWith('+');
+  const digits = trimmed.replace(/\D/g, '');
+  if (hasPlus) return `+${digits}`;
+  if (digits.startsWith('00')) return `+${digits.slice(2)}`;
+  if (digits.length === 11 && digits.startsWith('0')) return `+90${digits.slice(1)}`;
+  if (digits.length === 10 && digits.startsWith('5')) return `+90${digits}`;
+  return `+${digits}`;
 }
 
 export function authRoutes(db: Db, otp: OtpService): Router {

@@ -60,7 +60,7 @@ export default function RegisterScreen() {
               <Field label="Ad Soyad" placeholder="Ayşe Yılmaz" value={name} onChangeText={setName} />
               <Field
                 label="Telefon Numarası"
-                placeholder="+90 542 812 34 56"
+                placeholder="0542 812 34 56"
                 keyboardType="phone-pad"
                 value={phone}
                 onChangeText={setPhone}

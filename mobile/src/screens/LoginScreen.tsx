@@ -43,7 +43,7 @@ export default function LoginScreen() {
           <Text style={styles.subtitle}>Ulak hesabınla giriş yap.</Text>
           <Field
             label="Telefon Numarası"
-            placeholder="+90 542 812 34 56"
+            placeholder="0542 812 34 56"
             keyboardType="phone-pad"
             autoCapitalize="none"
             value={phone}

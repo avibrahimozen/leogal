@@ -92,6 +92,14 @@ describe('kayıt ve giriş', () => {
     driver2Id = res.body.user.id;
   });
 
+  it('yerel formatla yazılan numarayla giriş yapılabilir (0542..., 542..., boşluklu)', async () => {
+    for (const phone of ['05428111111', '5428111111', '0542 811 11 11', '+90 542 811 11 11', '905428111111']) {
+      const res = await request(app).post('/api/auth/login').send({ phone, password: 'gizli123' });
+      expect(res.status, `giriş: ${phone}`).toBe(200);
+      expect(res.body.user.phone).toBe('+905428111111');
+    }
+  });
+
   it('yanlış şifreyle giriş reddedilir', async () => {
     const res = await request(app)
       .post('/api/auth/login')
