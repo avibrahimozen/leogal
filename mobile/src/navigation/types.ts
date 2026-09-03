@@ -1,5 +1,6 @@
 export type AuthStackParamList = {
   Welcome: undefined;
+  GuestMap: undefined;
   Login: undefined;
   Register: undefined;
   DriverRegister: undefined;

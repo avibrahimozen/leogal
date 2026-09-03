@@ -11,6 +11,7 @@ import { Hub } from './realtime.js';
 import { adminRoutes } from './routes/admin.js';
 import { authRoutes } from './routes/auth.js';
 import { driverRoutes } from './routes/driver.js';
+import { publicRoutes } from './routes/public.js';
 import { rideRoutes } from './routes/rides.js';
 
 export interface AppContext {
@@ -38,6 +39,7 @@ export function createApp(
     res.json({ ok: true, service: 'ulak', time: new Date().toISOString() });
   });
 
+  app.use('/api/public', publicRoutes(db));
   app.use('/api/auth', authRoutes(db, otp));
   app.use('/api/rides', rideRoutes(db, hub, matcher));
   app.use('/api/driver', driverRoutes(db, hub));

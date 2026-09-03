@@ -69,6 +69,14 @@ export interface RideOffer {
   pickupDistanceKm: number;
 }
 
+/** Üyeliksiz harita için anonim sürücü konumu (~100 m hassasiyet). */
+export interface NearbyDriver {
+  lat: number;
+  lng: number;
+  vehicleModel: string;
+  distanceKm: number;
+}
+
 export interface Earnings {
   rideCount: number;
   grossEarnings: number;

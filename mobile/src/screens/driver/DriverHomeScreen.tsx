@@ -330,7 +330,11 @@ function toBadge(status: string) {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     padding: spacing(4),
   },
   statusBar: { flexDirection: 'row', alignItems: 'center' },

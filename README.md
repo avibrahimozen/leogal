@@ -83,17 +83,32 @@ Native). Her iki platformun paketlemesi de doğrulanmıştır.
 
 ### Geliştirme (Expo Go ile)
 
+Uygulama **Expo SDK 57** üzerindedir — mağazadaki güncel Expo Go ile açılır.
+
 ```bash
 cd mobile
 npm install
 npx expo start                # iPhone veya Android'de Expo Go ile QR kodu okutun
 ```
 
-Gerçek cihazda test ederken API adresini bilgisayarınızın yerel ağ IP'siyle verin:
+Telefon ve bilgisayar aynı Wi-Fi'da olmalı; sunucu (`cd server && npm run dev`)
+açık olmalı. API adresini elle girmeye gerek yok: uygulama Expo Go'da Metro'nun
+çalıştığı bilgisayarın IP'sini otomatik bulur ve `:4000` portuna bağlanır.
+Farklı bir sunucu kullanmak isterseniz yine de geçersiz kılabilirsiniz:
 
 ```bash
-EXPO_PUBLIC_API_URL=http://192.168.1.20:4000 npx expo start
+EXPO_PUBLIC_API_URL=http://10.0.0.5:4000 npx expo start
 ```
+
+Bağlantı sorununda: Windows güvenlik duvarında Node'a (4000 portu) izin verin;
+uygulama "Sunucuya ulaşılamıyor (http://...)" hatasında denediği adresi gösterir.
+
+### Üyeliksiz kullanım
+
+Karşılama ekranındaki **"Yakındaki Taksileri Gör"** giriş yapmadan haritada
+çevrimiçi taksileri gösterir (`GET /api/public/nearby-drivers`). Sürücü konumları
+~100 m hassasiyete yuvarlanır; isim, plaka ve telefon paylaşılmaz. Aynı bilgi
+giriş yapmış yolcunun ana ekranında da görünür.
 
 ### Mağaza derlemeleri (EAS Build)
 
@@ -124,6 +139,7 @@ Aynı uygulama iki modda çalışır: **yolcu** hesabıyla girince harita + ça�
 | `POST /api/auth/register` | Yolcu kaydı |
 | `POST /api/auth/register-driver` | Sürücü başvurusu (araç bilgileriyle) |
 | `POST /api/auth/login` | Giriş (telefon + şifre → JWT) |
+| `GET /api/public/nearby-drivers?lat=&lng=` | Yakındaki çevrimiçi taksiler (girişsiz, anonim) |
 | `POST /api/rides/estimate` | Ücret tahmini (girişsiz kullanılabilir) |
 | `POST /api/rides` | Çağrı oluştur → en yakın sürücülere teklif yayınlanır |
 | `POST /api/rides/:id/accept` | Sürücü kabulü — ilk kabul eden kazanır |

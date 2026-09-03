@@ -19,9 +19,11 @@ import { getSocket } from '../../api/socket';
 import { Badge, Button, Card, rideStatusLabel } from '../../components/ui';
 import { KKTC_CENTER, PLACES, type Place } from '../../data/places';
 import { colors, radius, spacing } from '../../theme';
-import type { Ride } from '../../types';
+import type { NearbyDriver, Ride } from '../../types';
 
 type Coords = { lat: number; lng: number };
+
+const NEARBY_REFRESH_MS = 15_000;
 
 export default function PassengerHomeScreen() {
   const mapRef = useRef<MapView>(null);
@@ -34,6 +36,29 @@ export default function PassengerHomeScreen() {
   const [search, setSearch] = useState('');
   const [busy, setBusy] = useState(false);
   const [ratingRide, setRatingRide] = useState<Ride | null>(null);
+  const [nearby, setNearby] = useState<NearbyDriver[]>([]);
+
+  // Aktif çağrı yokken çevredeki çevrimiçi taksileri göster
+  useEffect(() => {
+    if (ride) {
+      setNearby([]);
+      return;
+    }
+    let cancelled = false;
+    const load = () =>
+      api
+        .get<{ drivers: NearbyDriver[] }>(`/public/nearby-drivers?lat=${myLocation.lat}&lng=${myLocation.lng}`)
+        .then((res) => {
+          if (!cancelled) setNearby(res.drivers);
+        })
+        .catch(() => {});
+    load();
+    const timer = setInterval(load, NEARBY_REFRESH_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [ride, myLocation]);
 
   // Konum izni + mevcut konum
   useEffect(() => {
@@ -208,11 +233,29 @@ export default function PassengerHomeScreen() {
             <Text style={{ fontSize: 30 }}>🚕</Text>
           </Marker>
         )}
+        {!ride &&
+          nearby.map((d, i) => (
+            <Marker
+              key={`nearby-${d.lat}-${d.lng}-${i}`}
+              coordinate={{ latitude: d.lat, longitude: d.lng }}
+              title={d.vehicleModel}
+              tracksViewChanges={false}
+            >
+              <Text style={{ fontSize: 26 }}>🚕</Text>
+            </Marker>
+          ))}
       </MapView>
 
       <SafeAreaView style={styles.overlay} edges={['bottom']} pointerEvents="box-none">
         {!ride && (
           <Card>
+            {!destination && (
+              <Text style={styles.nearbyText}>
+                {nearby.length === 0
+                  ? 'Yakında çevrimiçi taksi yok'
+                  : `Yakında ${nearby.length} taksi çevrimiçi · en yakını ~${nearby[0]?.distanceKm} km`}
+              </Text>
+            )}
             <Pressable style={styles.searchBox} onPress={() => setPickerOpen(true)}>
               <Text style={styles.searchIcon}>🔍</Text>
               <Text style={destination ? styles.searchTextActive : styles.searchText}>
@@ -356,7 +399,11 @@ function toBadge(status: string) {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     justifyContent: 'flex-end',
     padding: spacing(4),
   },
@@ -371,6 +418,7 @@ const styles = StyleSheet.create({
     height: 52,
   },
   searchIcon: { marginRight: spacing(2.5), fontSize: 16 },
+  nearbyText: { fontSize: 13, fontWeight: '600', color: colors.muted, marginBottom: spacing(2.5) },
   searchText: { fontSize: 16, color: colors.muted },
   searchTextActive: { fontSize: 16, color: colors.ink, fontWeight: '600' },
   estimateRow: {

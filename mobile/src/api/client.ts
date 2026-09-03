@@ -1,9 +1,29 @@
+import Constants from 'expo-constants';
+
 /**
- * Ulak API istemcisi. Sunucu adresi EXPO_PUBLIC_API_URL ile değiştirilebilir;
- * gerçek cihazda test ederken bilgisayarınızın yerel ağ IP'sini kullanın:
- *   EXPO_PUBLIC_API_URL=http://192.168.1.20:4000 npx expo start
+ * Ulak API adresi.
+ *
+ * Öncelik sırası:
+ *  1. EXPO_PUBLIC_API_URL ortam değişkeni (üretim / özel sunucu)
+ *  2. Expo Go'da otomatik: Metro'nun çalıştığı bilgisayarın IP'si + 4000 portu
+ *     (telefon "localhost"u göremez; bu sayede elle IP girmeye gerek kalmaz)
+ *  3. localhost:4000 (simülatör / emülatör)
  */
-export const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:4000';
+function resolveApiUrl(): string {
+  const explicit = process.env.EXPO_PUBLIC_API_URL;
+  if (explicit) return explicit;
+  const hostUri: string | undefined =
+    Constants.expoConfig?.hostUri ??
+    (Constants.expoGoConfig as { debuggerHost?: string } | null)?.debuggerHost ??
+    undefined;
+  const host = hostUri?.split(':')[0];
+  if (host && host !== 'localhost' && host !== '127.0.0.1') {
+    return `http://${host}:4000`;
+  }
+  return 'http://localhost:4000';
+}
+
+export const API_URL = resolveApiUrl();
 
 let authToken: string | null = null;
 
@@ -35,7 +55,7 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<T>
       body: body === undefined ? undefined : JSON.stringify(body),
     });
   } catch {
-    throw new ApiError('Sunucuya ulaşılamıyor. İnternet bağlantınızı kontrol edin.', 0);
+    throw new ApiError(`Sunucuya ulaşılamıyor (${API_URL}). Sunucunun açık ve aynı Wi-Fi'da olduğundan emin olun.`, 0);
   }
   const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
   if (!res.ok) {

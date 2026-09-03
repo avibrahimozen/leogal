@@ -21,7 +21,9 @@ export default function WelcomeScreen({ navigation }: Props) {
         </Text>
       </View>
       <View style={styles.actions}>
-        <Button title="Giriş Yap" onPress={() => navigation.navigate('Login')} />
+        <Button title="Yakındaki Taksileri Gör" onPress={() => navigation.navigate('GuestMap')} />
+        <View style={{ height: spacing(3) }} />
+        <Button title="Giriş Yap" variant="outline" onPress={() => navigation.navigate('Login')} />
         <View style={{ height: spacing(3) }} />
         <Button title="Yolcu Olarak Kaydol" variant="dark" onPress={() => navigation.navigate('Register')} />
         <View style={{ height: spacing(3) }} />

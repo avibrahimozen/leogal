@@ -7,6 +7,7 @@ import { ActivityIndicator, View } from 'react-native';
 import { useAuth } from '../store/auth';
 import { colors } from '../theme';
 import DriverRegisterScreen from '../screens/DriverRegisterScreen';
+import GuestMapScreen from '../screens/GuestMapScreen';
 import LoginScreen from '../screens/LoginScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import RegisterScreen from '../screens/RegisterScreen';
@@ -106,6 +107,7 @@ export default function RootNavigator() {
           }}
         >
           <AuthStack.Screen name="Welcome" component={WelcomeScreen} options={{ headerShown: false }} />
+          <AuthStack.Screen name="GuestMap" component={GuestMapScreen} options={{ title: 'Yakındaki Taksiler' }} />
           <AuthStack.Screen name="Login" component={LoginScreen} options={{ title: 'Giriş Yap' }} />
           <AuthStack.Screen name="Register" component={RegisterScreen} options={{ title: 'Kaydol' }} />
           <AuthStack.Screen
