@@ -147,6 +147,25 @@ Gerçek zamanlı olaylar (Socket.IO): `ride:offer`, `ride:offer_closed`, `ride:u
 
 Örnek: Lefkoşa → Girne ≈ 23 km → **665 TL**, komisyon 99,75 TL.
 
+## Demo hesaplar
+
+Her testte kayıt/SMS akışıyla uğraşmamak için hazır hesaplar oluştur:
+
+```bash
+cd server
+npm run seed
+```
+
+| Hesap | Telefon | Şifre | Not |
+|---|---|---|---|
+| Yönetici | `+903920000000` | `ulak-admin` | tarayıcıda `/admin` paneli |
+| Demo Yolcu | `+905550000001` | `demo123` | 3 yolculukluk geçmişi dolu |
+| Demo Sürücü | `+905550000002` | `demo123` | onaylı · GM 100 · ⭐ 4.7 · komisyon borcu var |
+
+Script tekrar çalıştırılabilir (kayıtları çoğaltmaz). Çağrı akışını denemek için:
+sürücü hesabıyla girip **çevrimiçi ol**, ikinci cihazda yolcu hesabıyla **taksi çağır** —
+teklif sürücünün ekranına düşer.
+
 ## Hızlı deneme senaryosu
 
 ```bash
