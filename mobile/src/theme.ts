@@ -2,6 +2,7 @@
 export const colors = {
   primary: '#FFC400',
   primaryDark: '#E6B000',
+  orange: '#FF8A00',
   ink: '#0F172A',
   inkSoft: '#334155',
   muted: '#64748B',

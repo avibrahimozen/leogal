@@ -16,12 +16,18 @@ export function Button({
   variant = 'primary',
   disabled,
   loading,
+  textColor,
+  borderColor,
 }: {
   title: string;
   onPress: () => void;
   variant?: 'primary' | 'dark' | 'outline' | 'danger';
   disabled?: boolean;
   loading?: boolean;
+  /** Yazı rengini geçersiz kıl (örn. koyu zeminde outline buton) */
+  textColor?: string;
+  /** Outline kenarlık rengini geçersiz kıl */
+  borderColor?: string;
 }) {
   const bg =
     variant === 'primary'
@@ -31,7 +37,7 @@ export function Button({
         : variant === 'danger'
           ? colors.danger
           : 'transparent';
-  const fg = variant === 'primary' ? colors.ink : variant === 'outline' ? colors.ink : '#fff';
+  const fg = textColor ?? (variant === 'primary' ? colors.ink : variant === 'outline' ? colors.ink : '#fff');
   return (
     <Pressable
       onPress={onPress}
@@ -39,7 +45,7 @@ export function Button({
       style={({ pressed }) => [
         styles.button,
         { backgroundColor: bg, opacity: disabled || loading ? 0.5 : pressed ? 0.85 : 1 },
-        variant === 'outline' && { borderWidth: 1.5, borderColor: colors.line },
+        variant === 'outline' && { borderWidth: 1.5, borderColor: borderColor ?? colors.line },
       ]}
     >
       {loading ? (

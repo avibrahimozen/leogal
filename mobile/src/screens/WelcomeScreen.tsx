@@ -23,13 +23,27 @@ export default function WelcomeScreen({ navigation }: Props) {
       <View style={styles.actions}>
         <Button title="Yakındaki Taksileri Gör" onPress={() => navigation.navigate('GuestMap')} />
         <View style={{ height: spacing(3) }} />
-        <Button title="Giriş Yap" variant="outline" onPress={() => navigation.navigate('Login')} />
+        <Button
+          title="Giriş Yap"
+          variant="outline"
+          textColor={colors.orange}
+          borderColor={colors.orange}
+          onPress={() => navigation.navigate('Login')}
+        />
         <View style={{ height: spacing(3) }} />
-        <Button title="Yolcu Olarak Kaydol" variant="dark" onPress={() => navigation.navigate('Register')} />
+        <Button
+          title="Yolcu Olarak Kaydol"
+          variant="outline"
+          textColor={colors.orange}
+          borderColor={colors.orange}
+          onPress={() => navigation.navigate('Register')}
+        />
         <View style={{ height: spacing(3) }} />
         <Button
           title="Taksici misin? Ulak'a katıl"
           variant="outline"
+          textColor={colors.orange}
+          borderColor={colors.orange}
           onPress={() => navigation.navigate('DriverRegister')}
         />
       </View>
@@ -56,7 +70,7 @@ const styles = StyleSheet.create({
   tagline: {
     fontSize: 20,
     fontWeight: '700',
-    color: colors.primary,
+    color: colors.orange,
     marginTop: spacing(2),
   },
   subtitle: {
