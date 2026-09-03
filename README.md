@@ -83,11 +83,7 @@ Native). Her iki platformun paketlemesi de doğrulanmıştır.
 
 ### Geliştirme (Expo Go ile)
 
-Uygulama **Expo SDK 54** üzerindedir — App Store ve Play Store'daki Expo Go ile
-birebir uyumludur. (Expo'nun SDK 55–57 için hazırladığı Expo Go sürümleri Mayıs 2026'dan
-beri Apple onayında beklediği için mağazadaki Expo Go hâlâ SDK 54 çalıştırır; proje
-bu yüzden bilinçli olarak 54'te tutulur. Mağaza güncellenince `npx expo install --fix` ile
-yükseltilebilir.)
+Uygulama **Expo SDK 57** üzerindedir — mağazadaki güncel Expo Go ile açılır.
 
 ```bash
 cd mobile
