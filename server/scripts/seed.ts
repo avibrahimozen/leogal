@@ -1,5 +1,7 @@
 /**
- * Demo verisi: üç hazır hesap — yönetici, bir yolcu, bir taksici.
+ * Demo verisi: yönetici + iki yolcu + iki taksici.
+ *   Yolcu 1 / Sürücü 1: dolu geçmiş ve komisyon borcu
+ *   Yolcu 2 / Sürücü 2: temiz hesaplar (ikinci telefon için)
  *
  * Kullanım:  npm run seed          (sunucu açık olsa da olur, kapalıyken de)
  * Tekrar çalıştırmak güvenlidir — mevcut kayıtlar çoğaltılmaz.
@@ -92,7 +94,7 @@ function seedCompletedRide(passengerId: number, driverId: number, ride: SeedRide
   return rideId;
 }
 
-// ---- Hesaplar: yönetici + bir yolcu + bir taksici ----
+// ---- Hesaplar: yönetici + iki yolcu + iki taksici ----
 upsertUser(config.adminPhone, 'Ulak Yönetici', 'admin', bcrypt.hashSync(config.adminPassword, 10));
 const passenger = upsertUser('+905550000001', 'Demo Yolcu', 'passenger');
 const driver = upsertUser('+905550000002', 'Demo Sürücü', 'driver');
@@ -102,6 +104,16 @@ if (!driverExists) {
   db.prepare(
     "INSERT INTO drivers (user_id, license_no, vehicle_plate, vehicle_model, city, status) VALUES (?, 'KKTC-GM100', 'GM 100', 'Toyota Corolla', 'Lefkoşa', 'approved')",
   ).run(driver.id);
+}
+
+// İkinci çift: temiz hesaplar — ikinci telefonda ayrı kullanıcıyla test için
+upsertUser('+905550000003', 'Demo Yolcu 2', 'passenger');
+const driver2 = upsertUser('+905550000004', 'Demo Sürücü 2', 'driver');
+const driver2Exists = db.prepare('SELECT user_id FROM drivers WHERE user_id = ?').get(driver2.id);
+if (!driver2Exists) {
+  db.prepare(
+    "INSERT INTO drivers (user_id, license_no, vehicle_plate, vehicle_model, city, status) VALUES (?, 'KKTC-GN200', 'GN 200', 'Honda Civic', 'Girne', 'approved')",
+  ).run(driver2.id);
 }
 
 // ---- Yolculuk geçmişi (yalnızca ilk çalıştırmada) ----
@@ -161,6 +173,8 @@ console.log(`
 │ Yönetici     │ ${config.adminPhone.padEnd(14)} │ ${config.adminPassword.padEnd(10)} │ tarayıcıda /admin paneli         │
 │ Demo Yolcu   │ +905550000001  │ demo123    │ yolculuk geçmişi dolu            │
 │ Demo Sürücü  │ +905550000002  │ demo123    │ onaylı · komisyon borcu ${String(Math.round(due.due * 100) / 100).padEnd(7)} TL │
+│ Demo Yolcu 2 │ +905550000003  │ demo123    │ temiz hesap (2. telefon)         │
+│ Demo Sürücü 2│ +905550000004  │ demo123    │ onaylı · GN 200 · Girne · temiz  │
 └──────────────┴────────────────┴────────────┴──────────────────────────────────┘
 
 Yolculuklar: ${rideInfo}

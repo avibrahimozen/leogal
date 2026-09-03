@@ -177,6 +177,8 @@ npm run seed
 | Yönetici | `+903920000000` | `ulak-admin` | tarayıcıda `/admin` paneli |
 | Demo Yolcu | `+905550000001` | `demo123` | 3 yolculukluk geçmişi dolu |
 | Demo Sürücü | `+905550000002` | `demo123` | onaylı · GM 100 · ⭐ 4.7 · komisyon borcu var |
+| Demo Yolcu 2 | `+905550000003` | `demo123` | temiz hesap — ikinci telefon için |
+| Demo Sürücü 2 | `+905550000004` | `demo123` | onaylı · GN 200 · Girne · temiz hesap |
 
 Script tekrar çalıştırılabilir (kayıtları çoğaltmaz). Çağrı akışını denemek için:
 sürücü hesabıyla girip **çevrimiçi ol**, ikinci cihazda yolcu hesabıyla **taksi çağır** —
