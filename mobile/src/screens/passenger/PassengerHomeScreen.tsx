@@ -28,14 +28,8 @@ import { fetchEndedRide, useActiveRideSync } from '../../hooks/useActiveRideSync
 import { useCenterOnMe } from '../../hooks/useCenterOnMe';
 import { useLocationPermission } from '../../hooks/useLocationPermission';
 import { useRoadRoute } from '../../hooks/useRoadRoute';
-import {
-  driverLegTargets,
-  followTargets,
-  movedBeyond,
-  resolveHeading,
-  routeKey,
-  trimRouteToPosition,
-} from '../../logic/geo';
+import { useRouteFollower } from '../../hooks/useRouteFollower';
+import { driverLegTargets, followTargets, movedBeyond, resolveHeading, routeKey } from '../../logic/geo';
 import { applyPassengerRideUpdate } from '../../logic/rideUpdates';
 import { colors, radius, shadow, spacing } from '../../theme';
 import type {
@@ -61,7 +55,7 @@ type Target = 'pickup' | 'drop' | 'stop';
 const NEARBY_REFRESH_MS = 15_000;
 /** Sunucuyla aynı sınır: bir çağrıda en fazla 5 ara durak */
 const MAX_STOPS = 5;
-/** Sürücü bu kadar ilerlemeden sürücü→hedef yol rotası yeniden istenmez (km) */
+/** Yol rotası yokken / sürücü rotadan çıkınca bu kadar ilerleyince rota yeniden istenir (km) */
 const REROUTE_KM = 0.12;
 /** Takip kamerası: araç ve hedef, alttaki kartın üstünde kalacak şekilde çerçevelenir */
 const FOLLOW_PADDING = { top: 150, right: 70, bottom: 430, left: 70 };
@@ -414,19 +408,30 @@ export default function PassengerHomeScreen() {
   // Sürücü → sıradaki hedef (alış noktası ya da duraklar+varış) yol rotası
   const legTargets = useMemo(() => (ride && ride.status !== 'requested' ? driverLegTargets(ride) : []), [ride]);
   const legTargetKey = routeKey(legTargets);
-  useEffect(() => {
-    if (!driverPos || legTargets.length === 0) {
-      setLegOrigin(null);
-      return;
-    }
-    setLegOrigin((origin) => (movedBeyond(origin, driverPos, REROUTE_KM) ? { lat: driverPos.lat, lng: driverPos.lng } : origin));
-  }, [driverPos, legTargets, legTargetKey]);
   const legPoints = useMemo(
     () => (legOrigin && legTargets.length > 0 ? [legOrigin, ...legTargets] : null),
     [legOrigin, legTargets],
   );
   const legRoute = useRoadRoute(legPoints);
-  const legLine = legRoute && driverPos ? trimRouteToPosition(legRoute.points, driverPos).map(toCoordinate) : null;
+  // Araç ikonu yol tarifine oturur ve iki güncelleme arasında rota çizgisi üzerinden ilerler
+  const follower = useRouteFollower(driverPos, legRoute, routeKey(legPoints ?? []));
+  const car = follower?.display ?? null;
+  const offRoute = car?.offRoute ?? false;
+  const legIsRoad = legRoute?.source === 'osrm';
+  useEffect(() => {
+    if (!driverPos || legTargets.length === 0) {
+      setLegOrigin(null);
+      return;
+    }
+    setLegOrigin((origin) => {
+      if (!origin) return { lat: driverPos.lat, lng: driverPos.lng };
+      // Gerçek yol rotası varsa ve sürücü rotada kaldıkça aynı rota kullanılır (yeni istek yok);
+      // rotadan çıkınca ya da yol rotası alınamamışsa ilerledikçe yeniden dene
+      if (legIsRoad && !offRoute) return origin;
+      return movedBeyond(origin, driverPos, REROUTE_KM) ? { lat: driverPos.lat, lng: driverPos.lng } : origin;
+    });
+  }, [driverPos, legTargets, legTargetKey, legIsRoad, offRoute]);
+  const legLine = car?.ahead ? car.ahead.map(toCoordinate) : null;
 
   // Sürücü atanınca takip başlar
   const rideId = ride?.id ?? null;
@@ -437,22 +442,26 @@ export default function PassengerHomeScreen() {
 
   // Takip kamerası: her konum güncellemesinde araç + hedef çerçevelenir; yaklaştıkça yakınlaşır
   useEffect(() => {
-    if (!follow || !ride || !driverPos || ride.status === 'requested') return;
-    const pts = followTargets(driverPos, ride).map(toCoordinate);
+    if (!follow || !ride || !car || ride.status === 'requested') return;
+    const pts = followTargets(car, ride).map(toCoordinate);
     if (pts.length >= 2) {
       mapRef.current?.fitToCoordinates(pts, { edgePadding: FOLLOW_PADDING, animated: true });
     } else if (pts[0]) {
       mapRef.current?.animateCamera({ center: pts[0] }, { duration: 700 });
     }
-  }, [follow, driverPos, ride]);
+  }, [follow, car, ride]);
 
   const showFollowChip = ride !== null && ride.status !== 'requested' && !follow;
 
-  /** Sürücünün uzaklığı / kalan süre (yol rotasından) */
+  /** Sürücünün uzaklığı / kalan süre: rota üzerinde kalan yola göre ölçeklenir */
   const etaText = (() => {
     if (!ride || ride.status === 'requested' || !legRoute) return null;
-    const dist = `${legRoute.distanceKm.toFixed(1)} km`;
-    const mins = legRoute.durationMin;
+    const remainingKm = car?.remainingKm ?? legRoute.distanceKm;
+    const dist = `${remainingKm.toFixed(1)} km`;
+    const mins =
+      legRoute.durationMin && legRoute.distanceKm > 0
+        ? Math.max(1, Math.round((legRoute.durationMin * remainingKm) / legRoute.distanceKm))
+        : null;
     if (ride.status === 'in_progress') return mins ? `Varışa ~${mins} dk · ${dist}` : `Varışa ~${dist}`;
     if (ride.status === 'arrived') return 'Sürücü kapıda';
     return mins ? `Sürücü ~${mins} dk uzakta · ${dist}` : `Sürücü ~${dist} uzakta`;
@@ -504,11 +513,13 @@ export default function PassengerHomeScreen() {
           />
         )}
         {legLine && legLine.length > 1 && <Polyline coordinates={legLine} strokeColor={colors.info} strokeWidth={4} />}
-        {ride && driverPos && (
+        {ride && car && (
           <CarMarker
-            lat={driverPos.lat}
-            lng={driverPos.lng}
-            heading={driverPos.heading}
+            lat={car.lat}
+            lng={car.lng}
+            heading={car.heading}
+            path={car.path}
+            durationMs={follower?.durationMs}
             title={`${ride.driver?.name ?? 'Sürücü'} · ${ride.driver?.vehiclePlate ?? ''}`}
             zIndex={10}
           />

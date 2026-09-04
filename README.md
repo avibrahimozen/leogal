@@ -209,6 +209,10 @@ Gerçek zamanlı olaylar (Socket.IO): `ride:offer`, `ride:offer_closed`, `ride:u
 - **Kırmızı araç:** emoji yerine üstten görünüm araç görseli (`mobile/assets/car-red*.png`);
   sürücünün gidiş yönüne göre döner (GPS yönü yoksa son iki konumdan hesaplanır) ve yeni konuma
   kayarak gider.
+- **İkon yol tarifini izler:** sürücü eşleşince konumu rota çizgisine oturtulur (60 m içinde),
+  iki güncelleme arasında ikon düz çizgi yerine rotanın köşelerinden geçerek ilerler ve her
+  köşede yolun yönüne döner; kalan süre rota üzerinde kalan yola göre güncellenir. Sürücü
+  rotadan 100 m'den fazla saparsa rota yeniden istenir (`mobile/src/logic/routeFollow.ts`).
 - **Takip kamerası:** sürücü atanınca harita aracı ve sıradaki hedefi (alış noktası / durak / varış)
   birlikte çerçeveler; araç yaklaştıkça yakınlaşır. Haritayı elle kaydırınca takip durur,
   **"Sürücüyü takip et"** ile yeniden başlar. Sürücü uygulamasında da aynı takip vardır.

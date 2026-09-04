@@ -15,14 +15,8 @@ import { fetchEndedRide, useActiveRideSync } from '../../hooks/useActiveRideSync
 import { useCenterOnMe } from '../../hooks/useCenterOnMe';
 import { useLocationPermission } from '../../hooks/useLocationPermission';
 import { useRoadRoute } from '../../hooks/useRoadRoute';
-import {
-  driverLegTargets,
-  followTargets,
-  movedBeyond,
-  resolveHeading,
-  routeKey,
-  trimRouteToPosition,
-} from '../../logic/geo';
+import { useRouteFollower } from '../../hooks/useRouteFollower';
+import { driverLegTargets, followTargets, movedBeyond, resolveHeading, routeKey } from '../../logic/geo';
 import { applyDriverRideUpdate } from '../../logic/rideUpdates';
 import { useAuth } from '../../store/auth';
 import { colors, radius, shadow, spacing } from '../../theme';
@@ -31,7 +25,7 @@ import type { LatLng, Ride, RideOffer, RideUpdatePayload } from '../../types';
 /** Sürücünün kendi konumu + gidiş yönü */
 type MyPosition = LatLng & { heading: number | null };
 
-/** Bu kadar ilerlemeden sürücü→hedef yol rotası yeniden istenmez (km) */
+/** Yol rotası yokken / rotadan çıkınca bu kadar ilerleyince rota yeniden istenir (km) */
 const REROUTE_KM = 0.12;
 /** Takip kamerası: araç ve hedef, üst durum çubuğu ile alttaki çağrı kartının arasında kalır */
 const FOLLOW_PADDING = { top: 200, right: 70, bottom: 380, left: 70 };
@@ -306,19 +300,28 @@ export default function DriverHomeScreen() {
   // Ben → sıradaki hedef (alış noktası ya da duraklar + varış)
   const legTargets = useMemo(() => (ride ? driverLegTargets(ride) : []), [ride]);
   const legTargetKey = routeKey(legTargets);
-  useEffect(() => {
-    if (!myPos || legTargets.length === 0) {
-      setLegOrigin(null);
-      return;
-    }
-    setLegOrigin((origin) => (movedBeyond(origin, myPos, REROUTE_KM) ? { lat: myPos.lat, lng: myPos.lng } : origin));
-  }, [myPos, legTargets, legTargetKey]);
   const legPoints = useMemo(
     () => (legOrigin && legTargets.length > 0 ? [legOrigin, ...legTargets] : null),
     [legOrigin, legTargets],
   );
   const legRoute = useRoadRoute(legPoints);
-  const legLine = legRoute && myPos ? trimRouteToPosition(legRoute.points, myPos).map(toCoordinate) : null;
+  // Kendi aracım yol tarifine oturur ve rota çizgisi üzerinden ilerler (çağrı yokken ham GPS)
+  const follower = useRouteFollower(myPos, legRoute, routeKey(legPoints ?? []));
+  const me = follower?.display ?? myPos;
+  const offRoute = follower?.display.offRoute ?? false;
+  const legIsRoad = legRoute?.source === 'osrm';
+  useEffect(() => {
+    if (!myPos || legTargets.length === 0) {
+      setLegOrigin(null);
+      return;
+    }
+    setLegOrigin((origin) => {
+      if (!origin) return { lat: myPos.lat, lng: myPos.lng };
+      if (legIsRoad && !offRoute) return origin;
+      return movedBeyond(origin, myPos, REROUTE_KM) ? { lat: myPos.lat, lng: myPos.lng } : origin;
+    });
+  }, [myPos, legTargets, legTargetKey, legIsRoad, offRoute]);
+  const legLine = follower?.display.ahead ? follower.display.ahead.map(toCoordinate) : null;
 
   // Çağrı kabul edilince takip başlar
   const rideId = ride?.id ?? null;
@@ -329,19 +332,23 @@ export default function DriverHomeScreen() {
 
   // Takip kamerası: araç + sıradaki hedef çerçevelenir, yaklaştıkça yakınlaşır
   useEffect(() => {
-    if (!follow || !ride || !myPos) return;
-    const pts = followTargets(myPos, ride).map(toCoordinate);
+    if (!follow || !ride || !me) return;
+    const pts = followTargets(me, ride).map(toCoordinate);
     if (pts.length >= 2) {
       mapRef.current?.fitToCoordinates(pts, { edgePadding: FOLLOW_PADDING, animated: true });
     }
-  }, [follow, myPos, ride]);
+  }, [follow, me, ride]);
 
   const showFollowChip = ride !== null && !follow;
 
   const etaText = (() => {
     if (!ride || !legRoute) return null;
-    const dist = `${legRoute.distanceKm.toFixed(1)} km`;
-    const mins = legRoute.durationMin;
+    const remainingKm = follower?.display.remainingKm ?? legRoute.distanceKm;
+    const dist = `${remainingKm.toFixed(1)} km`;
+    const mins =
+      legRoute.durationMin && legRoute.distanceKm > 0
+        ? Math.max(1, Math.round((legRoute.durationMin * remainingKm) / legRoute.distanceKm))
+        : null;
     if (ride.status === 'in_progress') return mins ? `Varışa ~${mins} dk · ${dist}` : `Varışa ~${dist}`;
     if (ride.status === 'arrived') return 'Alış noktasındasın';
     return mins ? `Alış noktasına ~${mins} dk · ${dist}` : `Alış noktasına ~${dist}`;
@@ -372,8 +379,16 @@ export default function DriverHomeScreen() {
         showsUserLocation={!(online && myPos)}
         showsMyLocationButton
       >
-        {online && myPos && (
-          <CarMarker lat={myPos.lat} lng={myPos.lng} heading={myPos.heading} title="Sen" zIndex={10} />
+        {online && me && (
+          <CarMarker
+            lat={me.lat}
+            lng={me.lng}
+            heading={me.heading}
+            path={follower?.display.path}
+            durationMs={follower?.durationMs}
+            title="Sen"
+            zIndex={10}
+          />
         )}
         {ride && (
           <>
