@@ -649,7 +649,7 @@
       },
       "cocuk-menu": {
         "name": "Kids' Menu",
-        "detail": "65 g döner · Surprise gift!"
+        "detail": "Fries and a drink · Surprise gift!"
       },
       "mercimek-corbasi": {
         "name": "Lentil Soup"
@@ -749,7 +749,7 @@
       },
       "cocuk-menu": {
         "name": "Детское меню",
-        "detail": "65 г дёнера · Сюрприз в подарок!"
+        "detail": "Картофель фри и напиток · Сюрприз в подарок!"
       },
       "mercimek-corbasi": {
         "name": "Чечевичный суп"
@@ -849,7 +849,7 @@
       },
       "cocuk-menu": {
         "name": "Kindermenü",
-        "detail": "65 g Döner · Mit Überraschung!"
+        "detail": "Pommes und Getränk · Mit Überraschung!"
       },
       "mercimek-corbasi": {
         "name": "Linsensuppe"
@@ -941,7 +941,7 @@
       },
       "cocuk-menu": {
         "unit": "Set",
-        "blurb": "65 g döner, fries and a drink. With a surprise gift."
+        "blurb": "Fries and a drink. With a surprise gift."
       }
     },
     "ru": {
@@ -964,7 +964,7 @@
       },
       "cocuk-menu": {
         "unit": "Набор",
-        "blurb": "65 г дёнера, картофель фри и напиток. С сюрпризом."
+        "blurb": "Картофель фри и напиток. С сюрпризом."
       }
     },
     "de": {
@@ -987,7 +987,7 @@
       },
       "cocuk-menu": {
         "unit": "Menü",
-        "blurb": "65 g Döner, Pommes und ein Getränk. Mit Überraschung."
+        "blurb": "Pommes und ein Getränk. Mit Überraschung."
       }
     }
   }

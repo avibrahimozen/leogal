@@ -55,7 +55,8 @@ ${LANG_CSS}
   @media (min-width: 900px) { .hero .wrap { grid-template-columns: 1fr 1fr; align-items: center; padding-top: 80px; padding-bottom: 80px; } }
   .hero .mark { display: grid; justify-items: start; }
   .hero .mark .logo { width: min(440px, 100%); height: auto; filter: drop-shadow(0 12px 40px rgba(0,0,0,.5)); }
-  .hero .lede { display: grid; gap: 18px; }
+  .hero .lede { display: grid; gap: 18px; position: relative; }
+  .hero .lede::before { content: ''; position: absolute; inset: -18px -20px; background: radial-gradient(70% 80% at 50% 50%, rgba(20,18,16,.55), rgba(20,18,16,0)); z-index: -1; border-radius: 24px; }
   .hero .slogan { font-size: clamp(22px, 3vw, 30px); font-style: italic; color: var(--kul); }
   .hero .slogan b { color: var(--pide); font-style: normal; font-weight: 600; }
   .hero .actions { display: flex; flex-wrap: wrap; gap: 10px; }
@@ -141,37 +142,71 @@ ${LANG_CSS}
 `;
 
 const JS = `
-  // Girişteki köz kıvılcımları: sakin, düşük yoğunluklu; hareket azaltma tercihinde durur.
+  // Odun ateşi: giriş bölümünün altından yükselen katmanlı alevler ve közler.
+  // Hareket azaltma tercihinde tek kare çizilir.
   (function () {
     var c = document.getElementById('koz');
     if (!c || !c.getContext) return;
     var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    var ctx = c.getContext('2d'), W, H, P = [], dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var ctx = c.getContext('2d'), W, H, dpr = Math.min(window.devicePixelRatio || 1, 1.5), t = 0, embers = [];
+    var layers = [
+      { h: .34, speed: .9,  freq: .011, color: [179, 38, 30],  alpha: .55, phase: 0 },
+      { h: .26, speed: 1.4, freq: .017, color: [232, 110, 30], alpha: .6,  phase: 2.1 },
+      { h: .16, speed: 2.0, freq: .026, color: [255, 190, 60], alpha: .7,  phase: 4.2 }
+    ];
     function size() {
       var r = c.getBoundingClientRect();
       W = c.width = Math.max(1, Math.round(r.width * dpr)); H = c.height = Math.max(1, Math.round(r.height * dpr));
+      embers = []; for (var i = 0; i < 70; i++) embers.push(spawn(true));
     }
-    function spawn(y) {
-      return { x: Math.random() * W, y: y === undefined ? Math.random() * H : y, r: (Math.random() * 1.6 + .6) * dpr,
-        vx: (Math.random() - .5) * .15 * dpr, vy: -(Math.random() * .35 + .12) * dpr, a: Math.random(), da: Math.random() * .004 + .002 };
+    function noise(x, tt) {
+      return Math.sin(x * 1.0 + tt * 1.7) * .5 + Math.sin(x * 2.3 - tt * 2.9 + 1.3) * .3 + Math.sin(x * 4.7 + tt * 4.3 + 2.7) * .2;
+    }
+    function spawn(anywhere) {
+      return { x: Math.random() * W, y: anywhere ? Math.random() * H : H + 4 * dpr, r: (Math.random() * 1.8 + .6) * dpr,
+        vx: (Math.random() - .5) * .25 * dpr, vy: -(Math.random() * .6 + .25) * dpr, life: Math.random(), dl: Math.random() * .006 + .003 };
+    }
+    function flame(L, tt) {
+      var base = H, maxH = H * L.h, step = Math.max(6, Math.round(W / 90));
+      ctx.beginPath(); ctx.moveTo(0, base);
+      var prevX = 0, prevY = base;
+      for (var x = 0; x <= W + step; x += step) {
+        var n = noise(x * L.freq / dpr, tt * L.speed + L.phase);
+        var edge = 1 - Math.pow(Math.abs((x / W) * 2 - 1), 3) * .35;
+        var y = base - maxH * (0.45 + 0.55 * (0.5 + 0.5 * n)) * edge;
+        var cx = (prevX + x) / 2, cy = (prevY + y) / 2;
+        ctx.quadraticCurveTo(prevX, prevY, cx, cy);
+        prevX = x; prevY = y;
+      }
+      ctx.lineTo(W + step, base); ctx.closePath();
+      var g = ctx.createLinearGradient(0, base - maxH, 0, base);
+      var col = L.color.join(',');
+      g.addColorStop(0, 'rgba(' + col + ',0)');
+      g.addColorStop(.55, 'rgba(' + col + ',' + (L.alpha * .55) + ')');
+      g.addColorStop(1, 'rgba(' + col + ',' + L.alpha + ')');
+      ctx.fillStyle = g; ctx.fill();
     }
     function draw() {
       ctx.clearRect(0, 0, W, H);
-      var g = ctx.createRadialGradient(W * .5, H * 1.05, 0, W * .5, H * 1.05, Math.max(W, H) * .9);
-      g.addColorStop(0, 'rgba(232,135,30,.28)'); g.addColorStop(.45, 'rgba(179,38,30,.10)'); g.addColorStop(1, 'rgba(20,18,16,0)');
-      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-      for (var i = 0; i < P.length; i++) {
-        var p = P[i];
-        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(232,135,30,' + (0.15 + 0.6 * Math.abs(Math.sin(p.a * Math.PI))) + ')'; ctx.fill();
+      // Zemin közü: alt kenarda derin kızıl parıltı
+      var glow = ctx.createRadialGradient(W * .5, H * 1.1, 0, W * .5, H * 1.1, Math.max(W, H) * .8);
+      glow.addColorStop(0, 'rgba(232,110,30,.35)'); glow.addColorStop(.5, 'rgba(179,38,30,.14)'); glow.addColorStop(1, 'rgba(20,18,16,0)');
+      ctx.fillStyle = glow; ctx.fillRect(0, 0, W, H);
+      ctx.globalCompositeOperation = 'lighter';
+      for (var i = 0; i < layers.length; i++) flame(layers[i], t);
+      for (var j = 0; j < embers.length; j++) {
+        var e = embers[j], a = Math.sin(e.life * Math.PI);
+        ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255,' + (150 + Math.round(90 * a)) + ',60,' + (0.25 + 0.65 * a) + ')'; ctx.fill();
         if (reduce) continue;
-        p.x += p.vx; p.y += p.vy; p.a += p.da;
-        if (p.y < -10 || p.a > 1) P[i] = spawn(H + 5);
+        e.x += e.vx + Math.sin((e.y + t * 40) * .02) * .3 * dpr; e.y += e.vy; e.life += e.dl;
+        if (e.y < -10 || e.life >= 1) embers[j] = spawn(false);
       }
-      if (!reduce) requestAnimationFrame(draw);
+      ctx.globalCompositeOperation = 'source-over';
+      if (!reduce) { t += 0.016; requestAnimationFrame(draw); }
     }
-    size(); for (var i = 0; i < 60; i++) P.push(spawn());
-    window.addEventListener('resize', function () { size(); });
+    size();
+    window.addEventListener('resize', function () { size(); if (reduce) draw(); });
     draw();
   })();
 `;

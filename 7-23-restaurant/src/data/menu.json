@@ -297,15 +297,12 @@
         "id": "cocuk-menu",
         "name": "Çocuk Menü",
         "price": 400,
-        "detail": "65 gr döner · Sürpriz hediyeli!",
-        "kcal": 620,
-        "allergens": [
+        "detail": "Patates kızartması ve içecek · Sürpriz hediyeli!",
+        "kcal": 390,
+        "allergens": [],
+        "traces": [
           "gluten",
           "sut"
-        ],
-        "traces": [
-          "yumurta",
-          "susam"
         ]
       }
     },
@@ -576,7 +573,7 @@
     {
       "id": "cocuk-menu",
       "unit": "Menü",
-      "blurb": "65 gr döner, patates ve içecek. Sürpriz hediyeli.",
+      "blurb": "Patates kızartması ve içecek. Sürpriz hediyeli.",
       "child": true
     }
   ],
