@@ -20,3 +20,6 @@ dist/
 .export-test/
 mobile/android/
 mobile/ios/
+
+# Claude Code ajan çalışma kopyaları
+.claude/worktrees/
