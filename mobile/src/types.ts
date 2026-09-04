@@ -92,3 +92,17 @@ export interface Earnings {
     createdAt: string;
   }>;
 }
+
+/**
+ * Sunucudan gelen `ride:update` olayı. `rideId` ve `status` her zaman gelir;
+ * `ride` nesnesi bazı iptal olaylarında (örn. zaman aşımı) bulunmaz.
+ */
+export interface RideUpdatePayload {
+  rideId?: number;
+  status?: RideStatus;
+  ride?: Ride;
+  cancelReason?: string | null;
+  /** Sürücü iptal etti ve çağrı yeniden yayınlandı (yalnızca yolcuya) */
+  reassigned?: boolean;
+  previousDriverCancelled?: boolean;
+}
