@@ -15,7 +15,7 @@ export default function WelcomeScreen({ navigation }: Props) {
         <Text style={styles.logo}>
           ulak<Text style={{ color: colors.primary }}>.</Text>
         </Text>
-        <Text style={styles.tagline}>Kuzey Kıbrıs'ın taksi ağı</Text>
+        <Text style={styles.tagline}>Kıbrıs ve Türkiye'nin taksi ağı</Text>
         <Text style={styles.subtitle}>
           Tek dokunuşla en yakın taksiyi çağır, sürücünü canlı takip et, yolculuğunu güvenle tamamla.
         </Text>
