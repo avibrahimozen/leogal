@@ -1,6 +1,6 @@
-# 🚕 Ulak — Kuzey Kıbrıs'ın Taksi Ağı
+# 🚕 Ulak — Kıbrıs ve Türkiye'nin Taksi Ağı
 
-Ulak, Kuzey Kıbrıs Türk Cumhuriyeti için Uber tarzı bir taksi çağırma platformudur.
+Ulak, Kuzey Kıbrıs ve Türkiye için Uber tarzı bir taksi çağırma platformudur.
 Taksiciler platforma kaydolur, yönetici onayından geçer ve tamamlanan her yolculuktan
 küçük bir **komisyon** karşılığında müşteri alır. Yolcular tek dokunuşla en yakın
 taksiyi çağırır, sürücüsünü haritada canlı takip eder.
