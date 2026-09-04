@@ -30,7 +30,7 @@ mobile/   Expo / React Native uygulaması — yolcu ve sürücü modları (TypeS
 cd server
 npm install
 npm run dev        # http://localhost:4000
-npm test           # 36 test: ücret, auth, uçtan uca çağrı akışı, komisyon
+npm test           # 175 test: ücret, auth, çağrı akışı, gerçek zamanlı olaylar, bölgeler, güvenlik
 ```
 
 Ortam değişkenleri (hepsi opsiyonel):
@@ -47,6 +47,24 @@ Ortam değişkenleri (hepsi opsiyonel):
 | `TWILIO_ACCOUNT_SID` | — | Twilio hesap SID (yalnızca `SMS_PROVIDER=twilio`) |
 | `TWILIO_AUTH_TOKEN` | — | Twilio auth token |
 | `TWILIO_FROM` | — | SMS gönderen numara (Twilio'dan alınan) |
+| `NODE_ENV` | — | `production` iken varsayılan JWT anahtarı/admin şifresiyle sunucu **başlamaz**; OTP kodu yanıtta dönmez |
+| `TRUST_PROXY` | — | `1`: ters proxy (nginx vb.) arkasında gerçek istemci IP'sini kullan (hız sınırları için) |
+
+## Türkiye desteği
+
+Ulak iki ülkede çalışır: **Kuzey Kıbrıs** (6 ilçe) ve **Türkiye** (81 il).
+
+- Sürücü kaydında ülke seçilir, şehir o ülkenin listesinden aranarak seçilir
+  (`GET /api/public/regions` tek kaynak; uygulamada çevrimdışı yedek liste var).
+- Tarife ülkeye göre belirlenir: alış noktası Kıbrıs adasındaysa KKTC, değilse Türkiye
+  tarifesi. Panelde **Tarife & Komisyon → Ülke** seçiciyle ülkeye özel değer girilir;
+  girilmeyen alanlar genel tarifeden gelir (`GET/PUT /api/admin/settings?country=TR`).
+  Türkiye başlangıç değerleri **yer tutucudur** (açılış 42 / km 28 / asgari 150 TL);
+  gerçek değerleri panelden girin.
+- Hedef seçici: OpenStreetMap (Nominatim) ile Türkiye+Kıbrıs genelinde adres arama,
+  KKTC hızlı yerler ve **haritadan seçim** (pimi istediğin noktaya getir). Alış adresi
+  otomatik ters-geocode edilir. Nominatim geliştirme için uygundur; üretimde ücretli
+  bir geocoder (Google/Mapbox) kullanın — bkz. `mobile/src/api/geocode.ts`.
 
 ## SMS ile telefon doğrulama (OTP)
 
@@ -63,6 +81,21 @@ telefon başına saatte en çok 5 kod, 5 hatalı denemede kod geçersizleşir.
   değişkenini ayarlayın; KKTC (+90) numaralarına gönderim desteklenir. Farklı bir
   sağlayıcı (örn. NetGSM) için `server/src/lib/sms.ts` içindeki `SmsSender`
   arayüzünü uygulamak yeterlidir.
+
+## Güvenlik ve dayanıklılık
+
+- Hız sınırları: giriş (telefon başına 10 / IP başına 30, 15 dk), OTP isteği (IP başına
+  20/saat), yakındaki taksiler (IP başına 120/dk) — `server/src/lib/rateLimit.ts`,
+  değerler `config.ts` içinde.
+- Güvenlik başlıkları (nosniff, frame-deny, CSP) ve 100 KB JSON gövde sınırı; bozuk
+  JSON 400, büyük gövde 413, beklenmeyen hata 500 — hepsi JSON döner.
+- Uygulaması kapanan sürücüler 5 dakika konum göndermezse otomatik çevrimdışına
+  alınır (`server/src/maintenance.ts`); askıya alınan sürücü de anında çevrimdışı olur.
+- Sunucu yeniden başlarsa bekleyen çağrıların zaman aşımı yeniden kurulur; sürücü
+  iptal edince çağrı **iptal eden sürücü hariç** yeniden yayınlanır.
+- Geçmiş sayfalanır: `GET /api/rides/history?limit=20&before=<id>` (`nextBefore` döner).
+- Ayrıntılı güvenlik değerlendirmesi ve açık maddeler:
+  [`docs/ulak/guvenlik-degerlendirmesi.md`](docs/ulak/guvenlik-degerlendirmesi.md).
 
 ## Yönetim paneli
 
@@ -89,6 +122,7 @@ Uygulama **Expo SDK 57** üzerindedir — mağazadaki güncel Expo Go ile açıl
 cd mobile
 npm install
 npx expo start                # iPhone veya Android'de Expo Go ile QR kodu okutun
+npm test                      # 40 birim testi (jest-expo): API adresi, durum etiketleri, yer arama, çağrı olayları
 ```
 
 Telefon ve bilgisayar aynı Wi-Fi'da olmalı; sunucu (`cd server && npm run dev`)
@@ -226,6 +260,8 @@ curl -s -X POST localhost:4000/api/admin/drivers/2/approve -H "Authorization: Be
 - [x] Yönetici web paneli (onay, tahsilat, canlı harita) — `/admin`
 - [x] iOS + Android derleme profilleri (EAS Build)
 - [x] SMS ile telefon doğrulama (OTP) — console/Twilio sağlayıcılı
+- [x] Türkiye desteği: 81 il, ülkeye göre tarife, adres arama ve haritadan seçim
+- [x] Gerçek zamanlı entegrasyon testleri, hız sınırları, güvenlik başlıkları, bakım süpürmesi
 - [ ] Kart ile ödeme + otomatik komisyon kesintisi
 - [ ] Gerçek yol rotası ve süre tahmini (OSRM / Google Directions)
 - [ ] Anlık bildirimler (Expo Push)
