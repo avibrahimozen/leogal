@@ -30,7 +30,7 @@
     ],
     "wood": {
       "eyebrow": "Odun ateşi",
-      "title": "Gazla değil, odun ateşiyle",
+      "title": "Odun ateşiyle pişer",
       "lead": "Dönerimiz odun ateşinin karşısında, acele etmeden pişer. Dışı közlenir, içi sulu kalır; kokusu sokaktan belli olur.",
       "points": [
         {
@@ -58,7 +58,7 @@
       },
       {
         "q": "Döner nasıl pişiyor?",
-        "a": "Odun ateşinde. Gaz ya da elektrik kullanmıyoruz; döner közün karşısında yavaş yavaş pişer."
+        "a": "Odun ateşinde. Döner közün karşısında yavaş yavaş pişer."
       },
       {
         "q": "Neredesiniz?",

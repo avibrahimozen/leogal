@@ -352,7 +352,7 @@
       ],
       "wood": {
         "eyebrow": "Wood fire",
-        "title": "Not gas. Wood fire.",
+        "title": "Cooked over a wood fire",
         "lead": "Our döner cooks slowly in front of a wood fire. Charred outside, juicy inside; you can smell it from the street.",
         "points": [
           {
@@ -380,7 +380,7 @@
         },
         {
           "q": "How is the döner cooked?",
-          "a": "Over a wood fire. No gas or electricity; the döner cooks slowly in front of the embers."
+          "a": "Over a wood fire. The döner cooks slowly in front of the embers."
         },
         {
           "q": "Where are you?",
@@ -420,7 +420,7 @@
       ],
       "wood": {
         "eyebrow": "Дровяной огонь",
-        "title": "Не газ, а дрова",
+        "title": "На дровяном огне",
         "lead": "Наш дёнер медленно готовится перед дровяным огнём. Снаружи румяный, внутри сочный; запах слышно с улицы.",
         "points": [
           {
@@ -448,7 +448,7 @@
         },
         {
           "q": "Как готовится дёнер?",
-          "a": "На дровяном огне. Без газа и электричества; дёнер медленно готовится перед углями."
+          "a": "На дровяном огне. Дёнер медленно готовится перед углями."
         },
         {
           "q": "Где вы находитесь?",
@@ -488,7 +488,7 @@
       ],
       "wood": {
         "eyebrow": "Holzfeuer",
-        "title": "Kein Gas. Holzfeuer.",
+        "title": "Über dem Holzfeuer gegart",
         "lead": "Unser Döner gart langsam vor dem Holzfeuer. Außen knusprig, innen saftig; man riecht es schon von der Straße.",
         "points": [
           {
@@ -516,7 +516,7 @@
         },
         {
           "q": "Wie wird der Döner zubereitet?",
-          "a": "Über Holzfeuer. Kein Gas, kein Strom; der Döner gart langsam vor der Glut."
+          "a": "Über Holzfeuer. Der Döner gart langsam vor der Glut."
         },
         {
           "q": "Wo sind Sie?",
