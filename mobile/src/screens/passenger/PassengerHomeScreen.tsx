@@ -16,10 +16,14 @@ import MapView, { Marker, Polyline } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '../../api/client';
 import { getSocket } from '../../api/socket';
+import { LocationPermissionCard } from '../../components/LocationPermissionCard';
 import { Badge, Button, Card, rideStatusLabel } from '../../components/ui';
-import { KKTC_CENTER, PLACES, type Place } from '../../data/places';
+import { KKTC_CENTER, filterPlaces, type Place } from '../../data/places';
+import { fetchEndedRide, useActiveRideSync } from '../../hooks/useActiveRideSync';
+import { useLocationPermission } from '../../hooks/useLocationPermission';
+import { applyPassengerRideUpdate } from '../../logic/rideUpdates';
 import { colors, radius, spacing } from '../../theme';
-import type { NearbyDriver, Ride } from '../../types';
+import type { NearbyDriver, Ride, RideUpdatePayload } from '../../types';
 
 type Coords = { lat: number; lng: number };
 
@@ -29,6 +33,8 @@ export default function PassengerHomeScreen() {
   const mapRef = useRef<MapView>(null);
   const [myLocation, setMyLocation] = useState<Coords>(KKTC_CENTER);
   const [ride, setRide] = useState<Ride | null>(null);
+  // Socket işleyicileri güncel çağrıyı closure yerine buradan okur (bayat state'e düşmemek için)
+  const rideRef = useRef<Ride | null>(null);
   const [driverPos, setDriverPos] = useState<Coords | null>(null);
   const [destination, setDestination] = useState<Place | null>(null);
   const [estimate, setEstimate] = useState<{ distanceKm: number; fare: number } | null>(null);
@@ -37,10 +43,38 @@ export default function PassengerHomeScreen() {
   const [busy, setBusy] = useState(false);
   const [ratingRide, setRatingRide] = useState<Ride | null>(null);
   const [nearby, setNearby] = useState<NearbyDriver[]>([]);
+  const locationGranted = useLocationPermission();
+
+  /** Çağrı durumunu tek yerden günceller; çağrı yokken/aranırken sürücü konumu anlamsızdır. */
+  const applyRide = useCallback((next: Ride | null) => {
+    rideRef.current = next;
+    setRide(next);
+    if (!next || next.status === 'requested') setDriverPos(null);
+  }, []);
+
+  // Aktif çağrıyı sunucuyla eşitle (açılış, socket yeniden bağlanma, ön plana dönüş)
+  const onSynced = useCallback(
+    (fetched: Ride | null) => {
+      const previous = rideRef.current;
+      applyRide(fetched);
+      if (!previous || fetched) return;
+      // Biz dinlemezken bitmiş: sonucunu geçmişten öğren
+      fetchEndedRide(previous.id).then((ended) => {
+        if (ended?.status === 'completed') {
+          setRatingRide(ended);
+        } else if (ended?.cancelReason === 'no_driver') {
+          Alert.alert('Sürücü bulunamadı', 'Yakında müsait sürücü yok. Biraz sonra tekrar dene.');
+        }
+      });
+    },
+    [applyRide],
+  );
+  useActiveRideSync(onSynced);
 
   // Aktif çağrı yokken çevredeki çevrimiçi taksileri göster
+  const hasRide = ride !== null;
   useEffect(() => {
-    if (ride) {
+    if (hasRide) {
       setNearby([]);
       return;
     }
@@ -58,59 +92,55 @@ export default function PassengerHomeScreen() {
       cancelled = true;
       clearInterval(timer);
     };
-  }, [ride, myLocation]);
+  }, [hasRide, myLocation]);
 
-  // Konum izni + mevcut konum
+  // Konum izni verilince mevcut konuma git
   useEffect(() => {
-    (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') return;
-      try {
-        const pos = await Location.getCurrentPositionAsync({});
+    if (locationGranted !== true) return;
+    let cancelled = false;
+    Location.getCurrentPositionAsync({})
+      .then((pos) => {
+        if (cancelled) return;
         const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         setMyLocation(coords);
         mapRef.current?.animateToRegion(
           { latitude: coords.lat, longitude: coords.lng, latitudeDelta: 0.05, longitudeDelta: 0.05 },
           600,
         );
-      } catch {
+      })
+      .catch(() => {
         // Konum alınamazsa Lefkoşa merkezli kalır
-      }
-    })();
-  }, []);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [locationGranted]);
 
-  // Aktif çağrıyı yükle + socket olaylarına abone ol
+  // Socket olaylarına abone ol
   useEffect(() => {
-    api
-      .get<{ ride: Ride | null }>('/rides/active')
-      .then((res) => setRide(res.ride))
-      .catch(() => {});
-
     const socket = getSocket();
     if (!socket) return;
 
-    const onUpdate = (payload: { ride: Ride }) => {
-      const updated = payload.ride;
-      setRide((current) => {
-        if (current && updated.id !== current.id) return current;
-        if (updated.status === 'completed') {
-          setRatingRide(updated);
-          setDriverPos(null);
-          return null;
-        }
-        if (updated.status === 'cancelled') {
-          setDriverPos(null);
-          if (updated.cancelReason === 'no_driver') {
-            Alert.alert('Sürücü bulunamadı', 'Yakında müsait sürücü yok. Biraz sonra tekrar dene.');
-          } else if (updated.cancelReason === 'driver_cancelled') {
-            Alert.alert('Sürücü iptal etti', 'Sürücün çağrıyı iptal etti.');
-          }
-          return null;
-        }
-        return updated;
-      });
+    const onUpdate = (payload: RideUpdatePayload) => {
+      const { ride: next, event } = applyPassengerRideUpdate(rideRef.current, payload);
+      applyRide(next);
+      if (!event) return;
+      switch (event.type) {
+        case 'completed':
+          setRatingRide(event.ride);
+          break;
+        case 'no_driver':
+          Alert.alert('Sürücü bulunamadı', 'Yakında müsait sürücü yok. Biraz sonra tekrar dene.');
+          break;
+        case 'reassigned':
+          Alert.alert('Yeni sürücü aranıyor', 'Sürücü iptal etti, yeni sürücü aranıyor.');
+          break;
+      }
     };
-    const onDriverLocation = (payload: { lat: number; lng: number }) => {
+    const onDriverLocation = (payload: { rideId?: number; lat: number; lng: number }) => {
+      const current = rideRef.current;
+      if (!current || current.status === 'requested') return;
+      if (payload.rideId !== undefined && payload.rideId !== current.id) return;
       setDriverPos({ lat: payload.lat, lng: payload.lng });
     };
 
@@ -120,7 +150,7 @@ export default function PassengerHomeScreen() {
       socket.off('ride:update', onUpdate);
       socket.off('driver:location', onDriverLocation);
     };
-  }, []);
+  }, [applyRide]);
 
   // Hedef seçilince ücret tahmini al
   useEffect(() => {
@@ -128,13 +158,22 @@ export default function PassengerHomeScreen() {
       setEstimate(null);
       return;
     }
+    let cancelled = false;
+    setEstimate(null);
     api
       .post<{ distanceKm: number; fare: number }>('/rides/estimate', {
         pickup: { ...myLocation, address: 'Mevcut Konum' },
         drop: { lat: destination.lat, lng: destination.lng, address: destination.name },
       })
-      .then(setEstimate)
-      .catch(() => setEstimate(null));
+      .then((res) => {
+        if (!cancelled) setEstimate(res);
+      })
+      .catch(() => {
+        if (!cancelled) setEstimate(null);
+      });
+    return () => {
+      cancelled = true; // hedef hızla değişirse eski tahmin yeniyi ezmesin
+    };
   }, [destination, myLocation]);
 
   const requestRide = useCallback(async () => {
@@ -148,7 +187,7 @@ export default function PassengerHomeScreen() {
       if (res.noDriver) {
         Alert.alert('Sürücü bulunamadı', 'Şu an çevrimiçi sürücü yok. Biraz sonra tekrar dene.');
       } else {
-        setRide(res.ride);
+        applyRide(res.ride);
         setDestination(null);
       }
     } catch (e) {
@@ -156,21 +195,20 @@ export default function PassengerHomeScreen() {
     } finally {
       setBusy(false);
     }
-  }, [destination, myLocation]);
+  }, [destination, myLocation, applyRide]);
 
   const cancelRide = useCallback(async () => {
     if (!ride) return;
     setBusy(true);
     try {
       await api.post(`/rides/${ride.id}/cancel`);
-      setRide(null);
-      setDriverPos(null);
+      applyRide(null);
     } catch (e) {
       Alert.alert('İptal edilemedi', e instanceof Error ? e.message : 'Bir hata oluştu');
     } finally {
       setBusy(false);
     }
-  }, [ride]);
+  }, [ride, applyRide]);
 
   const submitRating = useCallback(
     async (rating: number) => {
@@ -185,11 +223,7 @@ export default function PassengerHomeScreen() {
     [ratingRide],
   );
 
-  const filteredPlaces = PLACES.filter(
-    (p) =>
-      p.name.toLocaleLowerCase('tr').includes(search.toLocaleLowerCase('tr')) ||
-      p.city.toLocaleLowerCase('tr').includes(search.toLocaleLowerCase('tr')),
-  );
+  const filteredPlaces = filterPlaces(search);
 
   const activeDrop = ride ? ride.drop : destination ? { lat: destination.lat, lng: destination.lng } : null;
 
@@ -247,6 +281,8 @@ export default function PassengerHomeScreen() {
       </MapView>
 
       <SafeAreaView style={styles.overlay} edges={['bottom']} pointerEvents="box-none">
+        {locationGranted === false && <LocationPermissionCard />}
+
         {!ride && (
           <Card>
             {!destination && (
@@ -310,7 +346,9 @@ export default function PassengerHomeScreen() {
                   </View>
                   <Pressable
                     style={styles.callButton}
-                    onPress={() => Linking.openURL(`tel:${ride.driver?.phone}`)}
+                    onPress={() => {
+                      Linking.openURL(`tel:${ride.driver?.phone}`).catch(() => {});
+                    }}
                   >
                     <Text style={{ fontSize: 18 }}>📞</Text>
                   </Pressable>

@@ -5,55 +5,71 @@ import MapView, { Marker } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '../../api/client';
 import { getSocket } from '../../api/socket';
+import { LocationPermissionCard } from '../../components/LocationPermissionCard';
 import { Badge, Button, Card, rideStatusLabel } from '../../components/ui';
 import { KKTC_CENTER } from '../../data/places';
+import { fetchEndedRide, useActiveRideSync } from '../../hooks/useActiveRideSync';
+import { useLocationPermission } from '../../hooks/useLocationPermission';
+import { applyDriverRideUpdate } from '../../logic/rideUpdates';
 import { useAuth } from '../../store/auth';
 import { colors, radius, spacing } from '../../theme';
-import type { Ride, RideOffer } from '../../types';
+import type { Ride, RideOffer, RideUpdatePayload } from '../../types';
 
 export default function DriverHomeScreen() {
   const { user, refreshUser } = useAuth();
   const [online, setOnline] = useState(user?.driver?.isOnline ?? false);
   const [ride, setRide] = useState<Ride | null>(null);
+  // Socket işleyicileri güncel çağrıyı closure yerine buradan okur (bayat state'e düşmemek için)
+  const rideRef = useRef<Ride | null>(null);
   const [offer, setOffer] = useState<RideOffer | null>(null);
   const [busy, setBusy] = useState(false);
-  const [myPos, setMyPos] = useState(KKTC_CENTER);
   const [ratingRide, setRatingRide] = useState<Ride | null>(null);
   const watcher = useRef<Location.LocationSubscription | null>(null);
+  const locationGranted = useLocationPermission();
 
   const approved = user?.driver?.status === 'approved';
 
-  // Aktif çağrı + socket abonelikleri
-  useEffect(() => {
-    api
-      .get<{ ride: Ride | null }>('/rides/active')
-      .then((res) => setRide(res.ride))
-      .catch(() => {});
+  const applyRide = useCallback((next: Ride | null) => {
+    rideRef.current = next;
+    setRide(next);
+  }, []);
 
+  // Aktif çağrıyı sunucuyla eşitle (açılış, socket yeniden bağlanma, ön plana dönüş)
+  const onSynced = useCallback(
+    (fetched: Ride | null) => {
+      const previous = rideRef.current;
+      applyRide(fetched);
+      if (!previous || fetched) return;
+      // Biz dinlemezken kapanmış: yolcu iptal ettiyse haber ver
+      fetchEndedRide(previous.id).then((ended) => {
+        if (ended?.status === 'cancelled' && ended.cancelReason === 'passenger_cancelled') {
+          Alert.alert('Çağrı iptal edildi', 'Yolcu çağrıyı iptal etti.');
+        }
+      });
+    },
+    [applyRide],
+  );
+  useActiveRideSync(onSynced);
+
+  // Socket abonelikleri
+  useEffect(() => {
     const socket = getSocket();
     if (!socket) return;
 
     const onOffer = (payload: RideOffer) => {
       // Aktif çağrısı olan sürücüye teklif gösterme
-      setRide((current) => {
-        if (!current) setOffer(payload);
-        return current;
-      });
+      if (rideRef.current) return;
+      setOffer(payload);
     };
     const onOfferClosed = (payload: { rideId: number }) => {
       setOffer((current) => (current?.rideId === payload.rideId ? null : current));
     };
-    const onUpdate = (payload: { ride: Ride }) => {
-      const updated = payload.ride;
-      setRide((current) => {
-        if (current && updated.id !== current.id) return current;
-        if (updated.status === 'cancelled') {
-          Alert.alert('Çağrı iptal edildi', 'Yolcu çağrıyı iptal etti.');
-          return null;
-        }
-        if (updated.status === 'completed') return null;
-        return updated;
-      });
+    const onUpdate = (payload: RideUpdatePayload) => {
+      const { ride: next, event } = applyDriverRideUpdate(rideRef.current, payload);
+      applyRide(next);
+      if (event === 'passenger_cancelled') {
+        Alert.alert('Çağrı iptal edildi', 'Yolcu çağrıyı iptal etti.');
+      }
     };
     const onDriverStatus = () => {
       refreshUser().catch(() => {});
@@ -69,24 +85,19 @@ export default function DriverHomeScreen() {
       socket.off('ride:update', onUpdate);
       socket.off('driver:status', onDriverStatus);
     };
-  }, [refreshUser]);
+  }, [applyRide, refreshUser]);
 
   // Çevrimiçiyken konum yayını (10 sn / 100 m aralıkla)
   useEffect(() => {
-    if (!online) {
-      watcher.current?.remove();
-      watcher.current = null;
-      return;
-    }
+    if (!online) return;
     let cancelled = false;
     (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted' || cancelled) return;
-      watcher.current = await Location.watchPositionAsync(
+      const { granted } = await Location.requestForegroundPermissionsAsync();
+      if (!granted || cancelled) return;
+      const subscription = await Location.watchPositionAsync(
         { accuracy: Location.Accuracy.Balanced, timeInterval: 10_000, distanceInterval: 100 },
         (pos) => {
           const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-          setMyPos(coords);
           const socket = getSocket();
           if (socket?.connected) {
             socket.emit('driver:location', coords);
@@ -95,7 +106,15 @@ export default function DriverHomeScreen() {
           }
         },
       );
-    })();
+      if (cancelled) {
+        // Beklerken çevrimdışı olundu: izleyiciyi sızdırma
+        subscription.remove();
+        return;
+      }
+      watcher.current = subscription;
+    })().catch(() => {
+      // Konum izlenemedi (izin yok / servis kapalı); uyarı kartı kullanıcıyı yönlendirir
+    });
     return () => {
       cancelled = true;
       watcher.current?.remove();
@@ -103,24 +122,41 @@ export default function DriverHomeScreen() {
     };
   }, [online]);
 
-  const toggleOnline = useCallback(
-    async (value: boolean) => {
-      try {
-        await api.post('/driver/status', { online: value });
-        setOnline(value);
-      } catch (e) {
-        Alert.alert('Olmadı', e instanceof Error ? e.message : 'Bir hata oluştu');
+  const toggleOnline = useCallback(async (value: boolean) => {
+    if (value) {
+      // Konum izni olmadan çevrimiçi olmak anlamsız: çağrı eşleştirme konuma dayanır
+      const permission = await Location.requestForegroundPermissionsAsync().catch(() => null);
+      if (!permission?.granted) {
+        Alert.alert(
+          'Konum izni gerekli',
+          "Çevrimiçi olup çağrı alabilmek için konum iznine ihtiyaç var. Ayarlar'dan izin ver.",
+          [
+            { text: 'Vazgeç', style: 'cancel' },
+            {
+              text: "Ayarlar'ı Aç",
+              onPress: () => {
+                Linking.openSettings().catch(() => {});
+              },
+            },
+          ],
+        );
+        return;
       }
-    },
-    [],
-  );
+    }
+    try {
+      await api.post('/driver/status', { online: value });
+      setOnline(value);
+    } catch (e) {
+      Alert.alert('Olmadı', e instanceof Error ? e.message : 'Bir hata oluştu');
+    }
+  }, []);
 
   const acceptOffer = useCallback(async () => {
     if (!offer) return;
     setBusy(true);
     try {
       const res = await api.post<{ ride: Ride }>(`/rides/${offer.rideId}/accept`);
-      setRide(res.ride);
+      applyRide(res.ride);
       setOffer(null);
     } catch (e) {
       setOffer(null);
@@ -128,7 +164,7 @@ export default function DriverHomeScreen() {
     } finally {
       setBusy(false);
     }
-  }, [offer]);
+  }, [offer, applyRide]);
 
   const advanceRide = useCallback(async () => {
     if (!ride) return;
@@ -138,17 +174,17 @@ export default function DriverHomeScreen() {
     try {
       const res = await api.post<{ ride: Ride }>(`/rides/${ride.id}/${nextAction}`);
       if (res.ride.status === 'completed') {
-        setRide(null);
+        applyRide(null);
         setRatingRide(res.ride);
       } else {
-        setRide(res.ride);
+        applyRide(res.ride);
       }
     } catch (e) {
       Alert.alert('Olmadı', e instanceof Error ? e.message : 'Bir hata oluştu');
     } finally {
       setBusy(false);
     }
-  }, [ride]);
+  }, [ride, applyRide]);
 
   const cancelRide = useCallback(async () => {
     if (!ride) return;
@@ -160,14 +196,14 @@ export default function DriverHomeScreen() {
         onPress: async () => {
           try {
             await api.post(`/rides/${ride.id}/cancel`);
-            setRide(null);
+            applyRide(null);
           } catch (e) {
             Alert.alert('Olmadı', e instanceof Error ? e.message : 'Bir hata oluştu');
           }
         },
       },
     ]);
-  }, [ride]);
+  }, [ride, applyRide]);
 
   const submitRating = useCallback(
     async (rating: number) => {
@@ -242,6 +278,10 @@ export default function DriverHomeScreen() {
           />
         </Card>
 
+        {locationGranted === false && (
+          <LocationPermissionCard style={{ marginTop: spacing(3), marginBottom: 0 }} />
+        )}
+
         <View style={{ flex: 1 }} pointerEvents="box-none" />
 
         {/* Aktif çağrı kartı */}
@@ -261,7 +301,9 @@ export default function DriverHomeScreen() {
               </View>
               <Pressable
                 style={styles.callButton}
-                onPress={() => Linking.openURL(`tel:${ride.passenger.phone}`)}
+                onPress={() => {
+                  Linking.openURL(`tel:${ride.passenger.phone}`).catch(() => {});
+                }}
               >
                 <Text style={{ fontSize: 18 }}>📞</Text>
               </Pressable>

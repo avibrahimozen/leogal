@@ -44,7 +44,13 @@ export default function ProfileScreen() {
         )}
 
         <View style={{ height: spacing(6) }} />
-        <Button title="Çıkış Yap" variant="outline" onPress={() => signOut()} />
+        <Button
+          title="Çıkış Yap"
+          variant="outline"
+          onPress={() => {
+            signOut().catch(() => {});
+          }}
+        />
         <Text style={styles.version}>Ulak v0.1 · Kuzey Kıbrıs 🇹🇷</Text>
       </ScrollView>
     </SafeAreaView>

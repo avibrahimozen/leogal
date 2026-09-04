@@ -5,8 +5,10 @@ import MapView, { Marker } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { api } from '../api/client';
+import { LocationPermissionCard } from '../components/LocationPermissionCard';
 import { Button, Card } from '../components/ui';
 import { KKTC_CENTER } from '../data/places';
+import { useLocationPermission } from '../hooks/useLocationPermission';
 import { colors, spacing } from '../theme';
 import type { AuthStackParamList } from '../navigation/types';
 import type { NearbyDriver } from '../types';
@@ -22,24 +24,29 @@ export default function GuestMapScreen({ navigation }: Props) {
   const [drivers, setDrivers] = useState<NearbyDriver[]>([]);
   const [error, setError] = useState('');
   const [loaded, setLoaded] = useState(false);
+  const locationGranted = useLocationPermission();
 
+  // Konum izni verilince mevcut konuma git
   useEffect(() => {
-    (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') return;
-      try {
-        const pos = await Location.getCurrentPositionAsync({});
+    if (locationGranted !== true) return;
+    let cancelled = false;
+    Location.getCurrentPositionAsync({})
+      .then((pos) => {
+        if (cancelled) return;
         const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         setCenter(coords);
         mapRef.current?.animateToRegion(
           { latitude: coords.lat, longitude: coords.lng, latitudeDelta: 0.08, longitudeDelta: 0.08 },
           600,
         );
-      } catch {
+      })
+      .catch(() => {
         // Konum alınamazsa Lefkoşa merkezli kalır
-      }
-    })();
-  }, []);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [locationGranted]);
 
   const refresh = useCallback(async () => {
     try {
@@ -85,6 +92,7 @@ export default function GuestMapScreen({ navigation }: Props) {
       </MapView>
 
       <SafeAreaView style={styles.overlay} edges={['bottom']} pointerEvents="box-none">
+        {locationGranted === false && <LocationPermissionCard />}
         <Card>
           {error !== '' ? (
             <Text style={styles.errorText}>{error}</Text>

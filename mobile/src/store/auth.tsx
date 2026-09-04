@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { api, setAuthToken } from '../api/client';
+import { api, onUnauthorized, setAuthToken } from '../api/client';
 import { connectSocket, disconnectSocket } from '../api/socket';
 import type { User } from '../types';
 
@@ -22,26 +22,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
 
+  const signOut = useCallback(async () => {
+    disconnectSocket();
+    setAuthToken(null);
+    setToken(null);
+    setUser(null);
+    await AsyncStorage.removeItem(STORAGE_KEY);
+  }, []);
+
+  // Sunucu 401 dönerse (token süresi dolmuş / geçersiz) oturumu kapat -> giriş ekranı açılır
+  useEffect(
+    () =>
+      onUnauthorized(() => {
+        signOut().catch(() => {});
+      }),
+    [signOut],
+  );
+
   // Açılışta kayıtlı oturumu geri yükle
   useEffect(() => {
     (async () => {
       try {
         const raw = await AsyncStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          const saved = JSON.parse(raw) as { token: string; user: User };
-          setAuthToken(saved.token);
-          setToken(saved.token);
-          setUser(saved.user);
-          connectSocket(saved.token);
-          // Arka planda güncel profili çek (onay durumu değişmiş olabilir)
-          api
-            .get<{ user: User }>('/auth/me')
-            .then((res) => {
-              setUser(res.user);
-              AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ token: saved.token, user: res.user })).catch(() => {});
-            })
-            .catch(() => {});
+        if (!raw) return;
+        const saved = JSON.parse(raw) as { token?: unknown; user?: unknown };
+        if (typeof saved.token !== 'string' || !saved.user || typeof saved.user !== 'object') {
+          // Bozuk kayıt: temiz başla
+          await AsyncStorage.removeItem(STORAGE_KEY);
+          return;
         }
+        const savedToken = saved.token;
+        setAuthToken(savedToken);
+        setToken(savedToken);
+        setUser(saved.user as User);
+        connectSocket(savedToken);
+        // Arka planda güncel profili çek (onay durumu değişmiş olabilir; 401 ise oturum kapanır)
+        api
+          .get<{ user: User }>('/auth/me')
+          .then((res) => {
+            setUser(res.user);
+            AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ token: savedToken, user: res.user })).catch(() => {});
+          })
+          .catch(() => {});
+      } catch {
+        // Depolama okunamadı / JSON bozuk: oturumsuz devam et
+        AsyncStorage.removeItem(STORAGE_KEY).catch(() => {});
       } finally {
         setLoading(false);
       }
@@ -54,14 +79,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(newUser);
     connectSocket(newToken);
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ token: newToken, user: newUser }));
-  }, []);
-
-  const signOut = useCallback(async () => {
-    disconnectSocket();
-    setAuthToken(null);
-    setToken(null);
-    setUser(null);
-    await AsyncStorage.removeItem(STORAGE_KEY);
   }, []);
 
   const refreshUser = useCallback(async () => {

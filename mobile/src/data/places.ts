@@ -25,3 +25,21 @@ export const PLACES: Place[] = [
   { name: 'İskele Long Beach', city: 'İskele', lat: 35.2825, lng: 33.9106 },
   { name: 'Lefke Avrupa Üniversitesi', city: 'Lefke', lat: 35.1178, lng: 32.8517 },
 ];
+
+const TR_FOLD: Record<string, string> = { ç: 'c', ğ: 'g', ı: 'i', ö: 'o', ş: 's', ü: 'u' };
+
+/**
+ * Arama için Türkçe'ye duyarlı sadeleştirme: önce Türkçe kurallarıyla küçük
+ * harfe çevirir (İ→i, I→ı), sonra Türkçe harfleri ASCII karşılığına indirger
+ * ki İngilizce klavyeden yazılan "guzelyurt" da "Güzelyurt"u bulsun.
+ */
+export function normalizeForSearch(text: string): string {
+  return text.toLocaleLowerCase('tr').replace(/[çğıöşü]/g, (ch) => TR_FOLD[ch] ?? ch);
+}
+
+/** Yer adına veya şehre göre süzer; boş sorguda tüm liste döner. */
+export function filterPlaces(query: string, places: readonly Place[] = PLACES): Place[] {
+  const q = normalizeForSearch(query.trim());
+  if (!q) return [...places];
+  return places.filter((p) => normalizeForSearch(p.name).includes(q) || normalizeForSearch(p.city).includes(q));
+}
