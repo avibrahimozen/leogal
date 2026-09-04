@@ -1,4 +1,4 @@
-# 7 23 Gece Dönercisi — Web Sitesi ve QR Menü
+# 7/23 Gece Dönercisi — Web Sitesi ve QR Menü
 
 Tek bir veri dosyasından (`src/data/menu.json`) web sitesini, QR menüyü ve arama motoru dosyalarını üreten Node.js projesi. Çıktılar statik HTML'dir; GitHub Pages üzerinde **antalyagecedonercisi.com** alan adıyla yayınlanır, sunucu gerekmez.
 
@@ -122,7 +122,7 @@ Not: Depo kökündeki `docs/` klasörü de alan adı altında erişilebilir olur
 
 ## İletişim bilgileri
 
-- İşletme: 7 23 Gece Dönercisi
+- İşletme: 7/23 Gece Dönercisi
 - Alo Paket: 0552 990 07 23 (arama ve WhatsApp bağlantıları sayfalarda)
 - Adres: Arapsuyu Mah. Belediye Cad. No: 12/B, Konyaaltı / Antalya
 - Çalışma saatleri: Her gün 07:00–23:00

@@ -1,5 +1,5 @@
 // Web sitesi ana sayfası (site/index.html).
-import { esc, money, head, url, restaurantJsonLd } from '../lib/seo.js';
+import { esc, money, head, url, restaurantJsonLd, brandMark } from '../lib/seo.js';
 import { links } from '../lib/links.js';
 import * as icon from '../lib/icons.js';
 
@@ -44,7 +44,8 @@ const CSS = `
   .hero .wrap { position: relative; display: grid; gap: 28px; padding-top: 72px; padding-bottom: 64px; }
   @media (min-width: 900px) { .hero .wrap { grid-template-columns: 1.2fr 1fr; align-items: end; padding-top: 96px; padding-bottom: 88px; } }
   .hero h1 { display: grid; line-height: .88; }
-  .hero h1 .n { font-size: clamp(120px, 24vw, 260px); color: var(--koz); letter-spacing: .04em; }
+  .hero h1 .n { font-size: clamp(120px, 24vw, 260px); color: var(--pide); letter-spacing: .02em; }
+  .hero h1 .n em { font-style: normal; color: var(--koz); }
   .hero h1 .t { font-size: clamp(34px, 6.4vw, 66px); letter-spacing: .14em; }
   .hero .lede { display: grid; gap: 18px; }
   .hero .slogan { font-size: clamp(22px, 3vw, 30px); font-style: italic; color: var(--kul); }
@@ -211,7 +212,7 @@ ${head({ title, description, canonical, site: s, business: b, jsonLd: [restauran
   <canvas id="koz" aria-hidden="true"></canvas>
   <div class="wrap">
     <h1 id="baslik">
-      <span class="n">${esc(b.shortName)}</span>
+      <span class="n">${brandMark(b.shortName)}</span>
       <span class="t">${esc(b.tagline)}</span>
     </h1>
     <div class="lede">

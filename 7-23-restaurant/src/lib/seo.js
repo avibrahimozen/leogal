@@ -8,6 +8,11 @@ export function esc(s) {
     .replace(/"/g, '&quot;');
 }
 
+/** Marka işareti: rakamlar vurgulu, eğik çizgi düz. "7/23" -> <em>7</em>/<em>23</em> */
+export function brandMark(shortName) {
+  return String(shortName).split('/').map((part) => `<em>${esc(part)}</em>`).join('/');
+}
+
 export function money(n) {
   return `${n} ₺`;
 }

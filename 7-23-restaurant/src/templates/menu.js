@@ -1,5 +1,5 @@
 // QR menü sayfası (index.html). Tek dosya, satır içi CSS, kütüphane yok.
-import { esc, money, head, url, restaurantJsonLd } from '../lib/seo.js';
+import { esc, money, head, url, restaurantJsonLd, brandMark } from '../lib/seo.js';
 import { links } from '../lib/links.js';
 import * as icon from '../lib/icons.js';
 
@@ -41,7 +41,8 @@ const CSS = `
   .brand { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: center; }
   .brand svg { width: 56px; height: 56px; display: block; }
   .brand-name { font-family: var(--display); line-height: .9; letter-spacing: .01em; margin: 0; font-weight: 400; }
-  .brand-name .l1 { display: block; font-size: 52px; color: var(--koz); letter-spacing: .06em; }
+  .brand-name .l1 { display: block; font-size: 52px; color: var(--pide); letter-spacing: .04em; }
+  .brand-name .l1 em { font-style: normal; color: var(--koz); }
   .brand-name .l2 { display: block; font-size: 26px; color: var(--pide); letter-spacing: .12em; }
   .slogan { margin: 0; font-size: 17px; color: var(--kul); font-style: italic; }
   .slogan b { color: var(--pide); font-style: normal; font-weight: 600; }
@@ -204,7 +205,7 @@ ${head({ title, description, canonical, site: s, business: b, jsonLd: [restauran
     <div class="brand">
       ${icon.logo(56)}
       <h1 class="brand-name">
-        <span class="l1">${esc(b.shortName)}</span>
+        <span class="l1">${brandMark(b.shortName)}</span>
         <span class="l2">${esc(b.tagline)}</span>
       </h1>
     </div>

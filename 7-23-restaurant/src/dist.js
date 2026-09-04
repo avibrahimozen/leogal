@@ -7,7 +7,7 @@ import { loadData, render, ROOT } from './build.js';
 
 const DIST = join(ROOT, 'dist');
 
-const HTACCESS = `# 7 23 Gece Dönercisi — Apache ayarları
+const HTACCESS = `# 7/23 Gece Dönercisi — Apache ayarları
 ErrorDocument 404 /404.html
 AddDefaultCharset utf-8
 
