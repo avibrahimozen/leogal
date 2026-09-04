@@ -3,9 +3,9 @@ import { z } from 'zod';
 import { config } from '../config.js';
 import { getSetting, nowIso, type Db } from '../db.js';
 import { requireAuth } from '../lib/auth.js';
-import { commissionOf, estimateFare } from '../lib/geo.js';
+import { commissionOf, estimateRouteFare } from '../lib/geo.js';
 import { regionForPoint, type CountryCode } from '../lib/regions.js';
-import { getRide, rideToJson, type RideRow } from '../lib/rides.js';
+import { MAX_STOPS, getRide, parseStops, rideToJson, routePoints, type RideRow } from '../lib/rides.js';
 import type { Matcher } from '../matching.js';
 import type { Hub } from '../realtime.js';
 
@@ -18,10 +18,22 @@ const pointSchema = z.object({
   address: z.string().min(1).max(200),
 });
 
+const stopsSchema = z.array(pointSchema).max(MAX_STOPS, `En fazla ${MAX_STOPS} durak eklenebilir`);
+
 const requestSchema = z.object({
   pickup: pointSchema,
   drop: pointSchema,
+  /** Ara duraklar (isteğe bağlı, en fazla MAX_STOPS) */
+  stops: stopsSchema.optional(),
 });
+
+const stopsUpdateSchema = z.object({ stops: stopsSchema });
+
+/** Durak sınırı gibi anlaşılır Türkçe mesajları ilet; diğer doğrulama hataları için genel mesaj. */
+function requestErrorMessage(error: z.ZodError): string {
+  const stopsIssue = error.issues.find((i) => i.path[0] === 'stops' && i.code === 'too_big');
+  return stopsIssue?.message ?? 'Geçersiz konum bilgisi';
+}
 
 const rateSchema = z.object({
   rating: z.number().int().min(1).max(5),
@@ -70,21 +82,22 @@ export function rideRoutes(db: Db, hub: Hub, matcher: Matcher): Router {
   router.post('/estimate', (req, res) => {
     const parsed = requestSchema.safeParse(req.body);
     if (!parsed.success) {
-      res.status(400).json({ error: 'Geçersiz konum bilgisi' });
+      res.status(400).json({ error: requestErrorMessage(parsed.error) });
       return;
     }
     const { pickup, drop } = parsed.data;
-    // Tarife, alış noktasının ülkesine göre belirlenir
+    const stops = parsed.data.stops ?? [];
+    // Tarife, alış noktasının ülkesine göre belirlenir; mesafe tüm rota (alış → duraklar → varış)
     const country = regionForPoint(pickup.lat, pickup.lng);
-    const est = estimateFare(pickup.lat, pickup.lng, drop.lat, drop.lng, fareParams(db, country));
-    res.json({ distanceKm: est.distanceKm, fare: est.fare, currency: 'TL', country });
+    const est = estimateRouteFare([pickup, ...stops, drop], fareParams(db, country));
+    res.json({ distanceKm: est.distanceKm, fare: est.fare, currency: 'TL', country, stopCount: stops.length });
   });
 
   /** Yolcu yeni çağrı oluşturur; uygun sürücülere teklif yayınlanır. */
   router.post('/', requireAuth('passenger'), (req, res) => {
     const parsed = requestSchema.safeParse(req.body);
     if (!parsed.success) {
-      res.status(400).json({ error: 'Geçersiz konum bilgisi' });
+      res.status(400).json({ error: requestErrorMessage(parsed.error) });
       return;
     }
     const passengerId = req.user!.id;
@@ -98,12 +111,13 @@ export function rideRoutes(db: Db, hub: Hub, matcher: Matcher): Router {
       return;
     }
     const { pickup, drop } = parsed.data;
+    const stops = parsed.data.stops ?? [];
     const country = regionForPoint(pickup.lat, pickup.lng);
-    const est = estimateFare(pickup.lat, pickup.lng, drop.lat, drop.lng, fareParams(db, country));
+    const est = estimateRouteFare([pickup, ...stops, drop], fareParams(db, country));
     const result = db
       .prepare(
-        `INSERT INTO rides (passenger_id, pickup_lat, pickup_lng, pickup_address, drop_lat, drop_lng, drop_address, est_distance_km, est_fare, country)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO rides (passenger_id, pickup_lat, pickup_lng, pickup_address, drop_lat, drop_lng, drop_address, est_distance_km, est_fare, country, stops)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         passengerId,
@@ -116,6 +130,7 @@ export function rideRoutes(db: Db, hub: Hub, matcher: Matcher): Router {
         est.distanceKm,
         est.fare,
         country,
+        stops.length > 0 ? JSON.stringify(stops) : null,
       );
     const ride = getRide(db, Number(result.lastInsertRowid))!;
     const hasCandidates = matcher.broadcast(ride);
@@ -162,6 +177,52 @@ export function rideRoutes(db: Db, hub: Hub, matcher: Matcher): Router {
     const last = rides[rides.length - 1];
     const nextBefore = rides.length === limit && last ? last.id : null;
     res.json({ rides: rides.map((r) => rideToJson(db, r)), nextBefore });
+  });
+
+  /**
+   * Yolcu ara durakları günceller (ekle/çıkar/sırala; en fazla MAX_STOPS).
+   * Çağrı beklerken ya da yolculuk sürerken yapılabilir; ücret tüm rota üzerinden
+   * yeniden hesaplanır ve sürücüye anında bildirilir.
+   */
+  router.put('/:id/stops', requireAuth('passenger'), (req, res) => {
+    const rideId = parseRideId(req.params.id);
+    if (rideId === null) {
+      notFound(res);
+      return;
+    }
+    const parsed = stopsUpdateSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.issues[0]?.message ?? 'Geçersiz durak listesi' });
+      return;
+    }
+    const ride = getRide(db, rideId);
+    if (!ride) {
+      notFound(res);
+      return;
+    }
+    if (ride.passenger_id !== req.user!.id) {
+      res.status(403).json({ error: 'Bu çağrı size ait değil' });
+      return;
+    }
+    if (!['requested', 'accepted', 'arrived', 'in_progress'].includes(ride.status)) {
+      res.status(409).json({ error: 'Tamamlanan veya iptal edilen çağrıya durak eklenemez' });
+      return;
+    }
+    const stops = parsed.data.stops;
+    const country = ride.country ?? regionForPoint(ride.pickup_lat, ride.pickup_lng);
+    const est = estimateRouteFare(
+      [{ lat: ride.pickup_lat, lng: ride.pickup_lng }, ...stops, { lat: ride.drop_lat, lng: ride.drop_lng }],
+      fareParams(db, country),
+    );
+    db.prepare('UPDATE rides SET stops = ?, est_distance_km = ?, est_fare = ? WHERE id = ?').run(
+      stops.length > 0 ? JSON.stringify(stops) : null,
+      est.distanceKm,
+      est.fare,
+      rideId,
+    );
+    const updated = getRide(db, rideId)!;
+    notifyRide(updated, { stopsChanged: true });
+    res.json({ ride: rideToJson(db, updated) });
   });
 
   /** Sürücü teklifi kabul eder — ilk kabul eden kazanır. */

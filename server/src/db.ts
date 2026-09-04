@@ -63,6 +63,7 @@ CREATE TABLE IF NOT EXISTS rides (
   country TEXT,
   final_fare REAL,
   commission REAL,
+  stops TEXT,
   cancel_reason TEXT,
   passenger_rating INTEGER,
   driver_rating INTEGER,
@@ -125,6 +126,7 @@ function migrate(db: Db): void {
   addColumnIfMissing(db, 'drivers', 'country', "TEXT NOT NULL DEFAULT 'KKTC'");
   addColumnIfMissing(db, 'rides', 'country', 'TEXT');
   addColumnIfMissing(db, 'drivers', 'cancellations', 'INTEGER NOT NULL DEFAULT 0');
+  addColumnIfMissing(db, 'rides', 'stops', 'TEXT');
 }
 
 function addColumnIfMissing(db: Db, table: string, column: string, definition: string): void {

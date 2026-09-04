@@ -28,6 +28,8 @@ export interface RideRow {
   cancelled_at: string | null;
   /** Alış noktasının ülkesi; ülke sütunu eklenmeden önceki kayıtlarda NULL. */
   country: CountryCode | null;
+  /** Ara duraklar: JSON dizisi [{lat,lng,address}] veya NULL */
+  stops: string | null;
 }
 
 export function getRide(db: Db, id: number): RideRow | undefined {
@@ -73,6 +75,7 @@ export function rideToJson(db: Db, ride: RideRow) {
     status: ride.status,
     pickup: { lat: ride.pickup_lat, lng: ride.pickup_lng, address: ride.pickup_address },
     drop: { lat: ride.drop_lat, lng: ride.drop_lng, address: ride.drop_address },
+    stops: parseStops(ride.stops),
     estDistanceKm: ride.est_distance_km,
     estFare: ride.est_fare,
     country: ride.country ?? null,
@@ -92,3 +95,38 @@ export function rideToJson(db: Db, ride: RideRow) {
 }
 
 export type RideJson = ReturnType<typeof rideToJson>;
+
+/** Bir çağrıda en fazla bu kadar ara durak olabilir. */
+export const MAX_STOPS = 5;
+
+export interface RoutePoint {
+  lat: number;
+  lng: number;
+  address: string;
+}
+
+/** rides.stops JSON sütununu güvenle çözer (NULL/bozuk → boş liste). */
+export function parseStops(raw: string | null | undefined): RoutePoint[] {
+  if (!raw) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter(
+        (p): p is RoutePoint =>
+          typeof p === 'object' && p !== null && typeof (p as RoutePoint).lat === 'number' && typeof (p as RoutePoint).lng === 'number',
+      )
+      .map((p) => ({ lat: p.lat, lng: p.lng, address: typeof p.address === 'string' ? p.address : '' }));
+  } catch {
+    return [];
+  }
+}
+
+/** Alış → duraklar → varış sırasıyla rota noktaları. */
+export function routePoints(ride: RideRow): RoutePoint[] {
+  return [
+    { lat: ride.pickup_lat, lng: ride.pickup_lng, address: ride.pickup_address },
+    ...parseStops(ride.stops),
+    { lat: ride.drop_lat, lng: ride.drop_lng, address: ride.drop_address },
+  ];
+}

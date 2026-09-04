@@ -36,7 +36,29 @@ export function estimateFare(
   dropLng: number,
   params: FareParams,
 ): FareEstimate {
-  const straightKm = haversineKm(pickupLat, pickupLng, dropLat, dropLng);
+  return estimateRouteFare(
+    [
+      { lat: pickupLat, lng: pickupLng },
+      { lat: dropLat, lng: dropLng },
+    ],
+    params,
+  );
+}
+
+/**
+ * Çok duraklı rota ücreti: alış → duraklar → varış bacaklarının kuş uçuşu
+ * toplamı yol çarpanıyla düzeltilir; açılış + km ücreti, asgari ücretin altına inmez.
+ */
+export function estimateRouteFare(
+  points: ReadonlyArray<{ lat: number; lng: number }>,
+  params: FareParams,
+): FareEstimate {
+  let straightKm = 0;
+  for (let i = 1; i < points.length; i++) {
+    const a = points[i - 1]!;
+    const b = points[i]!;
+    straightKm += haversineKm(a.lat, a.lng, b.lat, b.lng);
+  }
   const distanceKm = round2(straightKm * params.roadFactor);
   const raw = params.baseFare + params.perKm * distanceKm;
   const fare = Math.max(params.minFare, roundFare(raw));

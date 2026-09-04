@@ -2,7 +2,7 @@ import { config } from './config.js';
 import type { Db } from './db.js';
 import { nowIso } from './db.js';
 import { haversineKm } from './lib/geo.js';
-import { getRide, rideToJson, type RideRow } from './lib/rides.js';
+import { getRide, parseStops, rideToJson, type RideRow } from './lib/rides.js';
 import type { Hub } from './realtime.js';
 
 // Geriye dönük uyumluluk: RideRow artık lib/rides.ts içinde tanımlı
@@ -82,6 +82,7 @@ export class Matcher {
         rideId: ride.id,
         pickup: { lat: ride.pickup_lat, lng: ride.pickup_lng, address: ride.pickup_address },
         drop: { lat: ride.drop_lat, lng: ride.drop_lng, address: ride.drop_address },
+        stops: parseStops(ride.stops),
         estDistanceKm: ride.est_distance_km,
         estFare: ride.est_fare,
         pickupDistanceKm: Math.round(c.distanceKm * 10) / 10,
