@@ -8,6 +8,7 @@ import { renderMenu } from './templates/menu.js';
 import { renderSite } from './templates/site.js';
 import { renderNotFound } from './templates/notfound.js';
 import { sitemapXml, robotsTxt } from './lib/seo.js';
+import { STATIC_ASSETS, ASSETS_DIR } from './lib/assets.js';
 
 export const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 /** Yayın kökü: depo kökü. GitHub Pages ve özel alan adı buradan servis edilir. */
@@ -35,6 +36,7 @@ export async function render(data = null) {
   // lastmod veri dosyasındaki "updated" alanından gelir; fiyat değiştirince o tarihi güncelleyin.
   out.set('sitemap.xml', sitemapXml(data, data.updated));
   out.set('robots.txt', robotsTxt(data));
+  for (const name of STATIC_ASSETS) out.set(join('assets', name), await readFile(join(ASSETS_DIR, name)));
   if (s.domainActive) out.set('CNAME', s.domain + '\n');
   return out;
 }
@@ -51,14 +53,16 @@ export async function build({ check = false } = {}) {
   }
   for (const [rel, content] of files) {
     const abs = join(OUT, rel);
+    const binary = Buffer.isBuffer(content);
     if (check) {
-      const current = await readFile(abs, 'utf8').catch(() => null);
-      if (current !== content) stale.push(rel);
+      const current = await readFile(abs, binary ? undefined : 'utf8').catch(() => null);
+      const same = binary ? current !== null && Buffer.compare(current, content) === 0 : current === content;
+      if (!same) stale.push(rel);
       continue;
     }
     await mkdir(dirname(abs), { recursive: true });
-    await writeFile(abs, content, 'utf8');
-    console.log(`yazıldı  ${rel}  (${content.length.toLocaleString('tr-TR')} karakter)`);
+    await writeFile(abs, content);
+    console.log(`yazıldı  ${rel}  (${content.length.toLocaleString('tr-TR')} ${binary ? 'bayt' : 'karakter'})`);
   }
   if (check) {
     if (stale.length) {

@@ -4,7 +4,7 @@
     "shortName": "7/23",
     "tagline": "Gece Dönercisi",
     "slogan": "Geceyi değil, açlığı bitir.",
-    "description": "Konyaaltı Antalya'da her gün 11:00'den gece 03:00'e açık et dönercisi. Dürüm, pilav üstü, İskender, çorba ve tatlı. Alo Paket 0552 990 07 23.",
+    "description": "Konyaaltı Antalya'da odun ateşinde pişen et döner. Her gün 11:00'den gece 03:00'e açık. Dürüm, pilav üstü, İskender, çorba ve tatlı. Alo Paket 0552 990 07 23.",
     "phoneDisplay": "0552 990 07 23",
     "phoneE164": "+905529900723",
     "whatsappText": "Merhaba, sipariş vermek istiyorum.",
@@ -22,10 +22,52 @@
     "cuisine": "Döner, Türk mutfağı",
     "priceRange": "₺₺",
     "perks": [
+      "Odun ateşinde pişer",
       "Gece gündüz hizmetinizdeyiz",
       "Taze malzeme, lezzetin sırrı",
       "Alo paket, hızlı teslimat",
       "Temizlik önceliğimiz"
+    ],
+    "wood": {
+      "eyebrow": "Odun ateşi",
+      "title": "Gazla değil, odun ateşiyle",
+      "lead": "Dönerimiz odun ateşinin karşısında, acele etmeden pişer. Dışı közlenir, içi sulu kalır; kokusu sokaktan belli olur.",
+      "points": [
+        {
+          "title": "Odun közü",
+          "text": "Döner odun ateşinin közünde döner. Isı kademeli verilir, et dıştan içe eşit pişer."
+        },
+        {
+          "title": "Sıcak kesim",
+          "text": "Döner siparişle kesilir. Kestiğimiz her dilim közden yeni inmiştir."
+        },
+        {
+          "title": "Taze malzeme",
+          "text": "Ekmek, lavaş ve yeşillik günlük alınır; pilav tereyağıyla her gün yeniden yapılır."
+        }
+      ]
+    },
+    "faq": [
+      {
+        "q": "Kaça kadar açıksınız?",
+        "a": "Her gün 11:00'de açılır, gece 03:00'e kadar hizmet veririz. Gece geç saatte de sıcak döner bulursunuz."
+      },
+      {
+        "q": "Paket servis var mı?",
+        "a": "Evet. Konyaaltı içine paket servis yapıyoruz. 0552 990 07 23 numarasını arayın ya da WhatsApp'tan yazın."
+      },
+      {
+        "q": "Döner nasıl pişiyor?",
+        "a": "Odun ateşinde. Gaz ya da elektrik kullanmıyoruz; döner közün karşısında yavaş yavaş pişer."
+      },
+      {
+        "q": "Neredesiniz?",
+        "a": "Arapsuyu Mahallesi, Belediye Caddesi No: 12/B, Konyaaltı / Antalya. Haritada aç bağlantısıyla yol tarifi alabilirsiniz."
+      },
+      {
+        "q": "Fiyatlar nasıl belirleniyor?",
+        "a": "Döner fiyatları 100, 150 ve 200 gram et için ayrı ayrı yazılır. Güncel fiyatlar QR menüde."
+      }
     ]
   },
   "site": {
@@ -42,6 +84,7 @@
     "keywords": [
       "döner",
       "et döner",
+      "odun ateşinde döner",
       "dönerci",
       "Konyaaltı",
       "Antalya",
@@ -49,7 +92,7 @@
       "alo paket",
       "iskender",
       "dürüm",
-      "gece açık restoran"
+      "gece açık dönerci"
     ]
   },
   "updated": "2026-09-04",
@@ -304,11 +347,11 @@
   "featured": [
     {
       "id": "et-doner-durum",
-      "blurb": "Lavaşta, közlenmiş domates ve biberle. En çok giden."
+      "blurb": "Lavaşta, domates ve yeşillikle. En çok giden."
     },
     {
       "id": "pilav-ustu-et-doner",
-      "blurb": "Tereyağlı pirinç pilavının üzerinde, yanında közlenmiş biber."
+      "blurb": "Tereyağlı pirinç pilavının üzerinde, bol döner."
     },
     {
       "id": "iskender",

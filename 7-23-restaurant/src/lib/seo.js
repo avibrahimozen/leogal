@@ -23,6 +23,7 @@ export function url(site, path = '') {
 
 /** Bir sayfanın <head> içeriği: başlık, açıklama, canonical, Open Graph, Twitter, yazı tipleri. */
 export function head({ title, description, canonical, site, business, jsonLd = [], extra = '' }) {
+  const image = url(site, 'assets/og.png');
   const ld = jsonLd
     .map((o) => `<script type="application/ld+json">\n${JSON.stringify(o, null, 2)}\n</script>`)
     .join('\n');
@@ -40,9 +41,16 @@ export function head({ title, description, canonical, site, business, jsonLd = [
 <meta property="og:description" content="${esc(description)}">
 <meta property="og:url" content="${esc(canonical)}">
 <meta property="og:locale" content="${esc(site.locale)}">
-<meta name="twitter:card" content="summary">
+<meta property="og:image" content="${esc(image)}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="${esc(business.name)} logosu ve iletişim bilgileri">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${esc(title)}">
 <meta name="twitter:description" content="${esc(description)}">
+<meta name="twitter:image" content="${esc(image)}">
+<meta name="format-detection" content="telephone=yes">
+<link rel="icon" href="${esc(url(site, 'assets/logo-light.svg'))}" type="image/svg+xml">
 <meta name="geo.region" content="TR-07">
 <meta name="geo.placename" content="${esc(`${business.address.district}, ${business.address.city}`)}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -65,6 +73,12 @@ export function restaurantJsonLd(data, { embedMenu = false } = {}) {
     name: b.name,
     url: url(s, s.sitePath),
     telephone: b.phoneE164,
+    image: url(s, 'assets/og.png'),
+    logo: url(s, 'assets/logo-light.svg'),
+    description: b.description,
+    slogan: b.slogan,
+    hasMap: `https://maps.google.com/?q=${encodeURIComponent(b.mapQuery)}`,
+    areaServed: { '@type': 'City', name: `${b.address.district}, ${b.address.city}` },
     servesCuisine: b.cuisine,
     priceRange: b.priceRange,
     currenciesAccepted: data.currency,
@@ -124,6 +138,32 @@ export function menuJsonLd(data) {
       }
       return { '@type': 'MenuSection', name: sec.title, hasMenuItem: items };
     }),
+  };
+}
+
+/** schema.org FAQPage: sitedeki sık sorulan sorular. */
+export function faqJsonLd(data) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: data.business.faq.map((f) => ({
+      '@type': 'Question',
+      name: f.q,
+      acceptedAnswer: { '@type': 'Answer', text: f.a },
+    })),
+  };
+}
+
+/** schema.org BreadcrumbList: Ana sayfa > Menü. */
+export function breadcrumbJsonLd(data) {
+  const s = data.site;
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Ana sayfa', item: url(s, s.sitePath) },
+      { '@type': 'ListItem', position: 2, name: 'Menü', item: url(s, s.menuPath) },
+    ],
   };
 }
 

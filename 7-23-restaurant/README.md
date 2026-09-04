@@ -95,7 +95,8 @@ Web sitesindeki "öne çıkanlar" kartları `featured` listesinden gelir; ürün
 | --- | --- |
 | `src/data/menu.json` | İşletme bilgileri, alan adı, menü, fiyatlar, öne çıkanlar. Tek doğruluk kaynağı. |
 | `src/templates/site.js`, `menu.js`, `notfound.js` | Web sitesi, QR menü ve 404 şablonları. |
-| `src/lib/seo.js` | `<head>` etiketleri, schema.org Restaurant ve Menu nesneleri, sitemap, robots. |
+| `src/lib/seo.js` | `<head>` etiketleri, schema.org Restaurant, Menu, FAQPage ve BreadcrumbList nesneleri, sitemap, robots. |
+| `src/assets/` | Logo (açık ve koyu zemin sürümleri, SVG) ve sosyal paylaşım görseli `og.png`. Üretimde `assets/` altına kopyalanır. |
 | `src/build.js`, `src/dev.js`, `src/check.js` | Üretim, geliştirme sunucusu, kontrol. |
 | Depo kökünde `index.html`, `menu/`, `7-23-restaurant/index.html`, `404.html`, `sitemap.xml`, `robots.txt`, `CNAME` | **Üretilen** dosyalar; elle düzenlemeyin, `npm run build` ile yenileyin. |
 | `masa-karti.html` | Hazır QR gömülü, A6 basılabilir masa kartı. Yazı tipleri gömülüdür. |
@@ -108,7 +109,9 @@ Web sitesindeki "öne çıkanlar" kartları `featured` listesinden gelir; ürün
 Sayfalarda hazır olanlar:
 
 - Her sayfada ayrı başlık, açıklama ve canonical adres; Open Graph ve Twitter etiketleri. Eski QR adresi canonical olarak `/menu/` adresini gösterir, arama motorunda tek sayfa sayılır.
-- schema.org **Restaurant** (adres, telefon, çalışma saatleri, sipariş eylemi) ve menü sayfasında gramaja göre fiyat teklifleriyle tam **Menu** yapısı.
+- schema.org **Restaurant** (adres, telefon, çalışma saatleri, logo, harita, sipariş eylemi), menü sayfasında gramaja göre fiyat teklifleriyle tam **Menu**, ana sayfada **FAQPage**, menüde **BreadcrumbList**.
+- Paylaşım görseli (`assets/og.png`, 1200×630): WhatsApp, Instagram ve Google'da bağlantı önizlemesinde çıkar.
+- Ana sayfada odun ateşi ve sık sorulanlar bölümleri: arama motorlarının anlayacağı gerçek metin içerik.
 - Alan adı kökünde `sitemap.xml` ve `robots.txt`; `lang="tr"`, tek `h1`, anlamlı başlık hiyerarşisi.
 - Tek dosya, satır içi CSS, harici kütüphane yok: hızlı açılır.
 

@@ -1,15 +1,17 @@
 // QR menü sayfası (index.html). Tek dosya, satır içi CSS, kütüphane yok.
-import { esc, money, head, url, restaurantJsonLd, brandMark } from '../lib/seo.js';
+import { esc, money, head, url, restaurantJsonLd, breadcrumbJsonLd } from '../lib/seo.js';
 import { links } from '../lib/links.js';
 import * as icon from '../lib/icons.js';
+import { logo } from '../lib/assets.js';
 
 const CSS = `
   :root {
     --komur: #141210;      /* zemin */
     --is: #1f1b17;         /* yüzey */
     --is-2: #2a241e;       /* kenar / ayraç */
-    --koz: #e8871e;        /* vurgu turuncu */
-    --koz-koyu: #b8630f;
+    --koz: #ffcc00;        /* vurgu: logo sarısı */
+    --koz-koyu: #c79a00;
+    --ates: #e8871e;       /* odun ateşi turuncusu */
     --kor: #b3261e;        /* bölüm etiketi kırmızı */
     --pide: #f3ead9;       /* ana metin */
     --kul: #a89f94;        /* ikincil metin */
@@ -38,8 +40,9 @@ const CSS = `
     border-bottom: 1px solid var(--is-2);
   }
   .hero .wrap { display: grid; gap: 14px; }
-  .brand { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: center; }
-  .brand svg { width: 56px; height: 56px; display: block; }
+  .brand { display: grid; justify-items: center; }
+  .brand .logo { width: min(260px, 72%); height: auto; display: block; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .brand-name { font-family: var(--display); line-height: .9; letter-spacing: .01em; margin: 0; font-weight: 400; }
   .brand-name .l1 { display: block; font-size: 52px; color: var(--pide); letter-spacing: .04em; }
   .brand-name .l1 em { font-style: normal; color: var(--koz); }
@@ -190,12 +193,12 @@ export function renderMenu(data, { path = data.site.menuPath } = {}) {
   const canonical = url(s, s.menuPath);
   const siteHref = up(path) + s.sitePath || './';
   const title = `${b.name} · Menü ve Fiyatlar`;
-  const description = `${b.name} güncel menü: döner çeşitleri (100/150/200 gr), çorbalar, tatlılar, içecekler. ${b.address.district} / ${b.address.city}. Alo Paket ${b.phoneDisplay}.`;
+  const description = `${b.name} menü ve fiyatlar: odun ateşinde et döner (100/150/200 gr), çorbalar, tatlılar, içecekler. ${b.address.district} / ${b.address.city}. Alo Paket ${b.phoneDisplay}.`;
 
   return `<!DOCTYPE html>
 <html lang="tr">
 <head>
-${head({ title, description, canonical, site: s, business: b, jsonLd: [restaurantJsonLd(data, { embedMenu: true })] })}
+${head({ title, description, canonical, site: s, business: b, jsonLd: [restaurantJsonLd(data, { embedMenu: true }), breadcrumbJsonLd(data)] })}
 <style>${CSS}</style>
 </head>
 <body>
@@ -203,15 +206,12 @@ ${head({ title, description, canonical, site: s, business: b, jsonLd: [restauran
 <header class="hero">
   <div class="wrap">
     <div class="brand">
-      ${icon.logo(56)}
-      <h1 class="brand-name">
-        <span class="l1">${brandMark(b.shortName)}</span>
-        <span class="l2">${esc(b.tagline)}</span>
-      </h1>
+      ${logo('dark')}
+      <h1 class="sr-only">${esc(b.name)} · Menü ve Fiyatlar</h1>
     </div>
     <p class="slogan">${esc(b.slogan.split(',')[0])}, <b>${esc(b.slogan.split(',').slice(1).join(',').trim())}</b></p>
     <ul class="hours" aria-label="Çalışma bilgileri">
-      <li><span class="k">Açık</span><span class="v">${esc(b.hours.opens)} – ${esc(b.hours.closes)}</span></li>
+      <li><span class="k">Her gün açık</span><span class="v">${esc(b.hours.opens)} – ${esc(b.hours.closes)}</span></li>
       <li><span class="k">Alo Paket</span><span class="v">Hızlı Teslimat</span></li>
       <li><span class="k">Konum</span><span class="v">${esc(b.address.district)}</span></li>
     </ul>

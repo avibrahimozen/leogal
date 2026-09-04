@@ -1,11 +1,12 @@
 // Web sitesi ana sayfası (site/index.html).
-import { esc, money, head, url, restaurantJsonLd, brandMark } from '../lib/seo.js';
+import { esc, money, head, url, restaurantJsonLd, faqJsonLd } from '../lib/seo.js';
+import { logo } from '../lib/assets.js';
 import { links } from '../lib/links.js';
 import * as icon from '../lib/icons.js';
 
 const CSS = `
   :root {
-    --komur: #141210; --is: #1f1b17; --is-2: #2a241e; --koz: #e8871e; --koz-koyu: #b8630f; --kor: #b3261e;
+    --komur: #141210; --is: #1f1b17; --is-2: #2a241e; --koz: #ffcc00; --koz-koyu: #c79a00; --ates: #e8871e; --kor: #b3261e;
     --pide: #f3ead9; --kul: #a89f94; --kul-koyu: #6f675f;
     --display: "Bebas Neue", "Oswald", "Arial Narrow", Impact, sans-serif;
     --body: "Source Sans 3", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -28,9 +29,11 @@ const CSS = `
   /* ---------- Üst çubuk ---------- */
   .top { position: sticky; top: 0; z-index: 10; background: rgba(20,18,16,.9); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid var(--is-2); }
   .top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 64px; }
-  .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--pide); font-family: var(--display); font-size: 24px; letter-spacing: .06em; line-height: 1; }
-  .logo b { color: var(--koz); font-weight: 400; }
-  .logo svg { width: 30px; height: 30px; }
+  .brandlink { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--pide); font-family: var(--display); font-size: 24px; letter-spacing: .06em; line-height: 1; }
+  .brandlink b { color: var(--koz); font-weight: 400; }
+  .brandlink span { white-space: nowrap; }
+  .brandlink .logo-mark { width: 54px; height: 29px; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .top nav { display: flex; gap: 22px; }
   .top nav a { text-decoration: none; color: var(--kul); font-weight: 600; font-size: 16px; }
   .top nav a:hover { color: var(--pide); }
@@ -42,11 +45,9 @@ const CSS = `
   .hero { position: relative; overflow: hidden; border-bottom: 1px solid var(--is-2); }
   .hero canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
   .hero .wrap { position: relative; display: grid; gap: 28px; padding-top: 72px; padding-bottom: 64px; }
-  @media (min-width: 900px) { .hero .wrap { grid-template-columns: 1.2fr 1fr; align-items: end; padding-top: 96px; padding-bottom: 88px; } }
-  .hero h1 { display: grid; line-height: .88; }
-  .hero h1 .n { font-size: clamp(120px, 24vw, 260px); color: var(--pide); letter-spacing: .02em; }
-  .hero h1 .n em { font-style: normal; color: var(--koz); }
-  .hero h1 .t { font-size: clamp(34px, 6.4vw, 66px); letter-spacing: .14em; }
+  @media (min-width: 900px) { .hero .wrap { grid-template-columns: 1fr 1fr; align-items: center; padding-top: 80px; padding-bottom: 80px; } }
+  .hero .mark { display: grid; justify-items: start; }
+  .hero .mark .logo { width: min(440px, 100%); height: auto; filter: drop-shadow(0 12px 40px rgba(0,0,0,.5)); }
   .hero .lede { display: grid; gap: 18px; }
   .hero .slogan { font-size: clamp(22px, 3vw, 30px); font-style: italic; color: var(--kul); }
   .hero .slogan b { color: var(--pide); font-style: normal; font-weight: 600; }
@@ -68,6 +69,23 @@ const CSS = `
   .head { display: grid; gap: 10px; margin-bottom: 34px; max-width: 640px; }
   .head p { color: var(--kul); font-size: 19px; }
 
+  /* Odun ateşi */
+  .fire { background: radial-gradient(90% 70% at 50% 110%, rgba(232,135,30,.22) 0%, rgba(232,135,30,0) 60%), var(--komur); }
+  .fire .eyebrow { color: var(--ates); }
+  .points { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+  .point { border-left: 3px solid var(--ates); padding: 6px 0 6px 18px; display: grid; gap: 8px; align-content: start; }
+  .point h3 { font-size: 28px; }
+  .point p { color: var(--kul); font-size: 17px; }
+
+  /* SSS */
+  .faq { display: grid; gap: 6px; max-width: 760px; }
+  .faq details { border: 1px solid var(--is-2); border-radius: 8px; background: var(--is); }
+  .faq summary { cursor: pointer; padding: 14px 18px; font-weight: 600; list-style: none; display: flex; justify-content: space-between; gap: 12px; }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary::after { content: "+"; font-family: var(--display); font-size: 24px; line-height: 1; color: var(--koz); }
+  .faq details[open] summary::after { content: "–"; }
+  .faq details p { margin: 0; padding: 0 18px 16px; color: var(--kul); }
+
   /* Öne çıkanlar */
   .dishes { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
   .dish { background: var(--is); border: 1px solid var(--is-2); border-radius: 8px; padding: 20px; display: grid; grid-template-rows: auto 1fr auto; gap: 10px; }
@@ -85,7 +103,7 @@ const CSS = `
   .card { background: var(--is); border: 1px solid var(--is-2); border-radius: 8px; padding: 22px; display: grid; gap: 12px; align-content: start; }
   .card h3 { font-size: 30px; }
   .card p { color: var(--kul); }
-  .card .big { font-family: var(--display); font-size: clamp(30px, 4.5vw, 46px); letter-spacing: .04em; line-height: 1; color: var(--pide); text-decoration: none; white-space: nowrap; }
+  .card .big { font-family: var(--display); font-size: clamp(28px, 3.2vw, 40px); letter-spacing: .04em; line-height: 1; color: var(--pide); text-decoration: none; white-space: nowrap; }
   .card ol { margin: 0; padding-left: 20px; color: var(--kul); display: grid; gap: 4px; }
 
   /* Konum */
@@ -181,25 +199,26 @@ export function renderSite(data) {
   const l = links(b);
   const canonical = url(s, s.sitePath);
   const menuHref = s.menuPath;
-  const title = `${b.name} · ${b.address.district}, ${b.address.city}`;
+  const title = `${b.name} · Odun Ateşinde Et Döner, ${b.address.district} ${b.address.city}`;
   const description = b.description;
   const [open, close] = [b.hours.opens, b.hours.closes];
 
   return `<!DOCTYPE html>
 <html lang="tr">
 <head>
-${head({ title, description, canonical, site: s, business: b, jsonLd: [restaurantJsonLd(data)] })}
+${head({ title, description, canonical, site: s, business: b, jsonLd: [restaurantJsonLd(data), faqJsonLd(data)] })}
 <style>${CSS}</style>
 </head>
 <body>
 
 <header class="top">
   <div class="wrap">
-    <a class="logo" href="#" aria-label="${esc(b.name)}, başa dön">
-      ${icon.logo(30)}
+    <a class="brandlink" href="#" aria-label="${esc(b.name)}, başa dön">
+      ${logo('dark', { mark: true })}
       <span><b>${esc(b.shortName)}</b> ${esc(b.tagline)}</span>
     </a>
     <nav aria-label="Sayfa içi">
+      <a href="#odun-atesi">Odun Ateşi</a>
       <a href="#lezzetler">Lezzetler</a>
       <a href="#siparis">Sipariş</a>
       <a href="#konum">Konum &amp; Saatler</a>
@@ -212,13 +231,13 @@ ${head({ title, description, canonical, site: s, business: b, jsonLd: [restauran
 <section class="hero" aria-labelledby="baslik">
   <canvas id="koz" aria-hidden="true"></canvas>
   <div class="wrap">
-    <h1 id="baslik">
-      <span class="n">${brandMark(b.shortName)}</span>
-      <span class="t">${esc(b.tagline)}</span>
-    </h1>
+    <div class="mark">
+      ${logo('dark')}
+      <h1 id="baslik" class="sr-only">${esc(b.name)} · Odun ateşinde et döner, ${esc(b.address.district)} ${esc(b.address.city)}</h1>
+    </div>
     <div class="lede">
       <p class="slogan">Öğlen on birden gece üçe. <b>${esc(b.slogan)}</b></p>
-      <p>${esc(b.address.district)}'nda odun közünde pişen et döner. Dürüm, pilav üstü, İskender; yanında sıcak çorba ve ev tatlısı. Gel otur, ya da ara, kapına gelsin.</p>
+      <p>${esc(b.address.district)}'nda odun ateşinde pişen et döner. Dürüm, pilav üstü, İskender; yanında sıcak çorba ve ev tatlısı. Gel otur, ya da ara, kapına gelsin.</p>
       <div class="clock">
         ${icon.clock}
         <div><div class="k">Her gün açık</div><div class="v">${esc(open)} – ${esc(close)} <small>(gece)</small></div></div>
@@ -240,6 +259,22 @@ ${b.perks.map((p, i) => `      <li>${icon.perks[i % icon.perks.length]}${esc(p)}
 </div>
 
 <main>
+
+  <section class="block fire" id="odun-atesi" aria-labelledby="h-odun">
+    <div class="wrap">
+      <div class="head">
+        <span class="eyebrow">${esc(b.wood.eyebrow)}</span>
+        <h2 id="h-odun">${esc(b.wood.title)}</h2>
+        <p>${esc(b.wood.lead)}</p>
+      </div>
+      <div class="points">
+${b.wood.points.map((p) => `        <article class="point">
+          <h3>${esc(p.title)}</h3>
+          <p>${esc(p.text)}</p>
+        </article>`).join('\n')}
+      </div>
+    </div>
+  </section>
 
   <section class="block" id="lezzetler" aria-labelledby="h-lezzetler">
     <div class="wrap">
@@ -311,6 +346,21 @@ ${dishes(data)}
         <div class="map">
           <iframe title="Harita: ${esc(b.address.street)}, ${esc(b.address.district)}" src="${esc(l.mapEmbed)}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="sss" aria-labelledby="h-sss">
+    <div class="wrap">
+      <div class="head">
+        <span class="eyebrow">Sık sorulanlar</span>
+        <h2 id="h-sss">Merak edilenler</h2>
+      </div>
+      <div class="faq">
+${b.faq.map((f) => `        <details>
+          <summary>${esc(f.q)}</summary>
+          <p>${esc(f.a)}</p>
+        </details>`).join('\n')}
       </div>
     </div>
   </section>
