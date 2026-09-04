@@ -1,8 +1,9 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { config } from '../config.js';
+import { config, rateLimits } from '../config.js';
 import type { Db } from '../db.js';
 import { haversineKm } from '../lib/geo.js';
+import { ipKey, rateLimit } from '../lib/rateLimit.js';
 
 const nearbySchema = z.object({
   lat: z.coerce.number().min(-90).max(90).default(35.1856),
@@ -31,7 +32,10 @@ function blur(coord: number): number {
 export function publicRoutes(db: Db): Router {
   const router = Router();
 
-  router.get('/nearby-drivers', (req, res) => {
+  // Girişsiz uç: toplu kazıma / sürücü takibine karşı IP başına hız sınırı
+  const nearbyByIp = rateLimit({ ...rateLimits.nearbyPerIp, keyFn: ipKey });
+
+  router.get('/nearby-drivers', nearbyByIp, (req, res) => {
     const parsed = nearbySchema.safeParse(req.query);
     if (!parsed.success) {
       res.status(400).json({ error: 'Geçersiz konum' });

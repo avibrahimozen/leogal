@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
-import { config } from '../config.js';
+import { config, rateLimits } from '../config.js';
 import type { Db } from '../db.js';
 import { requireAuth, signToken, type Role } from '../lib/auth.js';
+import { ipKey, rateLimit } from '../lib/rateLimit.js';
 import { OtpError, verifyPhoneToken, type OtpService } from '../otp.js';
 
 const phoneSchema = z
@@ -101,8 +102,17 @@ export function normalizePhone(raw: string): string {
 export function authRoutes(db: Db, otp: OtpService): Router {
   const router = Router();
 
+  // Kaba kuvvet / SMS bombardımanına karşı hız sınırları (telefon başına OTP sınırı OtpService içinde).
+  const otpRequestByIp = rateLimit({ ...rateLimits.otpRequestPerIp, keyFn: ipKey });
+  const loginByIp = rateLimit({ ...rateLimits.loginPerIp, keyFn: ipKey });
+  const loginByPhone = rateLimit({
+    ...rateLimits.loginPerPhone,
+    // Aynı hesabın farklı yazımları (0542..., +90542...) tek sayaçta toplanır
+    keyFn: (req) => (typeof req.body?.phone === 'string' ? normalizePhone(req.body.phone) : null),
+  });
+
   /** Kayıt öncesi telefon doğrulaması: SMS kodu iste. */
-  router.post('/otp/request', async (req, res) => {
+  router.post('/otp/request', otpRequestByIp, async (req, res) => {
     const parsed = otpRequestSchema.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({ error: parsed.error.issues[0]?.message ?? 'Geçersiz istek' });
@@ -213,7 +223,7 @@ export function authRoutes(db: Db, otp: OtpService): Router {
     });
   });
 
-  router.post('/login', (req, res) => {
+  router.post('/login', loginByIp, loginByPhone, (req, res) => {
     const parsed = loginSchema.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({ error: 'Telefon ve şifre gerekli' });
