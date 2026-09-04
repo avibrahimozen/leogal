@@ -26,9 +26,11 @@ Alan adı bağlanana kadar aynı sayfalar `https://avibrahimozen.github.io/leoga
    | A | `@` | `185.199.111.153` |
    | CNAME | `www` | `avibrahimozen.github.io` |
 
-3. Depoda `CNAME` dosyası hazır (içeriği alan adı). GitHub, dalı yayınlarken bunu okur ve **Settings → Pages → Custom domain** alanına yazar.
-4. DNS yayıldıktan sonra (genelde 1 saat, en fazla 1 gün) aynı sayfada **Enforce HTTPS** kutusunu işaretleyin.
+3. DNS yayıldıktan sonra (genelde 1 saat, en fazla 1 gün) `src/data/menu.json` içinde `"domainActive": false` değerini `true` yapın, `npm run build` ve `npm test` çalıştırıp commit edin. Bu, depo köküne `CNAME` dosyasını koyar ve tüm adresleri alan adına çevirir; GitHub dalı yayınlarken bunu **Settings → Pages → Custom domain** alanına yazar.
+4. Aynı Pages sayfasında **Enforce HTTPS** kutusunu işaretleyin.
 5. Tarayıcıda https://antalyagecedonercisi.com/menu/ açılıyorsa QR kodları bastırabilirsiniz.
+
+`domainActive` kapalıyken sayfalar `avibrahimozen.github.io/leogal/` adresini kullanır ve `CNAME` üretilmez. Anahtar DNS'ten önce açılırsa GitHub, github.io adreslerini henüz çalışmayan alan adına yönlendirir ve mevcut QR kodlar kırılır; o yüzden sıra önemli.
 
 ## Kurulum ve komutlar
 

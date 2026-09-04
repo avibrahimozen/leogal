@@ -1,7 +1,7 @@
 // Menü verisinden tüm sayfaları ve SEO dosyalarını üretir.
 //   node src/build.js          -> dosyaları yazar
 //   node src/build.js --check  -> yazmaz; diskteki çıktı güncel değilse hata verir
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, rm } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { renderMenu } from './templates/menu.js';
@@ -15,7 +15,11 @@ export const OUT = join(ROOT, '..');
 const DATA = join(ROOT, 'src', 'data', 'menu.json');
 
 export async function loadData() {
-  return JSON.parse(await readFile(DATA, 'utf8'));
+  const data = JSON.parse(await readFile(DATA, 'utf8'));
+  // Alan adı anahtarı: domainActive true olana kadar sayfalar github.io adresini kullanır ve CNAME üretilmez.
+  // Böylece DNS hazır olmadan github.io adresleri özel alan adına yönlendirilip kırılmaz.
+  data.site.baseUrl = data.site.domainActive ? data.site.domainBaseUrl : data.site.legacyBaseUrl;
+  return data;
 }
 
 /** Çıktı dosyalarını (yol -> içerik) üretir; diske yazmaz. */
@@ -31,13 +35,20 @@ export async function render(data = null) {
   // lastmod veri dosyasındaki "updated" alanından gelir; fiyat değiştirince o tarihi güncelleyin.
   out.set('sitemap.xml', sitemapXml(data, data.updated));
   out.set('robots.txt', robotsTxt(data));
-  out.set('CNAME', s.domain + '\n');
+  if (s.domainActive) out.set('CNAME', s.domain + '\n');
   return out;
 }
 
 export async function build({ check = false } = {}) {
-  const files = await render();
+  const data = await loadData();
+  const files = await render(data);
   const stale = [];
+  // Alan adı kapalıyken eski bir CNAME kalmış olmamalı.
+  if (!data.site.domainActive) {
+    const cname = join(OUT, 'CNAME');
+    if (check) { if (await readFile(cname, 'utf8').catch(() => null) !== null) stale.push('CNAME (silinmeli)'); }
+    else await rm(cname, { force: true });
+  }
   for (const [rel, content] of files) {
     const abs = join(OUT, rel);
     if (check) {

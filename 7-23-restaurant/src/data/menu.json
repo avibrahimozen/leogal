@@ -30,13 +30,14 @@
   },
   "site": {
     "domain": "antalyagecedonercisi.com",
-    "baseUrl": "https://antalyagecedonercisi.com/",
+    "domainActive": false,
+    "domainBaseUrl": "https://antalyagecedonercisi.com/",
+    "legacyBaseUrl": "https://avibrahimozen.github.io/leogal/",
     "sitePath": "",
     "menuPath": "menu/",
     "menuAliases": [
       "7-23-restaurant/"
     ],
-    "legacyBaseUrl": "https://avibrahimozen.github.io/leogal/",
     "locale": "tr_TR",
     "keywords": [
       "döner",

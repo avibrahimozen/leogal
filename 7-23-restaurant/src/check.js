@@ -88,7 +88,8 @@ for (const sec of data.sections) {
 const sitemap = await readFile(join(OUT, 'sitemap.xml'), 'utf8');
 for (const page of pages) if (!sitemap.includes(`<loc>${page.canonical}</loc>`)) fail(`sitemap.xml: ${page.canonical} eksik`);
 const cname = await readFile(join(OUT, 'CNAME'), 'utf8').catch(() => '');
-if (cname.trim() !== data.site.domain) fail(`CNAME dosyası "${data.site.domain}" olmalı`);
+if (data.site.domainActive && cname.trim() !== data.site.domain) fail(`CNAME dosyası "${data.site.domain}" olmalı`);
+if (!data.site.domainActive && cname) fail('Alan adı kapalıyken CNAME dosyası olmamalı');
 const robots = await readFile(join(OUT, 'robots.txt'), 'utf8').catch(() => '');
 if (!robots.includes('Sitemap: ' + data.site.baseUrl + 'sitemap.xml')) fail('robots.txt sitemap satırı eksik');
 
@@ -96,4 +97,4 @@ if (errors.length) {
   console.error(`${errors.length} sorun:\n- ` + errors.join('\n- '));
   process.exit(1);
 }
-console.log(`Tamam: ${ids.size} ürün, ${pages.length} sayfa, sitemap.xml.`);
+console.log(`Tamam: ${ids.size} ürün, ${pages.length} sayfa, sitemap.xml. Alan adı: ${data.site.domainActive ? data.site.domain + ' (açık)' : 'kapalı, ' + data.site.baseUrl}`);
