@@ -4,7 +4,7 @@
     "shortName": "7/23",
     "tagline": "Gece Dönercisi",
     "slogan": "Geceyi değil, açlığı bitir.",
-    "description": "Konyaaltı Antalya'da her gün 07:00–23:00 açık et dönercisi. Dürüm, pilav üstü, İskender, çorba ve tatlı. Alo Paket 0552 990 07 23.",
+    "description": "Konyaaltı Antalya'da her gün 11:00'den gece 03:00'e açık et dönercisi. Dürüm, pilav üstü, İskender, çorba ve tatlı. Alo Paket 0552 990 07 23.",
     "phoneDisplay": "0552 990 07 23",
     "phoneE164": "+905529900723",
     "whatsappText": "Merhaba, sipariş vermek istiyorum.",
@@ -16,8 +16,8 @@
     },
     "mapQuery": "Arapsuyu Mahallesi Belediye Caddesi 12/B Konyaaltı Antalya",
     "hours": {
-      "opens": "07:00",
-      "closes": "23:00"
+      "opens": "11:00",
+      "closes": "03:00"
     },
     "cuisine": "Döner, Türk mutfağı",
     "priceRange": "₺₺",

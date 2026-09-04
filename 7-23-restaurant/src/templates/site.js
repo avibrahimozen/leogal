@@ -55,6 +55,7 @@ const CSS = `
   .hero .clock svg { width: 34px; height: 34px; }
   .hero .clock .k { font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--kul); }
   .hero .clock .v { font-family: var(--display); font-size: 30px; line-height: 1; letter-spacing: .04em; }
+  .hero .clock .v small { font-family: var(--body); font-size: 13px; color: var(--kul); letter-spacing: 0; }
 
   /* ---------- Vaat şeridi ---------- */
   .perks { border-bottom: 1px solid var(--is-2); background: var(--is); }
@@ -216,11 +217,11 @@ ${head({ title, description, canonical, site: s, business: b, jsonLd: [restauran
       <span class="t">${esc(b.tagline)}</span>
     </h1>
     <div class="lede">
-      <p class="slogan">Sabah yedi, gece on bir. <b>${esc(b.slogan)}</b></p>
+      <p class="slogan">Öğlen on birden gece üçe. <b>${esc(b.slogan)}</b></p>
       <p>${esc(b.address.district)}'nda odun közünde pişen et döner. Dürüm, pilav üstü, İskender; yanında sıcak çorba ve ev tatlısı. Gel otur, ya da ara, kapına gelsin.</p>
       <div class="clock">
         ${icon.clock}
-        <div><div class="k">Her gün açık</div><div class="v">${esc(open)} – ${esc(close)}</div></div>
+        <div><div class="k">Her gün açık</div><div class="v">${esc(open)} – ${esc(close)} <small>(gece)</small></div></div>
       </div>
       <div class="actions">
         <a class="btn" href="${esc(menuHref)}">Menüyü Gör</a>
@@ -268,7 +269,7 @@ ${dishes(data)}
         <div class="card">
           <h3>Telefonla</h3>
           <a class="big" href="${esc(l.tel)}">${esc(b.phoneDisplay)}</a>
-          <p>Her gün ${esc(open)}–${esc(close)} arası açık hat.</p>
+          <p>Her gün ${esc(open)} ile gece ${esc(close)} arası açık hat.</p>
         </div>
         <div class="card">
           <h3>WhatsApp ile</h3>

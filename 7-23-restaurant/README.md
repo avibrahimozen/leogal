@@ -125,4 +125,4 @@ Not: Depo kökündeki `docs/` klasörü de alan adı altında erişilebilir olur
 - İşletme: 7/23 Gece Dönercisi
 - Alo Paket: 0552 990 07 23 (arama ve WhatsApp bağlantıları sayfalarda)
 - Adres: Arapsuyu Mah. Belediye Cad. No: 12/B, Konyaaltı / Antalya
-- Çalışma saatleri: Her gün 07:00–23:00
+- Çalışma saatleri: Her gün 11:00 – 03:00 (gece)
