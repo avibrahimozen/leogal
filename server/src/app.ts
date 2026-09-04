@@ -4,6 +4,8 @@ import cors from 'cors';
 import bcrypt from 'bcryptjs';
 import { config } from './config.js';
 import type { Db } from './db.js';
+import { jsonBodyErrors } from './lib/jsonBodyErrors.js';
+import { securityHeaders } from './lib/securityHeaders.js';
 import { createSmsSender, type SmsSender } from './lib/sms.js';
 import { Matcher } from './matching.js';
 import { OtpService } from './otp.js';
@@ -32,8 +34,12 @@ export function createApp(
   const otp = new OtpService(db, options.smsSender ?? createSmsSender());
 
   const app = express();
+  // Ters vekil arkasında gerçek istemci IP'si (hız sınırı, HSTS) için — TRUST_PROXY=1
+  if (config.trustProxy) app.set('trust proxy', 1);
   app.use(cors());
-  app.use(express.json());
+  app.use(securityHeaders());
+  app.use(express.json({ limit: config.jsonBodyLimit }));
+  app.use(jsonBodyErrors());
 
   app.get('/api/health', (_req, res) => {
     res.json({ ok: true, service: 'ulak', time: new Date().toISOString() });
