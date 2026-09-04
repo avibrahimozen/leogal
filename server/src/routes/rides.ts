@@ -4,6 +4,7 @@ import { config } from '../config.js';
 import { getSetting, nowIso, type Db } from '../db.js';
 import { requireAuth } from '../lib/auth.js';
 import { commissionOf, estimateFare } from '../lib/geo.js';
+import { regionForPoint, type CountryCode } from '../lib/regions.js';
 import type { Matcher, RideRow } from '../matching.js';
 import type { Hub } from '../realtime.js';
 
@@ -22,20 +23,24 @@ const rateSchema = z.object({
   rating: z.number().int().min(1).max(5),
 });
 
-function fareParams(db: Db) {
+/** Tarife ülkeye göre seçilir: ülkeye özel ayar yoksa genel ayar geçerlidir. */
+function fareParams(db: Db, country: CountryCode) {
   return {
-    baseFare: getSetting(db, 'base_fare'),
-    perKm: getSetting(db, 'per_km'),
-    minFare: getSetting(db, 'min_fare'),
+    baseFare: getSetting(db, 'base_fare', country),
+    perKm: getSetting(db, 'per_km', country),
+    minFare: getSetting(db, 'min_fare', country),
     roadFactor: config.roadFactor,
   };
 }
 
-export function getRide(db: Db, id: number): RideRow | undefined {
-  return db.prepare('SELECT * FROM rides WHERE id = ?').get(id) as unknown as RideRow | undefined;
+/** rides.country sütunu: ülke sütunu eklenmeden önceki kayıtlarda NULL. */
+export type RideRowWithCountry = RideRow & { country: CountryCode | null };
+
+export function getRide(db: Db, id: number): RideRowWithCountry | undefined {
+  return db.prepare('SELECT * FROM rides WHERE id = ?').get(id) as unknown as RideRowWithCountry | undefined;
 }
 
-export function rideToJson(db: Db, ride: RideRow) {
+export function rideToJson(db: Db, ride: RideRow & { country?: CountryCode | null }) {
   let driver: Record<string, unknown> | null = null;
   if (ride.driver_id) {
     const row = db
@@ -75,6 +80,7 @@ export function rideToJson(db: Db, ride: RideRow) {
     drop: { lat: ride.drop_lat, lng: ride.drop_lng, address: ride.drop_address },
     estDistanceKm: ride.est_distance_km,
     estFare: ride.est_fare,
+    country: ride.country ?? null,
     finalFare: ride.final_fare,
     cancelReason: ride.cancel_reason,
     passengerRating: ride.passenger_rating,
@@ -107,8 +113,10 @@ export function rideRoutes(db: Db, hub: Hub, matcher: Matcher): Router {
       return;
     }
     const { pickup, drop } = parsed.data;
-    const est = estimateFare(pickup.lat, pickup.lng, drop.lat, drop.lng, fareParams(db));
-    res.json({ distanceKm: est.distanceKm, fare: est.fare, currency: 'TL' });
+    // Tarife, alış noktasının ülkesine göre belirlenir
+    const country = regionForPoint(pickup.lat, pickup.lng);
+    const est = estimateFare(pickup.lat, pickup.lng, drop.lat, drop.lng, fareParams(db, country));
+    res.json({ distanceKm: est.distanceKm, fare: est.fare, currency: 'TL', country });
   });
 
   /** Yolcu yeni çağrı oluşturur; uygun sürücülere teklif yayınlanır. */
@@ -129,11 +137,12 @@ export function rideRoutes(db: Db, hub: Hub, matcher: Matcher): Router {
       return;
     }
     const { pickup, drop } = parsed.data;
-    const est = estimateFare(pickup.lat, pickup.lng, drop.lat, drop.lng, fareParams(db));
+    const country = regionForPoint(pickup.lat, pickup.lng);
+    const est = estimateFare(pickup.lat, pickup.lng, drop.lat, drop.lng, fareParams(db, country));
     const result = db
       .prepare(
-        `INSERT INTO rides (passenger_id, pickup_lat, pickup_lng, pickup_address, drop_lat, drop_lng, drop_address, est_distance_km, est_fare)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO rides (passenger_id, pickup_lat, pickup_lng, pickup_address, drop_lat, drop_lng, drop_address, est_distance_km, est_fare, country)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         passengerId,
@@ -145,6 +154,7 @@ export function rideRoutes(db: Db, hub: Hub, matcher: Matcher): Router {
         drop.address,
         est.distanceKm,
         est.fare,
+        country,
       );
     const ride = getRide(db, Number(result.lastInsertRowid))!;
     const hasCandidates = matcher.broadcast(ride);
@@ -252,7 +262,9 @@ export function rideRoutes(db: Db, hub: Hub, matcher: Matcher): Router {
       return;
     }
     const finalFare = ride.est_fare;
-    const rate = getSetting(db, 'commission_rate');
+    // Komisyon oranı da yolculuğun ülkesine göre; eski (ülkesiz) kayıtlarda alış noktasından türetilir
+    const country = ride.country ?? regionForPoint(ride.pickup_lat, ride.pickup_lng);
+    const rate = getSetting(db, 'commission_rate', country);
     const commission = commissionOf(finalFare, rate);
     db.prepare(
       "UPDATE rides SET status = 'completed', completed_at = ?, final_fare = ?, commission = ? WHERE id = ?",
