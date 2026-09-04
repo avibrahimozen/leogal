@@ -1,8 +1,9 @@
-// Kalite kontrolü: çıktı güncel mi, veri tutarlı mı, SEO parçaları yerinde mi, bağlantılar çalışıyor mu.
+// Kalite kontrolü: çıktı güncel mi, veri tutarlı mı, SEO parçaları yerinde mi, bağlantılar çalışıyor mu, çeviriler tam mı.
 //   npm test
 import { readFile, access } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { build, loadData, OUT } from './build.js';
+import { LANGS, localize } from './lib/i18n.js';
 
 const errors = [];
 const fail = (m) => errors.push(m);
@@ -41,31 +42,57 @@ for (const sec of data.sections) {
   }
 }
 
-// 2. Çıktı güncel mi
+// 2. Çeviriler: her dilde her arayüz metni, bölüm başlığı ve ürün adı var mı
+const base = localize(data);
+for (const lang of LANGS) {
+  const d = localize(data, lang.code);
+  for (const key of Object.keys(base.ui)) if (d.ui[key] == null) fail(`${lang.code}: arayüz metni eksik "${key}"`);
+  if (lang.default) continue;
+  for (const sec of d.sections) {
+    const raw = data.sections.find((x) => x.id === sec.id);
+    if (sec.title === raw.title) fail(`${lang.code}: bölüm başlığı çevrilmemiş "${sec.id}"`);
+    for (const it of sec.items) {
+      if (it.separator) continue;
+      const r = raw.items.find((x) => x.id === it.id);
+      if (it.name === r.name && !/^(Ayran|Fanta|Sprite|Fuse Tea)$/.test(r.name)) fail(`${lang.code}: ürün adı çevrilmemiş "${it.id}"`);
+    }
+  }
+  if (d.business.faq.length !== data.business.faq.length) fail(`${lang.code}: SSS sayısı farklı`);
+  if (d.business.perks.length !== data.business.perks.length) fail(`${lang.code}: vaat sayısı farklı`);
+  if (d.business.wood.points.length !== data.business.wood.points.length) fail(`${lang.code}: odun ateşi madde sayısı farklı`);
+  if (Object.keys(d.allergenNames).length !== Object.keys(data.allergenNames).length) fail(`${lang.code}: alerjen adları eksik`);
+}
+
+// 3. Çıktı güncel mi
 await build({ check: true });
 if (process.exitCode) { fail('Üretilen dosyalar güncel değil'); process.exitCode = 0; }
 
-// 3. Sayfa içeriği ve SEO
-const pages = [
-  { rel: join(data.site.menuPath, 'index.html'), canonical: data.site.baseUrl + data.site.menuPath },
-  { rel: join(data.site.sitePath, 'index.html'), canonical: data.site.baseUrl + data.site.sitePath },
-  ...(data.site.menuAliases ?? []).map((a) => ({ rel: join(a, 'index.html'), canonical: data.site.baseUrl + data.site.menuPath, alias: true })),
-];
+// 4. Sayfa içeriği ve SEO (her dil)
+const pages = [];
+for (const lang of LANGS) {
+  const d = localize(data, lang.code);
+  pages.push({ lang: lang.code, kind: 'menu', rel: join(d.site.menuPath, 'index.html'), canonical: d.site.baseUrl + d.site.menuPath, data: d });
+  pages.push({ lang: lang.code, kind: 'site', rel: join(d.site.sitePath, 'index.html'), canonical: d.site.baseUrl + d.site.sitePath, data: d });
+  for (const a of d.site.menuAliases ?? []) pages.push({ lang: lang.code, kind: 'menu', rel: join(a, 'index.html'), canonical: d.site.baseUrl + d.site.menuPath, data: d, alias: true });
+}
 const hrefRe = /(?:href|src)="([^"]+)"/g;
 for (const page of pages) {
   const abs = join(OUT, page.rel);
   const html = await readFile(abs, 'utf8');
   const must = [
-    ['<html lang="tr">', 'lang="tr"'],
+    [`<html lang="${page.lang}">`, `lang="${page.lang}"`],
     ['<title>', 'title'],
     ['<meta name="description"', 'meta description'],
     [`<link rel="canonical" href="${page.canonical}">`, 'canonical'],
+    ['hreflang="x-default"', 'hreflang'],
     ['property="og:title"', 'Open Graph başlığı'],
     ['application/ld+json', 'JSON-LD'],
     ['<h1', 'h1 başlığı'],
     [data.business.phoneDisplay, 'telefon numarası'],
+    ['class="lang"', 'dil değiştirici'],
   ];
   for (const [needle, label] of must) if (!html.includes(needle)) fail(`${page.rel}: ${label} eksik`);
+  for (const lang of LANGS) if (!html.includes(`hreflang="${lang.code}"`)) fail(`${page.rel}: hreflang ${lang.code} eksik`);
 
   const titles = html.match(/<title>(.*?)<\/title>/)?.[1] ?? '';
   if (titles.length > 70) fail(`${page.rel}: başlık ${titles.length} karakter, 70'i geçmemeli`);
@@ -84,20 +111,21 @@ for (const page of pages) {
     const file = target.endsWith('/') || !/\.\w+$/.test(target) ? join(target, 'index.html') : target;
     await access(file).catch(() => fail(`${page.rel}: kırık bağlantı ${href}`));
   }
-}
 
-// 4. Menü sayfasında her ürün ve fiyat görünüyor mu
-const menuHtml = await readFile(join(OUT, pages[0].rel), 'utf8');
-for (const sec of data.sections) {
-  for (const it of sec.items) {
-    if (it.separator) continue;
-    if (!menuHtml.includes(it.name)) fail(`Menüde ürün adı yok: ${it.name}`);
-    const prices = sec.type === 'grams' ? it.prices.filter((p) => p != null) : [it.price];
-    for (const p of prices) if (!menuHtml.includes(`${p} ₺`)) fail(`Menüde fiyat yok: ${it.name} ${p} ₺`);
+  // Menü sayfasında her ürün ve fiyat (o dildeki adıyla) görünüyor mu
+  if (page.kind === 'menu') {
+    for (const sec of page.data.sections) {
+      for (const it of sec.items) {
+        if (it.separator) continue;
+        if (!html.includes(it.name.replace(/&/g, '&amp;'))) fail(`${page.rel}: ürün adı yok: ${it.name}`);
+        const prices = sec.type === 'grams' ? it.prices.filter((p) => p != null) : [it.price];
+        for (const p of prices) if (!html.includes(`${p} ₺`)) fail(`${page.rel}: fiyat yok: ${it.name} ${p} ₺`);
+      }
+    }
   }
 }
 
-// 5. Site haritası
+// 5. Site haritası, CNAME, robots
 const sitemap = await readFile(join(OUT, 'sitemap.xml'), 'utf8');
 for (const page of pages) if (!sitemap.includes(`<loc>${page.canonical}</loc>`)) fail(`sitemap.xml: ${page.canonical} eksik`);
 const cname = await readFile(join(OUT, 'CNAME'), 'utf8').catch(() => '');
@@ -110,4 +138,4 @@ if (errors.length) {
   console.error(`${errors.length} sorun:\n- ` + errors.join('\n- '));
   process.exit(1);
 }
-console.log(`Tamam: ${ids.size} ürün, ${pages.length} sayfa, sitemap.xml. Alan adı: ${data.site.domainActive ? data.site.domain + ' (açık)' : 'kapalı, ' + data.site.baseUrl}`);
+console.log(`Tamam: ${ids.size} ürün, ${LANGS.length} dil, ${pages.length} sayfa, sitemap.xml. Alan adı: ${data.site.domainActive ? data.site.domain + ' (açık)' : 'kapalı, ' + data.site.baseUrl}`);

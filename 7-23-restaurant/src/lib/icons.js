@@ -16,3 +16,10 @@ export const perks = [
   `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19 7h-3V5a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v11h2a3 3 0 0 0 6 0h2a3 3 0 0 0 6 0h2v-6l-3-3zm-11 9a1 1 0 1 1 1-1 1 1 0 0 1-1 1zm8 0a1 1 0 1 1 1-1 1 1 0 0 1-1 1zm0-7h2.2L20 10.8V11h-4z"/></svg>`,
   `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2 4 5v6c0 5.3 3.4 10.2 8 11.5 4.6-1.3 8-6.2 8-11.5V5zm-1.2 14.4-3.6-3.6 1.4-1.4 2.2 2.2 5-5 1.4 1.4z"/></svg>`,
 ];
+
+// Dil bayrakları (20×14). Emoji bayraklar Windows'ta görünmediği için SVG.
+export const flags = {
+  tr: `<svg viewBox="0 0 20 14" aria-hidden="true"><rect width="20" height="14" fill="#e30a17"/><circle cx="7.6" cy="7" r="3.6" fill="#fff"/><circle cx="8.5" cy="7" r="2.9" fill="#e30a17"/><path fill="#fff" d="M12.9 7l-2.1.68 1.3-1.78v2.2l-1.3-1.78z"/></svg>`,
+  en: `<svg viewBox="0 0 60 30" aria-hidden="true"><path d="M0 0v30h60V0z" fill="#012169"/><path d="M0 0l60 30m0-30L0 30" stroke="#fff" stroke-width="6"/><path d="M0 0l60 30m0-30L0 30" stroke="#C8102E" stroke-width="2.5"/><path d="M30 0v30M0 15h60" stroke="#fff" stroke-width="10"/><path d="M30 0v30M0 15h60" stroke="#C8102E" stroke-width="6"/></svg>`,
+  ru: `<svg viewBox="0 0 20 14" aria-hidden="true"><rect width="20" height="14" fill="#fff"/><rect y="4.67" width="20" height="4.67" fill="#0039a6"/><rect y="9.33" width="20" height="4.67" fill="#d52b1e"/></svg>`,
+};

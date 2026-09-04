@@ -1,15 +1,63 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://avibrahimozen.github.io/leogal/</loc>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://avibrahimozen.github.io/leogal/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://avibrahimozen.github.io/leogal/en/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://avibrahimozen.github.io/leogal/ru/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://avibrahimozen.github.io/leogal/"/>
     <lastmod>2026-09-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
+    <loc>https://avibrahimozen.github.io/leogal/en/</loc>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://avibrahimozen.github.io/leogal/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://avibrahimozen.github.io/leogal/en/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://avibrahimozen.github.io/leogal/ru/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://avibrahimozen.github.io/leogal/"/>
+    <lastmod>2026-09-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://avibrahimozen.github.io/leogal/ru/</loc>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://avibrahimozen.github.io/leogal/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://avibrahimozen.github.io/leogal/en/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://avibrahimozen.github.io/leogal/ru/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://avibrahimozen.github.io/leogal/"/>
+    <lastmod>2026-09-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://avibrahimozen.github.io/leogal/menu/</loc>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://avibrahimozen.github.io/leogal/menu/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://avibrahimozen.github.io/leogal/en/menu/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://avibrahimozen.github.io/leogal/ru/menu/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://avibrahimozen.github.io/leogal/menu/"/>
     <lastmod>2026-09-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://avibrahimozen.github.io/leogal/en/menu/</loc>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://avibrahimozen.github.io/leogal/menu/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://avibrahimozen.github.io/leogal/en/menu/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://avibrahimozen.github.io/leogal/ru/menu/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://avibrahimozen.github.io/leogal/menu/"/>
+    <lastmod>2026-09-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://avibrahimozen.github.io/leogal/ru/menu/</loc>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://avibrahimozen.github.io/leogal/menu/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://avibrahimozen.github.io/leogal/en/menu/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://avibrahimozen.github.io/leogal/ru/menu/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://avibrahimozen.github.io/leogal/menu/"/>
+    <lastmod>2026-09-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
   </url>
 </urlset>

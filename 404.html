@@ -9,6 +9,7 @@
 <meta name="robots" content="index, follow, max-image-preview:large">
 <meta name="theme-color" content="#141210">
 <link rel="canonical" href="https://avibrahimozen.github.io/leogal/">
+
 <meta property="og:type" content="restaurant">
 <meta property="og:site_name" content="7/23 Gece Dönercisi">
 <meta property="og:title" content="Sayfa bulunamadı · 7/23 Gece Dönercisi">
@@ -33,28 +34,46 @@
 <meta name="robots" content="noindex">
 
 <style>
-  :root { --komur: #141210; --koz: #e8871e; --pide: #f3ead9; --kul: #a89f94; --is-2: #2a241e;
+  :root { --komur: #141210; --koz: #ffcc00; --pide: #f3ead9; --kul: #a89f94; --is-2: #2a241e;
     --display: "Bebas Neue", "Arial Narrow", Impact, sans-serif; --body: "Source Sans 3", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
   * { box-sizing: border-box; }
   body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: var(--komur); color: var(--pide); font-family: var(--body); font-size: 18px; padding: 24px; }
-  main { max-width: 520px; display: grid; gap: 16px; text-align: center; }
+  main { max-width: 560px; display: grid; gap: 22px; text-align: center; }
   h1 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 96px; line-height: .9; color: var(--koz); }
+  section { display: grid; gap: 10px; padding-top: 14px; border-top: 1px solid var(--is-2); }
   p { margin: 0; color: var(--kul); }
   nav { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
-  a { display: inline-block; text-decoration: none; font-family: var(--display); font-size: 22px; letter-spacing: .05em; padding: 12px 20px 10px; border-radius: 6px; border: 1px solid var(--koz); color: var(--koz); }
+  a { display: inline-block; text-decoration: none; font-family: var(--display); font-size: 20px; letter-spacing: .05em; padding: 10px 18px 8px; border-radius: 6px; border: 1px solid var(--koz); color: var(--koz); }
   a.p { background: var(--koz); color: var(--komur); }
   a:focus-visible { outline: 2px solid var(--koz); outline-offset: 3px; }
+  .tel { border: 0; padding: 0; font-family: var(--body); font-size: 16px; color: var(--kul); }
 </style>
 </head>
 <body>
 <main>
   <h1>404</h1>
-  <p>Aradığınız sayfa burada değil. Ama döner hâlâ közde.</p>
-  <nav>
-    <a class="p" href="/menu/">Menü</a>
-    <a href="/">Ana sayfa</a>
-    <a href="tel:+905529900723">0552 990 07 23</a>
-  </nav>
+  <section lang="tr">
+    <p>Aradığınız sayfa burada değil. Ama döner hâlâ közde.</p>
+    <nav>
+      <a class="p" href="/menu/">Menü</a>
+      <a href="/">Ana sayfa</a>
+    </nav>
+  </section>
+  <section lang="en">
+    <p>That page isn't here. The döner is still on the fire, though.</p>
+    <nav>
+      <a class="p" href="/en/menu/">Menu</a>
+      <a href="/en/">Home</a>
+    </nav>
+  </section>
+  <section lang="ru">
+    <p>Такой страницы нет. Но дёнер всё ещё на огне.</p>
+    <nav>
+      <a class="p" href="/ru/menu/">Меню</a>
+      <a href="/ru/">Главная</a>
+    </nav>
+  </section>
+  <a class="tel" href="tel:+905529900723">0552 990 07 23</a>
 </main>
 </body>
 </html>

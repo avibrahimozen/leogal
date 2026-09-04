@@ -1,8 +1,10 @@
-// Web sitesi ana sayfası (site/index.html).
+// Web sitesi ana sayfası. Her dil için ayrı üretilir.
 import { esc, money, head, url, restaurantJsonLd, faqJsonLd, allergenText, kcalText } from '../lib/seo.js';
 import { logo } from '../lib/assets.js';
 import { links } from '../lib/links.js';
 import * as icon from '../lib/icons.js';
+import { fmt } from '../lib/i18n.js';
+import { rel, langSwitcher, LANG_CSS } from '../lib/ui.js';
 
 const CSS = `
   :root {
@@ -25,7 +27,8 @@ const CSS = `
   .eyebrow { font-size: 13px; letter-spacing: .18em; text-transform: uppercase; color: var(--koz); font-weight: 600; }
   .btn { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font-family: var(--display); font-size: 22px; letter-spacing: .05em; line-height: 1; padding: 14px 22px 12px; border-radius: 6px; border: 1px solid var(--koz); background: var(--koz); color: var(--komur); white-space: nowrap; }
   .btn.ghost { background: transparent; color: var(--koz); }
-
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+${LANG_CSS}
   /* ---------- Üst çubuk ---------- */
   .top { position: sticky; top: 0; z-index: 10; background: rgba(20,18,16,.9); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid var(--is-2); }
   .top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 64px; }
@@ -33,13 +36,14 @@ const CSS = `
   .brandlink b { color: var(--koz); font-weight: 400; }
   .brandlink span { white-space: nowrap; }
   .brandlink .logo-mark { width: 54px; height: 29px; }
-  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-  .top nav { display: flex; gap: 22px; }
-  .top nav a { text-decoration: none; color: var(--kul); font-weight: 600; font-size: 16px; white-space: nowrap; }
-  .top nav a:hover { color: var(--pide); }
+  .top nav.main { display: flex; gap: 22px; }
+  .top nav.main a { text-decoration: none; color: var(--kul); font-weight: 600; font-size: 16px; white-space: nowrap; }
+  .top nav.main a:hover { color: var(--pide); }
+  .top .right { display: flex; align-items: center; gap: 12px; }
   .top .call { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; color: var(--komur); background: var(--koz); font-family: var(--display); font-size: 20px; letter-spacing: .05em; padding: 9px 14px 7px; border-radius: 6px; white-space: nowrap; }
   .top .call svg { width: 18px; height: 18px; }
-  @media (max-width: 760px) { .top nav { display: none; } }
+  @media (max-width: 1240px) { .brandlink span { display: none; } }
+  @media (max-width: 960px) { .top nav.main { display: none; } }
 
   /* ---------- Giriş ---------- */
   .hero { position: relative; overflow: hidden; border-bottom: 1px solid var(--is-2); }
@@ -91,15 +95,15 @@ const CSS = `
   .dish { background: var(--is); border: 1px solid var(--is-2); border-radius: 8px; padding: 20px; display: grid; grid-template-rows: auto 1fr auto auto; gap: 10px; }
   .dish h3 { font-size: 30px; }
   .dish p { color: var(--kul); font-size: 16px; }
+  .dish .nut { display: grid; gap: 2px; font-size: 13px; color: var(--kul-koyu); line-height: 1.35; }
+  .dish .nut b { color: var(--kul); font-weight: 600; }
   .dish .pr { display: flex; align-items: baseline; justify-content: space-between; border-top: 1px dashed var(--is-2); padding-top: 10px; }
   .dish .pr b { font-family: var(--display); font-size: 30px; font-weight: 400; color: var(--koz); font-variant-numeric: tabular-nums; }
   .dish .pr small { color: var(--kul-koyu); font-size: 13px; letter-spacing: .08em; text-transform: uppercase; }
-  .dish .nut { display: grid; gap: 2px; font-size: 13px; color: var(--kul-koyu); line-height: 1.35; }
-  .dish .nut b { color: var(--kul); font-weight: 600; }
-  .all .fine { flex-basis: 100%; color: var(--kul-koyu); font-size: 14px; }
   .dish.child { border-color: var(--koz-koyu); border-style: dashed; }
   .all { margin-top: 26px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
   .all span { color: var(--kul); }
+  .all .fine { flex-basis: 100%; color: var(--kul-koyu); font-size: 14px; }
 
   /* Sipariş */
   .order { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
@@ -122,7 +126,7 @@ const CSS = `
 
   /* Alt bilgi */
   footer { padding: 34px 0 40px; color: var(--kul); font-size: 15px; }
-  footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px 24px; }
+  footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px 24px; }
   footer a { color: var(--kul); }
 
   /* Mobil sabit sipariş çubuğu */
@@ -180,6 +184,7 @@ function indexItems(data) {
 }
 
 function dishes(data) {
+  const L = data.ui;
   const items = indexItems(data);
   return data.featured.map((f) => {
     const it = items.get(f.id);
@@ -187,13 +192,13 @@ function dishes(data) {
     const grams = it.sec.type === 'grams';
     const price = grams ? it.prices[0] : it.price;
     const kcal = grams ? it.kcal?.[0] : it.kcal;
-    const unit = f.unit || (grams ? `${data.gramSizes[0]} gr` : 'Adet');
+    const unit = f.unit || (grams ? fmt(L.unitGram, { g: data.gramSizes[0] }) : L.unitEach);
     const name = f.label || it.name;
-    const al = allergenText(it, data.allergenNames || {});
+    const al = allergenText(it, data);
     return `        <article class="dish${f.child ? ' child' : ''}">
           <h3>${esc(name)}</h3>
           <p>${esc(f.blurb)}</p>
-          <div class="nut">${kcal != null ? `<b>${esc(kcalText(kcal))}</b>` : ''}${al ? `<span>${esc(al)}</span>` : ''}</div>
+          <div class="nut">${kcal != null ? `<b>${esc(kcalText(kcal, data))}</b>` : ''}${al ? `<span>${esc(al)}</span>` : ''}</div>
           <div class="pr"><small>${esc(unit)}</small><b>${money(price)}</b></div>
         </article>`;
   }).join('\n');
@@ -202,35 +207,41 @@ function dishes(data) {
 export function renderSite(data) {
   const b = data.business;
   const s = data.site;
+  const L = data.ui;
   const l = links(b);
-  const canonical = url(s, s.sitePath);
-  const menuHref = s.menuPath;
-  const title = `${b.name} · Odun Ateşinde Et Döner, ${b.address.district} ${b.address.city}`;
+  const path = s.sitePath;
+  const canonical = url(s, path);
+  const menuHref = rel(path, s.menuPath);
+  const v = { district: b.address.district, city: b.address.city, name: b.name, open: b.hours.opens, close: b.hours.closes, g0: data.gramSizes[0], g1: data.gramSizes[1], g2: data.gramSizes[2] };
+  const title = `${b.name} · ${fmt(L.siteTitle, v)}`;
   const description = b.description;
   const [open, close] = [b.hours.opens, b.hours.closes];
 
   return `<!DOCTYPE html>
-<html lang="tr">
+<html lang="${data.lang.code}">
 <head>
-${head({ title, description, canonical, site: s, business: b, jsonLd: [restaurantJsonLd(data), faqJsonLd(data)] })}
+${head({ title, description, canonical, data, kind: 'site', jsonLd: [restaurantJsonLd(data), faqJsonLd(data)] })}
 <style>${CSS}</style>
 </head>
 <body>
 
 <header class="top">
   <div class="wrap">
-    <a class="brandlink" href="#" aria-label="${esc(b.name)}, başa dön">
+    <a class="brandlink" href="#" aria-label="${esc(b.name)}, ${esc(L.backToTop)}">
       ${logo('dark', { mark: true })}
       <span><b>${esc(b.shortName)}</b> ${esc(b.tagline)}</span>
     </a>
-    <nav aria-label="Sayfa içi">
-      <a href="#odun-atesi">Odun Ateşi</a>
-      <a href="#lezzetler">Lezzetler</a>
-      <a href="#siparis">Sipariş</a>
-      <a href="#konum">Konum &amp; Saatler</a>
-      <a href="${esc(menuHref)}">Tam Menü</a>
+    <nav class="main" aria-label="${esc(L.menuSections)}">
+      <a href="#odun-atesi">${esc(L.navFire)}</a>
+      <a href="#lezzetler">${esc(L.navDishes)}</a>
+      <a href="#siparis">${esc(L.navOrder)}</a>
+      <a href="#konum">${esc(L.navWhere)}</a>
+      <a href="${esc(menuHref)}">${esc(L.navMenu)}</a>
     </nav>
-    <a class="call" href="${esc(l.tel)}">${icon.phone} ${esc(b.phoneDisplay)}</a>
+    <div class="right">
+      ${langSwitcher(data, 'site', path)}
+      <a class="call" href="${esc(l.tel)}">${icon.phone} ${esc(b.phoneDisplay)}</a>
+    </div>
   </div>
 </header>
 
@@ -239,18 +250,18 @@ ${head({ title, description, canonical, site: s, business: b, jsonLd: [restauran
   <div class="wrap">
     <div class="mark">
       ${logo('dark')}
-      <h1 id="baslik" class="sr-only">${esc(b.name)} · Odun ateşinde et döner, ${esc(b.address.district)} ${esc(b.address.city)}</h1>
+      <h1 id="baslik" class="sr-only">${esc(title)}</h1>
     </div>
     <div class="lede">
-      <p class="slogan">Öğlen on birden gece üçe. <b>${esc(b.slogan)}</b></p>
-      <p>${esc(b.address.district)}'nda odun ateşinde pişen et döner. Dürüm, pilav üstü, İskender; yanında sıcak çorba ve ev tatlısı. Gel otur, ya da ara, kapına gelsin.</p>
+      <p class="slogan">${esc(L.heroLine)} <b>${esc(b.slogan)}</b></p>
+      <p>${esc(fmt(L.heroText, v))}</p>
       <div class="clock">
         ${icon.clock}
-        <div><div class="k">Her gün açık</div><div class="v">${esc(open)} – ${esc(close)} <small>(gece)</small></div></div>
+        <div><div class="k">${esc(L.openDaily)}</div><div class="v">${esc(open)} – ${esc(close)} <small>${esc(L.night)}</small></div></div>
       </div>
       <div class="actions">
-        <a class="btn" href="${esc(menuHref)}">Menüyü Gör</a>
-        <a class="btn ghost" href="${esc(l.whatsapp)}" target="_blank" rel="noopener">WhatsApp ile Sipariş</a>
+        <a class="btn" href="${esc(menuHref)}">${esc(L.seeMenu)}</a>
+        <a class="btn ghost" href="${esc(l.whatsapp)}" target="_blank" rel="noopener">${esc(L.orderWhatsapp)}</a>
       </div>
     </div>
   </div>
@@ -258,7 +269,7 @@ ${head({ title, description, canonical, site: s, business: b, jsonLd: [restauran
 
 <div class="perks">
   <div class="wrap">
-    <ul aria-label="Neden biz">
+    <ul aria-label="${esc(L.whyUs)}">
 ${b.perks.map((p, i) => `      <li>${icon.perks[i % icon.perks.length]}${esc(p)}</li>`).join('\n')}
     </ul>
   </div>
@@ -285,16 +296,16 @@ ${b.wood.points.map((p) => `        <article class="point">
   <section class="block" id="lezzetler" aria-labelledby="h-lezzetler">
     <div class="wrap">
       <div class="head">
-        <span class="eyebrow">Közden tabağa</span>
-        <h2 id="h-lezzetler">Ne yiyeceğinizi bilmiyorsanız buradan başlayın</h2>
-        <p>Döner fiyatları ${data.gramSizes[0]} gram et içindir; ${data.gramSizes.slice(1).join(' ve ')} gramlık porsiyonlar menüde.</p>
+        <span class="eyebrow">${esc(L.dishesEyebrow)}</span>
+        <h2 id="h-lezzetler">${esc(L.dishesTitle)}</h2>
+        <p>${esc(fmt(L.dishesLead, v))}</p>
       </div>
       <div class="dishes">
 ${dishes(data)}
       </div>
       <div class="all">
-        <a class="btn ghost" href="${esc(menuHref)}">Tam menü ve fiyatlar</a>
-        <span>Tatlılar, içecekler, tüm gramajlar, kalori ve alerjen bilgisi menüde.</span>
+        <a class="btn ghost" href="${esc(menuHref)}">${esc(L.fullMenu)}</a>
+        <span>${esc(L.fullMenuNote)}</span>
         <p class="fine">${esc(data.nutritionNotice.lines[0])} ${esc(data.nutritionNotice.lines[1])}</p>
       </div>
     </div>
@@ -303,27 +314,25 @@ ${dishes(data)}
   <section class="block" id="siparis" aria-labelledby="h-siparis">
     <div class="wrap">
       <div class="head">
-        <span class="eyebrow">Alo Paket</span>
-        <h2 id="h-siparis">Aramanız yeter, gerisi bizde</h2>
-        <p>${esc(b.address.district)} içi paket servis. Sipariş için arayın ya da WhatsApp'tan yazın.</p>
+        <span class="eyebrow">${esc(L.orderEyebrow)}</span>
+        <h2 id="h-siparis">${esc(L.orderTitle)}</h2>
+        <p>${esc(fmt(L.orderLead, v))}</p>
       </div>
       <div class="order">
         <div class="card">
-          <h3>Telefonla</h3>
+          <h3>${esc(L.byPhone)}</h3>
           <a class="big" href="${esc(l.tel)}">${esc(b.phoneDisplay)}</a>
-          <p>Her gün ${esc(open)} ile gece ${esc(close)} arası açık hat.</p>
+          <p>${esc(fmt(L.openLine, v))}</p>
         </div>
         <div class="card">
-          <h3>WhatsApp ile</h3>
-          <p>Menüden seçin, adresinizi yazın, onaylayalım.</p>
-          <a class="btn" href="${esc(l.whatsapp)}" target="_blank" rel="noopener">WhatsApp'tan Yaz</a>
+          <h3>${esc(L.byWhatsapp)}</h3>
+          <p>${esc(L.whatsappLead)}</p>
+          <a class="btn" href="${esc(l.whatsapp)}" target="_blank" rel="noopener">${esc(L.writeWhatsapp)}</a>
         </div>
         <div class="card">
-          <h3>Nasıl işler?</h3>
+          <h3>${esc(L.howTitle)}</h3>
           <ol>
-            <li>Menüden seçiminizi yapın.</li>
-            <li>Arayın ya da yazın; adresinizi alalım.</li>
-            <li>Sıcak sıcak kapınıza gelsin.</li>
+${L.how.map((h) => `            <li>${esc(h)}</li>`).join('\n')}
           </ol>
         </div>
       </div>
@@ -334,7 +343,7 @@ ${dishes(data)}
     <div class="wrap">
       <div class="head">
         <span class="eyebrow">${esc(b.address.district)}, ${esc(b.address.city)}</span>
-        <h2 id="h-konum">Arapsuyu'nda, Belediye Caddesi üzerinde</h2>
+        <h2 id="h-konum">${esc(L.whereTitle)}</h2>
       </div>
       <div class="where">
         <div>
@@ -342,16 +351,16 @@ ${dishes(data)}
             <b>${esc(b.name)}</b>
             <span>${esc(b.address.street)}</span>
             <span>${esc(b.address.district)} / ${esc(b.address.city)}</span>
-            <a href="${esc(l.map)}" target="_blank" rel="noopener">Yol tarifi al</a>
+            <a href="${esc(l.map)}" target="_blank" rel="noopener">${esc(L.directions)}</a>
           </address>
-          <ul class="hours" aria-label="Çalışma saatleri">
-            <li><span>Pazartesi – Cuma</span><b>${esc(open)} – ${esc(close)}</b></li>
-            <li><span>Cumartesi</span><b>${esc(open)} – ${esc(close)}</b></li>
-            <li><span>Pazar</span><b>${esc(open)} – ${esc(close)}</b></li>
+          <ul class="hours" aria-label="${esc(L.hoursLabel)}">
+            <li><span>${esc(L.weekdays)}</span><b>${esc(open)} – ${esc(close)}</b></li>
+            <li><span>${esc(L.saturday)}</span><b>${esc(open)} – ${esc(close)}</b></li>
+            <li><span>${esc(L.sunday)}</span><b>${esc(open)} – ${esc(close)}</b></li>
           </ul>
         </div>
         <div class="map">
-          <iframe title="Harita: ${esc(b.address.street)}, ${esc(b.address.district)}" src="${esc(l.mapEmbed)}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
+          <iframe title="${esc(L.mapTitle)}: ${esc(b.address.street)}, ${esc(b.address.district)}" src="${esc(l.mapEmbed)}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
         </div>
       </div>
     </div>
@@ -360,8 +369,8 @@ ${dishes(data)}
   <section class="block" id="sss" aria-labelledby="h-sss">
     <div class="wrap">
       <div class="head">
-        <span class="eyebrow">Sık sorulanlar</span>
-        <h2 id="h-sss">Merak edilenler</h2>
+        <span class="eyebrow">${esc(L.faqEyebrow)}</span>
+        <h2 id="h-sss">${esc(L.faqTitle)}</h2>
       </div>
       <div class="faq">
 ${b.faq.map((f) => `        <details>
@@ -377,13 +386,14 @@ ${b.faq.map((f) => `        <details>
 <footer>
   <div class="wrap">
     <span>© ${esc(b.name)} · ${esc(b.address.district)}, ${esc(b.address.city)}</span>
-    <span><a href="${esc(menuHref)}">QR Menü</a> · <a href="${esc(l.tel)}">${esc(b.phoneDisplay)}</a></span>
+    ${langSwitcher(data, 'site', path)}
+    <span><a href="${esc(menuHref)}">${esc(L.qrMenu)}</a> · <a href="${esc(l.tel)}">${esc(b.phoneDisplay)}</a></span>
   </div>
 </footer>
 
-<div class="bar" aria-label="Hızlı sipariş">
-  <a href="${esc(l.tel)}">${icon.phone}Ara</a>
-  <a href="${esc(menuHref)}">${icon.menu}Menü</a>
+<div class="bar" aria-label="${esc(L.quickOrder)}">
+  <a href="${esc(l.tel)}">${icon.phone}${esc(L.call)}</a>
+  <a href="${esc(menuHref)}">${icon.menu}${esc(L.menu)}</a>
 </div>
 
 <script>${JS}</script>

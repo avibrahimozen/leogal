@@ -1,4 +1,4 @@
-// Menü verisinden tüm sayfaları ve SEO dosyalarını üretir.
+// Menü verisinden tüm dillerdeki sayfaları ve SEO dosyalarını üretir.
 //   node src/build.js          -> dosyaları yazar
 //   node src/build.js --check  -> yazmaz; diskteki çıktı güncel değilse hata verir
 import { readFile, writeFile, mkdir, rm } from 'node:fs/promises';
@@ -9,6 +9,7 @@ import { renderSite } from './templates/site.js';
 import { renderNotFound } from './templates/notfound.js';
 import { sitemapXml, robotsTxt } from './lib/seo.js';
 import { STATIC_ASSETS, ASSETS_DIR } from './lib/assets.js';
+import { LANGS, localize } from './lib/i18n.js';
 
 export const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 /** Yayın kökü: depo kökü. GitHub Pages ve özel alan adı buradan servis edilir. */
@@ -26,18 +27,21 @@ export async function loadData() {
 /** Çıktı dosyalarını (yol -> içerik) üretir; diske yazmaz. */
 export async function render(data = null) {
   data ??= await loadData();
-  const s = data.site;
   const out = new Map();
-  out.set(join(s.sitePath, 'index.html'), renderSite(data));
-  out.set(join(s.menuPath, 'index.html'), renderMenu(data));
-  // Basılı QR kodların adresi: aynı menü, canonical /menu/ adresini gösterir.
-  for (const alias of s.menuAliases ?? []) out.set(join(alias, 'index.html'), renderMenu(data, { path: alias }));
+  for (const lang of LANGS) {
+    const d = localize(data, lang.code);
+    out.set(join(lang.sitePath, 'index.html'), renderSite(d));
+    out.set(join(lang.menuPath, 'index.html'), renderMenu(d));
+    // Basılı QR kodların adresi (yalnızca varsayılan dil): aynı menü, canonical /menu/ adresini gösterir.
+    for (const alias of d.site.menuAliases ?? []) out.set(join(alias, 'index.html'), renderMenu(d, { path: alias }));
+  }
+  const base = localize(data);
   out.set('404.html', renderNotFound(data));
   // lastmod veri dosyasındaki "updated" alanından gelir; fiyat değiştirince o tarihi güncelleyin.
-  out.set('sitemap.xml', sitemapXml(data, data.updated));
-  out.set('robots.txt', robotsTxt(data));
+  out.set('sitemap.xml', sitemapXml(base, data.updated));
+  out.set('robots.txt', robotsTxt(base));
   for (const name of STATIC_ASSETS) out.set(join('assets', name), await readFile(join(ASSETS_DIR, name)));
-  if (s.domainActive) out.set('CNAME', s.domain + '\n');
+  if (data.site.domainActive) out.set('CNAME', data.site.domain + '\n');
   return out;
 }
 
