@@ -1,17 +1,21 @@
-import { Router } from 'express';
+import { Router, type Request, type Response } from 'express';
 import { z } from 'zod';
-import { setSetting, type Db } from '../db.js';
+import { deleteSetting, getSetting, hasSetting, scopedKey, setSetting, type Db } from '../db.js';
 import { requireAuth } from '../lib/auth.js';
-import { defaultSettings } from '../config.js';
+import { defaultSettings, type SettingKey } from '../config.js';
+import { isCountryCode, type CountryCode } from '../lib/regions.js';
 import type { Hub } from '../realtime.js';
 import { getDemandHint } from './public.js';
 
+// null: ülkeye özel değeri kaldır (genel tarifeye dön). Genel ayarda null yok sayılır.
 const settingsSchema = z.object({
-  base_fare: z.coerce.number().positive().optional(),
-  per_km: z.coerce.number().positive().optional(),
-  min_fare: z.coerce.number().positive().optional(),
-  commission_rate: z.coerce.number().min(0).max(0.5).optional(),
+  base_fare: z.coerce.number().positive().nullable().optional(),
+  per_km: z.coerce.number().positive().nullable().optional(),
+  min_fare: z.coerce.number().positive().nullable().optional(),
+  commission_rate: z.coerce.number().min(0).max(0.5).nullable().optional(),
 });
+
+const SETTING_KEYS = Object.keys(defaultSettings) as SettingKey[];
 
 const settlementSchema = z.object({
   amount: z.number().positive(),
@@ -27,7 +31,7 @@ export function adminRoutes(db: Db, hub: Hub): Router {
     const status = typeof req.query.status === 'string' ? req.query.status : null;
     const rows = db
       .prepare(
-        `SELECT u.id, u.name, u.phone, u.created_at, d.license_no, d.vehicle_plate, d.vehicle_model, d.city, d.status, d.is_online, d.rating_sum, d.rating_count, d.lat, d.lng, d.location_at,
+        `SELECT u.id, u.name, u.phone, u.created_at, d.license_no, d.vehicle_plate, d.vehicle_model, d.city, d.country, d.status, d.is_online, d.rating_sum, d.rating_count, d.lat, d.lng, d.location_at,
            (SELECT COALESCE(SUM(CASE WHEN l.type = 'commission' THEN l.amount ELSE -l.amount END), 0) FROM ledger l WHERE l.driver_id = u.id) AS commission_due
          FROM users u JOIN drivers d ON d.user_id = u.id
          WHERE (? IS NULL OR d.status = ?)
@@ -43,6 +47,7 @@ export function adminRoutes(db: Db, hub: Hub): Router {
         vehiclePlate: r.vehicle_plate,
         vehicleModel: r.vehicle_model,
         city: r.city,
+        country: r.country,
         status: r.status,
         isOnline: r.is_online === 1,
         lat: r.lat,
@@ -175,28 +180,53 @@ export function adminRoutes(db: Db, hub: Hub): Router {
     });
   });
 
-  /** Ücret / komisyon ayarları. */
-  router.get('/settings', (_req, res) => {
-    const rows = db.prepare('SELECT key, value FROM settings').all() as unknown as Array<{
-      key: string;
-      value: string;
-    }>;
-    const settings: Record<string, number> = {};
-    for (const key of Object.keys(defaultSettings)) {
-      const row = rows.find((r) => r.key === key);
-      settings[key] = Number(row?.value ?? defaultSettings[key as keyof typeof defaultSettings]);
+  /**
+   * ?country=TR|KKTC sorgu parametresi: verilirse o ülkeye özel ayarlar hedeflenir,
+   * verilmezse genel (tüm ülkeler için geçerli) ayarlar. Geçersiz ülkede 400 döner.
+   */
+  function countryParam(req: Request, res: Response): { ok: true; country: CountryCode | null } | { ok: false } {
+    const raw = req.query.country;
+    if (raw === undefined || raw === '') return { ok: true, country: null };
+    if (!isCountryCode(raw)) {
+      res.status(400).json({ error: 'Geçersiz ülke (KKTC veya TR)' });
+      return { ok: false };
     }
-    res.json({ settings });
+    return { ok: true, country: raw };
+  }
+
+  /**
+   * Ücret / komisyon ayarları. Ülke verilirse o ülke için yürürlükteki değerler
+   * (özel yoksa genel) ve hangi anahtarların ülkeye özel olduğu (`overrides`) döner.
+   */
+  router.get('/settings', (req, res) => {
+    const q = countryParam(req, res);
+    if (!q.ok) return;
+    const settings: Record<string, number> = {};
+    const overrides: SettingKey[] = [];
+    for (const key of SETTING_KEYS) {
+      settings[key] = getSetting(db, key, q.country);
+      if (q.country && hasSetting(db, scopedKey(key, q.country))) overrides.push(key);
+    }
+    res.json({ settings, country: q.country, overrides });
   });
 
   router.put('/settings', (req, res) => {
+    const q = countryParam(req, res);
+    if (!q.ok) return;
     const parsed = settingsSchema.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({ error: 'Geçersiz ayar değeri' });
       return;
     }
-    for (const [key, value] of Object.entries(parsed.data)) {
-      if (value !== undefined) setSetting(db, key, String(value));
+    for (const key of SETTING_KEYS) {
+      const value = parsed.data[key];
+      if (value === undefined) continue;
+      if (value === null) {
+        // Ülkeye özel değeri kaldır → genel tarife geçerli olur; genel ayar silinemez
+        if (q.country) deleteSetting(db, scopedKey(key, q.country));
+        continue;
+      }
+      setSetting(db, scopedKey(key, q.country), String(value));
     }
     res.json({ ok: true });
   });

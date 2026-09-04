@@ -1,5 +1,6 @@
 import { DatabaseSync } from 'node:sqlite';
-import { config, defaultSettings, type SettingKey } from './config.js';
+import { config, defaultCountrySettings, defaultSettings, type SettingKey } from './config.js';
+import type { CountryCode } from './lib/regions.js';
 
 export type Db = DatabaseSync;
 
@@ -31,6 +32,8 @@ CREATE TABLE IF NOT EXISTS drivers (
   vehicle_plate TEXT NOT NULL,
   vehicle_model TEXT NOT NULL,
   city TEXT NOT NULL,
+  -- Sürücünün çalıştığı ülke (KKTC | TR); şehir bu ülkenin listesinden seçilir
+  country TEXT NOT NULL DEFAULT 'KKTC',
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected','suspended')),
   is_online INTEGER NOT NULL DEFAULT 0,
   lat REAL,
@@ -54,6 +57,8 @@ CREATE TABLE IF NOT EXISTS rides (
   drop_address TEXT NOT NULL,
   est_distance_km REAL NOT NULL,
   est_fare REAL NOT NULL,
+  -- Alış noktasına göre uygulanan tarife ülkesi (KKTC | TR); eski kayıtlarda NULL
+  country TEXT,
   final_fare REAL,
   commission REAL,
   cancel_reason TEXT,
@@ -99,26 +104,62 @@ export function createDb(path: string = config.dbPath): Db {
   for (const [key, value] of Object.entries(defaultSettings)) {
     insertSetting.run(key, value);
   }
+  // Ülkeye özel varsayılanlar yalnızca ilk açılışta yazılır: yönetici sonradan
+  // bir ülkenin özel tarifesini kaldırırsa yeniden açılışta geri gelmemeli.
+  for (const [country, values] of Object.entries(defaultCountrySettings)) {
+    const marker = `seeded:${country}`;
+    if (hasSetting(db, marker)) continue;
+    for (const [key, value] of Object.entries(values ?? {})) {
+      insertSetting.run(scopedKey(key as SettingKey, country as CountryCode), value);
+    }
+    insertSetting.run(marker, new Date().toISOString());
+  }
   return db;
 }
 
 /** Eski veritabanlarına sonradan eklenen sütunları uygular. */
 function migrate(db: Db): void {
-  const userCols = db.prepare('PRAGMA table_info(users)').all() as unknown as Array<{ name: string }>;
-  if (!userCols.some((c) => c.name === 'phone_verified_at')) {
-    db.exec('ALTER TABLE users ADD COLUMN phone_verified_at TEXT');
+  addColumnIfMissing(db, 'users', 'phone_verified_at', 'TEXT');
+  addColumnIfMissing(db, 'drivers', 'country', "TEXT NOT NULL DEFAULT 'KKTC'");
+  addColumnIfMissing(db, 'rides', 'country', 'TEXT');
+}
+
+function addColumnIfMissing(db: Db, table: string, column: string, definition: string): void {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all() as unknown as Array<{ name: string }>;
+  if (!cols.some((c) => c.name === column)) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
   }
 }
 
-export function getSetting(db: Db, key: SettingKey): number {
-  const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key) as
-    | { value: string }
-    | undefined;
+/** Ülkeye özel ayar anahtarı: `TR:per_km`. Ülke verilmezse genel anahtar. */
+export function scopedKey(key: SettingKey, country?: CountryCode | null): string {
+  return country ? `${country}:${key}` : key;
+}
+
+export function hasSetting(db: Db, key: string): boolean {
+  return db.prepare('SELECT 1 FROM settings WHERE key = ?').get(key) !== undefined;
+}
+
+/**
+ * Ayar değerini okur. Ülke verilirse önce `${ülke}:${anahtar}` aranır,
+ * yoksa genel anahtara, o da yoksa koddaki varsayılana düşülür.
+ */
+export function getSetting(db: Db, key: SettingKey, country?: CountryCode | null): number {
+  const select = db.prepare('SELECT value FROM settings WHERE key = ?');
+  if (country) {
+    const scoped = select.get(scopedKey(key, country)) as { value: string } | undefined;
+    if (scoped) return Number(scoped.value);
+  }
+  const row = select.get(key) as { value: string } | undefined;
   return Number(row?.value ?? defaultSettings[key]);
 }
 
 export function setSetting(db: Db, key: string, value: string): void {
   db.prepare('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value').run(key, value);
+}
+
+export function deleteSetting(db: Db, key: string): void {
+  db.prepare('DELETE FROM settings WHERE key = ?').run(key);
 }
 
 export function nowIso(): string {

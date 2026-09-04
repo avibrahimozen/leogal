@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { config } from '../config.js';
 import type { Db } from '../db.js';
 import { haversineKm } from '../lib/geo.js';
+import { COUNTRIES, COUNTRY_CODES } from '../lib/regions.js';
 
 const nearbySchema = z.object({
   lat: z.coerce.number().min(-90).max(90).default(35.1856),
@@ -61,6 +62,17 @@ export function publicRoutes(db: Db): Router {
       .slice(0, 50);
 
     res.json({ count: drivers.length, drivers });
+  });
+
+  /** Hizmet verilen ülkeler ve şehir listeleri — mobil uygulamanın tek kaynağı. */
+  router.get('/regions', (_req, res) => {
+    res.json({
+      countries: COUNTRY_CODES.map((code) => ({
+        code,
+        name: COUNTRIES[code].name,
+        cities: COUNTRIES[code].cities,
+      })),
+    });
   });
 
   return router;

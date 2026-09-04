@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { config } from '../config.js';
 import type { Db } from '../db.js';
 import { requireAuth, signToken, type Role } from '../lib/auth.js';
+import { COUNTRIES, isValidCity } from '../lib/regions.js';
 import { OtpError, verifyPhoneToken, type OtpService } from '../otp.js';
 
 const phoneSchema = z
@@ -26,12 +27,25 @@ const otpVerifySchema = z.object({
   code: z.string().regex(/^[0-9]{6}$/, 'Kod 6 haneli olmalı'),
 });
 
-const driverRegisterSchema = registerSchema.extend({
-  licenseNo: z.string().min(3, 'Ehliyet/ruhsat numarası gerekli').max(40),
-  vehiclePlate: z.string().min(3, 'Araç plakası gerekli').max(16),
-  vehicleModel: z.string().min(2, 'Araç modeli gerekli').max(60),
-  city: z.enum(['Lefkoşa', 'Girne', 'Gazimağusa', 'Güzelyurt', 'İskele', 'Lefke']),
-});
+const driverRegisterSchema = registerSchema
+  .extend({
+    licenseNo: z.string().min(3, 'Ehliyet/ruhsat numarası gerekli').max(40),
+    vehiclePlate: z.string().min(3, 'Araç plakası gerekli').max(16),
+    vehicleModel: z.string().min(2, 'Araç modeli gerekli').max(60),
+    // Ülke verilmezse KKTC varsayılır (eski uygulama sürümleri ülke göndermez)
+    country: z.enum(['KKTC', 'TR'], { message: 'Geçersiz ülke (KKTC veya TR)' }).default('KKTC'),
+    city: z.string().min(1, 'Çalıştığınız şehri seçin').max(60),
+  })
+  .superRefine((data, ctx) => {
+    // Şehir, seçilen ülkenin listesinden olmalı (lib/regions.ts tek kaynak)
+    if (!isValidCity(data.country, data.city)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['city'],
+        message: `${COUNTRIES[data.country].name} için geçerli bir şehir seçin`,
+      });
+    }
+  });
 
 const loginSchema = z.object({
   phone: phoneSchema,
@@ -52,6 +66,7 @@ export interface DriverRow {
   vehicle_plate: string;
   vehicle_model: string;
   city: string;
+  country: string;
   status: string;
   is_online: number;
   rating_sum: number;
@@ -70,6 +85,7 @@ export function publicUser(user: UserRow, driver?: DriverRow | null) {
           vehiclePlate: driver.vehicle_plate,
           vehicleModel: driver.vehicle_model,
           city: driver.city,
+          country: driver.country,
           status: driver.status,
           isOnline: driver.is_online === 1,
           rating: driver.rating_count > 0 ? Math.round((driver.rating_sum / driver.rating_count) * 10) / 10 : null,
@@ -184,7 +200,7 @@ export function authRoutes(db: Db, otp: OtpService): Router {
       res.status(400).json({ error: parsed.error.issues[0]?.message ?? 'Geçersiz istek' });
       return;
     }
-    const { name, password, licenseNo, vehiclePlate, vehicleModel, city } = parsed.data;
+    const { name, password, licenseNo, vehiclePlate, vehicleModel, city, country } = parsed.data;
     const phone = normalizePhone(parsed.data.phone);
     const verificationError = checkPhoneVerification(phone, parsed.data.verificationToken);
     if (verificationError) {
@@ -204,8 +220,8 @@ export function authRoutes(db: Db, otp: OtpService): Router {
       .run(phone, name, hash, config.otpRequired ? new Date().toISOString() : null);
     const userId = Number(result.lastInsertRowid);
     db.prepare(
-      'INSERT INTO drivers (user_id, license_no, vehicle_plate, vehicle_model, city) VALUES (?, ?, ?, ?, ?)',
-    ).run(userId, licenseNo, vehiclePlate.toUpperCase(), vehicleModel, city);
+      'INSERT INTO drivers (user_id, license_no, vehicle_plate, vehicle_model, city, country) VALUES (?, ?, ?, ?, ?, ?)',
+    ).run(userId, licenseNo, vehiclePlate.toUpperCase(), vehicleModel, city, country);
     const user: UserRow = { id: userId, phone, name, password_hash: hash, role: 'driver' };
     res.status(201).json({
       token: signToken({ id: userId, role: 'driver' }),

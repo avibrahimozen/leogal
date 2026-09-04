@@ -24,7 +24,7 @@
   .login-card p { color: var(--muted); font-size: 14px; margin: 4px 0 24px; }
   .field { margin-bottom: 14px; }
   .field label { display: block; font-size: 12px; font-weight: 600; color: var(--ink-soft); margin-bottom: 5px; }
-  .field input { width: 100%; height: 44px; border: 1.5px solid var(--line); border-radius: 8px; padding: 0 12px; }
+  .field input, .field select { width: 100%; height: 44px; border: 1.5px solid var(--line); border-radius: 8px; padding: 0 12px; background: #fff; }
   .btn-primary { width: 100%; height: 46px; background: var(--primary); font-weight: 700; }
   .error { color: var(--danger); font-size: 13px; margin-top: 10px; min-height: 18px; }
 
@@ -79,7 +79,7 @@
 <div id="login-view">
   <div class="login-card">
     <h1>ulak<span>.</span></h1>
-    <p>Yönetim Paneli — Kuzey Kıbrıs'ın taksi ağı</p>
+    <p>Yönetim Paneli — Kıbrıs ve Türkiye'nin taksi ağı</p>
     <div class="field">
       <label>Telefon Numarası</label>
       <input id="login-phone" placeholder="+903920000000" autocomplete="username">
@@ -137,13 +137,22 @@
       <div class="card">
         <h2>⚙️ Tarife ve Komisyon Ayarları</h2>
         <div class="settings-grid">
+          <div class="field"><label>Ülke</label>
+            <select id="set-country">
+              <option value="">Genel (tüm ülkeler)</option>
+              <option value="KKTC">Kuzey Kıbrıs</option>
+              <option value="TR">Türkiye</option>
+            </select>
+          </div>
           <div class="field"><label>Açılış Ücreti (TL)</label><input id="set-base_fare" type="number" min="1"></div>
           <div class="field"><label>Km Başına (TL)</label><input id="set-per_km" type="number" min="1"></div>
           <div class="field"><label>Asgari Ücret (TL)</label><input id="set-min_fare" type="number" min="1"></div>
           <div class="field"><label>Komisyon Oranı (0–0.5)</label><input id="set-commission_rate" type="number" step="0.01" min="0" max="0.5"></div>
           <button class="btn-primary" style="height:44px" id="save-settings">Kaydet</button>
         </div>
-        <p class="muted" style="margin-top:12px">Değişiklikler anında yürürlüğe girer; yeni çağrı tahminleri güncel tarifeyle hesaplanır.</p>
+        <p class="muted" style="margin-top:12px">Değişiklikler anında yürürlüğe girer; yeni çağrı tahminleri güncel tarifeyle hesaplanır. Tarife, çağrının alış noktasının ülkesine göre seçilir: ülkeye özel değer yoksa genel tarife uygulanır.</p>
+        <p class="muted" id="settings-overrides" style="margin-top:6px"></p>
+        <div class="actions" style="margin-top:10px"><button class="act-suspend" id="reset-country-settings" style="display:none">Bu ülkenin özel tarifesini kaldır (genel tarifeye dön)</button></div>
       </div>
     </section>
   </main>
@@ -287,7 +296,7 @@ function driverTable(drivers, withActions) {
       <td><b>${esc(d.name)}</b><br><span class="muted">${esc(d.licenseNo)}</span></td>
       <td>${esc(d.phone)}</td>
       <td>${esc(d.vehiclePlate)}<br><span class="muted">${esc(d.vehicleModel)}</span></td>
-      <td>${esc(d.city)}</td>
+      <td>${esc(d.city)}<br><span class="muted">${esc(COUNTRY_NAMES[d.country] || d.country || '')}</span></td>
       <td>${badge(d.status)}</td>
       <td><span class="badge ${d.isOnline ? 'online' : 'offline'}">${d.isOnline ? 'Çevrimiçi' : 'Çevrimdışı'}</span></td>
       <td>${d.rating ? '⭐ ' + d.rating : '—'}</td>
@@ -345,22 +354,58 @@ async function loadRides() {
 }
 
 /* ---------- Ayarlar ---------- */
+const SETTING_KEYS = ['base_fare', 'per_km', 'min_fare', 'commission_rate'];
+const SETTING_LABELS = { base_fare: 'açılış', per_km: 'km', min_fare: 'asgari', commission_rate: 'komisyon' };
+const COUNTRY_NAMES = { KKTC: 'Kuzey Kıbrıs', TR: 'Türkiye' };
+
+/* Ülke seçiliyse ülkeye özel, değilse genel ayarlar hedeflenir */
+function settingsPath() {
+  const country = $('#set-country').value;
+  return '/admin/settings' + (country ? '?country=' + country : '');
+}
+
 async function loadSettings() {
-  const res = await api('GET', '/admin/settings');
-  for (const key of ['base_fare', 'per_km', 'min_fare', 'commission_rate']) {
-    $('#set-' + key).value = res.settings[key];
+  const res = await api('GET', settingsPath());
+  const overrides = res.overrides || [];
+  for (const key of SETTING_KEYS) {
+    const input = $('#set-' + key);
+    input.value = res.settings[key];
+    // Ülkeye özel değeri olan alanlar sarı kenarlıkla vurgulanır
+    input.style.borderColor = overrides.includes(key) ? 'var(--primary)' : '';
   }
+  const country = $('#set-country').value;
+  $('#reset-country-settings').style.display = country && overrides.length ? '' : 'none';
+  $('#settings-overrides').textContent = !country
+    ? 'Genel tarife: ülkeye özel değeri olmayan her alan için geçerlidir.'
+    : overrides.length === 0
+      ? COUNTRY_NAMES[country] + ' için özel değer yok; genel tarife uygulanıyor. Kaydedince girilen alanlar bu ülkeye özel olur.'
+      : COUNTRY_NAMES[country] + ' için özel: ' + overrides.map((k) => SETTING_LABELS[k]).join(', ') + ' · diğer alanlar genel tarifeden.';
 }
 
 async function saveSettings() {
   const body = {};
-  for (const key of ['base_fare', 'per_km', 'min_fare', 'commission_rate']) {
+  for (const key of SETTING_KEYS) {
     const v = Number($('#set-' + key).value);
     if (Number.isFinite(v)) body[key] = v;
   }
+  const country = $('#set-country').value;
   try {
-    await api('PUT', '/admin/settings', body);
-    toast('Tarife güncellendi ⚙️');
+    await api('PUT', settingsPath(), body);
+    toast(country ? COUNTRY_NAMES[country] + ' tarifesi güncellendi ⚙️' : 'Genel tarife güncellendi ⚙️');
+    loadSettings();
+  } catch (e) { toast(e.message); }
+}
+
+async function resetCountrySettings() {
+  const country = $('#set-country').value;
+  if (!country) return;
+  if (!confirm(COUNTRY_NAMES[country] + ' için özel tarife kaldırılsın ve genel tarife uygulansın mı?')) return;
+  const body = {};
+  for (const key of SETTING_KEYS) body[key] = null;
+  try {
+    await api('PUT', settingsPath(), body);
+    toast('Genel tarifeye dönüldü');
+    loadSettings();
   } catch (e) { toast(e.message); }
 }
 
@@ -381,6 +426,8 @@ $('#login-btn').addEventListener('click', login);
 $('#login-password').addEventListener('keydown', (e) => { if (e.key === 'Enter') login(); });
 $('#logout').addEventListener('click', logout);
 $('#save-settings').addEventListener('click', saveSettings);
+$('#set-country').addEventListener('change', loadSettings);
+$('#reset-country-settings').addEventListener('click', resetCountrySettings);
 
 if (token) {
   api('GET', '/auth/me').then((res) => {
