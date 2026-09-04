@@ -4,6 +4,11 @@ import { verifyToken, type AuthUser } from './lib/auth.js';
 import type { Db } from './db.js';
 import { nowIso } from './db.js';
 
+/** Sonlu sayı ve verilen aralıkta mı? (socket yükü doğrulanmadan gelir) */
+function inRange(value: unknown, min: number, max: number): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= min && value <= max;
+}
+
 /**
  * Gerçek zamanlı katman. Her kullanıcı kimliği doğrulanmış tek bir
  * `user:{id}` odasına katılır; sunucu olayları bu odalara yayınlar.
@@ -13,6 +18,7 @@ import { nowIso } from './db.js';
  *  - ride:offer_closed   teklif başka sürücüye gitti / iptal oldu
  *  - ride:update         çağrı durum değişikliği (yolcu + sürücü)
  *  - driver:location     aktif çağrıdaki sürücü konumu (yolcuya)
+ *  - driver:status       sürücü hesap/çevrimiçi durumu değişti (uygulama /me'yi tazeler)
  *
  * Olaylar (istemci -> sunucu):
  *  - driver:location     { lat, lng } sürücü konum güncellemesi
@@ -37,10 +43,12 @@ export class Hub {
       const user = (socket.data as { user: AuthUser }).user;
       socket.join(`user:${user.id}`);
 
-      socket.on('driver:location', (payload: { lat?: number; lng?: number }) => {
+      socket.on('driver:location', (payload: { lat?: unknown; lng?: unknown } | undefined) => {
         if (user.role !== 'driver') return;
-        const { lat, lng } = payload ?? {};
-        if (typeof lat !== 'number' || typeof lng !== 'number') return;
+        const lat = payload?.lat;
+        const lng = payload?.lng;
+        // REST yolundaki zod şemasıyla aynı sınırlar: NaN, sonsuz ve aralık dışı değerler yok sayılır
+        if (!inRange(lat, -90, 90) || !inRange(lng, -180, 180)) return;
         this.updateDriverLocation(user.id, lat, lng);
       });
     });
