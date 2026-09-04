@@ -1,0 +1,598 @@
+{
+  "business": {
+    "name": "7/23 Gece Dönercisi",
+    "shortName": "7/23",
+    "tagline": "Gece Dönercisi",
+    "slogan": "Geceyi değil, açlığı bitir.",
+    "description": "Konyaaltı Antalya'da odun ateşinde pişen et döner. Her gün 11:00'den gece 03:00'e açık. Dürüm, pilav üstü, İskender, çorba ve tatlı. Alo Paket 0552 990 07 23.",
+    "phoneDisplay": "0552 990 07 23",
+    "phoneE164": "+905529900723",
+    "whatsappText": "Merhaba, sipariş vermek istiyorum.",
+    "address": {
+      "street": "Arapsuyu Mahallesi, Belediye Cad. No: 12/B",
+      "district": "Konyaaltı",
+      "city": "Antalya",
+      "country": "TR"
+    },
+    "mapQuery": "Arapsuyu Mahallesi Belediye Caddesi 12/B Konyaaltı Antalya",
+    "hours": {
+      "opens": "11:00",
+      "closes": "03:00"
+    },
+    "cuisine": "Döner, Türk mutfağı",
+    "priceRange": "₺₺",
+    "perks": [
+      "Odun ateşinde pişer",
+      "Gece gündüz hizmetinizdeyiz",
+      "Taze malzeme, lezzetin sırrı",
+      "Alo paket, hızlı teslimat",
+      "Temizlik önceliğimiz"
+    ],
+    "wood": {
+      "eyebrow": "Odun ateşi",
+      "title": "Odun ateşiyle pişer",
+      "lead": "Dönerimiz odun ateşinin karşısında, acele etmeden pişer. Dışı közlenir, içi sulu kalır; kokusu sokaktan belli olur.",
+      "points": [
+        {
+          "title": "Odun közü",
+          "text": "Döner odun ateşinin közünde döner. Isı kademeli verilir, et dıştan içe eşit pişer."
+        },
+        {
+          "title": "Sıcak kesim",
+          "text": "Döner siparişle kesilir. Kestiğimiz her dilim közden yeni inmiştir."
+        },
+        {
+          "title": "Taze malzeme",
+          "text": "Ekmek, lavaş ve yeşillik günlük alınır; pilav tereyağıyla her gün yeniden yapılır."
+        }
+      ]
+    },
+    "faq": [
+      {
+        "q": "Kaça kadar açıksınız?",
+        "a": "Her gün 11:00'de açılır, gece 03:00'e kadar hizmet veririz. Gece geç saatte de sıcak döner bulursunuz."
+      },
+      {
+        "q": "Paket servis var mı?",
+        "a": "Evet. Konyaaltı içine paket servis yapıyoruz. 0552 990 07 23 numarasını arayın ya da WhatsApp'tan yazın."
+      },
+      {
+        "q": "Döner nasıl pişiyor?",
+        "a": "Odun ateşinde. Döner közün karşısında yavaş yavaş pişer."
+      },
+      {
+        "q": "Neredesiniz?",
+        "a": "Arapsuyu Mahallesi, Belediye Caddesi No: 12/B, Konyaaltı / Antalya. Haritada aç bağlantısıyla yol tarifi alabilirsiniz."
+      },
+      {
+        "q": "Fiyatlar nasıl belirleniyor?",
+        "a": "Döner fiyatları 100, 150 ve 200 gram et için ayrı ayrı yazılır. Güncel fiyatlar QR menüde."
+      }
+    ]
+  },
+  "site": {
+    "domain": "antalyagecedonercisi.com",
+    "domainActive": false,
+    "domainBaseUrl": "https://antalyagecedonercisi.com/",
+    "legacyBaseUrl": "https://avibrahimozen.github.io/leogal/",
+    "sitePath": "",
+    "menuPath": "menu/",
+    "menuAliases": [
+      "7-23-restaurant/"
+    ],
+    "locale": "tr_TR",
+    "keywords": [
+      "döner",
+      "et döner",
+      "odun ateşinde döner",
+      "dönerci",
+      "Konyaaltı",
+      "Antalya",
+      "Arapsuyu",
+      "alo paket",
+      "iskender",
+      "dürüm",
+      "gece açık dönerci"
+    ]
+  },
+  "updated": "2026-09-04",
+  "currency": "TRY",
+  "gramSizes": [
+    100,
+    150,
+    200
+  ],
+  "sections": [
+    {
+      "id": "doner",
+      "title": "Döner Çeşitleri",
+      "navLabel": "Döner",
+      "note": "Fiyatlar et gramajına göre",
+      "style": "kor",
+      "type": "grams",
+      "items": [
+        {
+          "id": "et-doner-durum",
+          "name": "Et Döner Dürüm",
+          "prices": [
+            410,
+            600,
+            790
+          ],
+          "kcal": [
+            600,
+            740,
+            880
+          ],
+          "allergens": [
+            "gluten"
+          ],
+          "traces": [
+            "sut",
+            "susam",
+            "yumurta"
+          ]
+        },
+        {
+          "id": "gobit-doner",
+          "name": "Gobit Döner",
+          "prices": [
+            410,
+            600,
+            790
+          ],
+          "kcal": [
+            540,
+            680,
+            820
+          ],
+          "allergens": [
+            "gluten",
+            "susam"
+          ],
+          "traces": [
+            "sut",
+            "yumurta"
+          ]
+        },
+        {
+          "id": "somun-doner",
+          "name": "Somun Döner",
+          "prices": [
+            410,
+            600,
+            790
+          ],
+          "kcal": [
+            620,
+            760,
+            900
+          ],
+          "allergens": [
+            "gluten"
+          ],
+          "traces": [
+            "sut",
+            "susam",
+            "yumurta"
+          ]
+        },
+        {
+          "id": "et-doner-burger",
+          "name": "Et Döner Burger",
+          "prices": [
+            450,
+            650,
+            790
+          ],
+          "kcal": [
+            650,
+            790,
+            930
+          ],
+          "allergens": [
+            "gluten",
+            "sut",
+            "susam"
+          ],
+          "traces": [
+            "yumurta"
+          ]
+        },
+        {
+          "separator": true
+        },
+        {
+          "id": "sade-et-doner",
+          "name": "Sade Et Döner",
+          "prices": [
+            470,
+            670,
+            880
+          ],
+          "kcal": [
+            320,
+            460,
+            600
+          ],
+          "allergens": [],
+          "traces": [
+            "gluten",
+            "sut"
+          ]
+        },
+        {
+          "id": "pilav-ustu-et-doner",
+          "name": "Pilav Üstü Et Döner",
+          "prices": [
+            500,
+            700,
+            900
+          ],
+          "kcal": [
+            650,
+            790,
+            930
+          ],
+          "allergens": [
+            "sut"
+          ],
+          "traces": [
+            "gluten"
+          ]
+        },
+        {
+          "id": "iskender",
+          "name": "İskender",
+          "prices": [
+            650,
+            850,
+            null
+          ],
+          "kcal": [
+            780,
+            920,
+            null
+          ],
+          "allergens": [
+            "gluten",
+            "sut"
+          ],
+          "traces": []
+        }
+      ]
+    },
+    {
+      "id": "menuler",
+      "title": "Menüler",
+      "navLabel": "Menüler",
+      "style": "koz",
+      "type": "list",
+      "items": [
+        {
+          "id": "icli-kofte",
+          "name": "İçli Köfte",
+          "price": 140,
+          "kcal": 380,
+          "allergens": [
+            "gluten"
+          ],
+          "traces": [
+            "yumurta",
+            "yemis"
+          ]
+        },
+        {
+          "id": "patates-kizartmasi",
+          "name": "Patates Kızartması",
+          "price": 160,
+          "kcal": 450,
+          "allergens": [],
+          "traces": [
+            "gluten"
+          ]
+        }
+      ],
+      "feature": {
+        "id": "cocuk-menu",
+        "name": "Çocuk Menü",
+        "price": 400,
+        "detail": "65 gr döner · Sürpriz hediyeli!",
+        "kcal": 620,
+        "allergens": [
+          "gluten",
+          "sut"
+        ],
+        "traces": [
+          "yumurta",
+          "susam"
+        ]
+      }
+    },
+    {
+      "id": "corbalar",
+      "title": "Çorbalar",
+      "navLabel": "Çorbalar",
+      "note": "Sıcacık, limonlu",
+      "style": "kor",
+      "type": "list",
+      "items": [
+        {
+          "id": "mercimek-corbasi",
+          "name": "Mercimek Çorbası",
+          "price": 190,
+          "kcal": 180,
+          "allergens": [],
+          "traces": [
+            "gluten",
+            "sut"
+          ]
+        },
+        {
+          "id": "ezogelin-corbasi",
+          "name": "Ezogelin Çorbası",
+          "price": 190,
+          "kcal": 190,
+          "allergens": [
+            "gluten"
+          ],
+          "traces": [
+            "sut"
+          ]
+        },
+        {
+          "id": "domates-corbasi",
+          "name": "Domates Çorbası",
+          "price": 190,
+          "kcal": 160,
+          "allergens": [
+            "gluten",
+            "sut"
+          ],
+          "traces": []
+        },
+        {
+          "id": "tavuk-corbasi",
+          "name": "Tavuk Çorbası",
+          "price": 190,
+          "kcal": 170,
+          "allergens": [
+            "gluten"
+          ],
+          "traces": [
+            "sut"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tatlilar",
+      "title": "Tatlılar",
+      "navLabel": "Tatlılar",
+      "style": "kor",
+      "type": "list",
+      "items": [
+        {
+          "id": "sutlac",
+          "name": "Sütlaç",
+          "price": 170,
+          "kcal": 260,
+          "allergens": [
+            "sut"
+          ],
+          "traces": []
+        },
+        {
+          "id": "kabak-tatlisi",
+          "name": "Kabak Tatlısı",
+          "price": 200,
+          "kcal": 330,
+          "allergens": [
+            "susam",
+            "yemis"
+          ],
+          "traces": []
+        },
+        {
+          "id": "havuc-dilimi",
+          "name": "Havuç Dilimi",
+          "price": 260,
+          "kcal": 420,
+          "allergens": [
+            "gluten",
+            "sut",
+            "yemis"
+          ],
+          "traces": [
+            "yumurta"
+          ]
+        },
+        {
+          "id": "dondurma",
+          "name": "Dondurma",
+          "price": 90,
+          "kcal": 210,
+          "allergens": [
+            "sut"
+          ],
+          "traces": [
+            "yemis"
+          ]
+        },
+        {
+          "id": "kaymak",
+          "name": "Kaymak",
+          "price": 90,
+          "kcal": 300,
+          "allergens": [
+            "sut"
+          ],
+          "traces": []
+        }
+      ]
+    },
+    {
+      "id": "icecekler",
+      "title": "İçecekler",
+      "navLabel": "İçecekler",
+      "style": "yesil",
+      "type": "list",
+      "items": [
+        {
+          "id": "ayran",
+          "name": "Ayran",
+          "price": 75,
+          "kcal": 90,
+          "allergens": [
+            "sut"
+          ],
+          "traces": []
+        },
+        {
+          "id": "yayik-ayran",
+          "name": "Yayık Ayran",
+          "price": 75,
+          "kcal": 90,
+          "allergens": [
+            "sut"
+          ],
+          "traces": []
+        },
+        {
+          "id": "limonata",
+          "name": "Limonata",
+          "price": 70,
+          "kcal": 130,
+          "allergens": [],
+          "traces": []
+        },
+        {
+          "id": "sira",
+          "name": "Şıra",
+          "price": 95,
+          "kcal": 150,
+          "allergens": [],
+          "traces": []
+        },
+        {
+          "id": "salgam",
+          "name": "Şalgam",
+          "price": 95,
+          "kcal": 25,
+          "allergens": [],
+          "traces": []
+        },
+        {
+          "id": "kola",
+          "name": "Kola",
+          "price": 90,
+          "kcal": 140,
+          "allergens": [],
+          "traces": []
+        },
+        {
+          "id": "fanta",
+          "name": "Fanta",
+          "price": 90,
+          "kcal": 145,
+          "allergens": [],
+          "traces": []
+        },
+        {
+          "id": "sprite",
+          "name": "Sprite",
+          "price": 90,
+          "kcal": 135,
+          "allergens": [],
+          "traces": []
+        },
+        {
+          "id": "fuse-tea",
+          "name": "Fuse Tea",
+          "price": 90,
+          "kcal": 110,
+          "allergens": [],
+          "traces": []
+        },
+        {
+          "id": "meyve-suyu",
+          "name": "Meyve Suyu",
+          "price": 90,
+          "kcal": 100,
+          "allergens": [],
+          "traces": []
+        },
+        {
+          "id": "soda",
+          "name": "Soda",
+          "price": 50,
+          "kcal": 0,
+          "allergens": [],
+          "traces": []
+        },
+        {
+          "id": "su",
+          "name": "Su",
+          "price": 40,
+          "kcal": 0,
+          "allergens": [],
+          "traces": []
+        },
+        {
+          "id": "kola-1lt",
+          "name": "Kola",
+          "sub": "1 litre",
+          "price": 145,
+          "kcal": 420,
+          "allergens": [],
+          "traces": []
+        }
+      ]
+    }
+  ],
+  "featured": [
+    {
+      "id": "et-doner-durum",
+      "blurb": "Lavaşta, domates ve yeşillikle. En çok giden."
+    },
+    {
+      "id": "pilav-ustu-et-doner",
+      "blurb": "Tereyağlı pirinç pilavının üzerinde, bol döner."
+    },
+    {
+      "id": "iskender",
+      "blurb": "Pide üstünde, domates soslu, kızgın tereyağı ve yoğurtla."
+    },
+    {
+      "id": "et-doner-burger",
+      "blurb": "Susamlı ekmekte döner, cheddar ve taze yeşillik."
+    },
+    {
+      "id": "mercimek-corbasi",
+      "label": "Sıcak Çorbalar",
+      "unit": "Kase",
+      "blurb": "Mercimek, ezogelin, domates, tavuk. Limon ve kıtır ekmekle."
+    },
+    {
+      "id": "cocuk-menu",
+      "unit": "Menü",
+      "blurb": "65 gr döner, patates ve içecek. Sürpriz hediyeli.",
+      "child": true
+    }
+  ],
+  "allergenNames": {
+    "gluten": "Gluten",
+    "sut": "Süt",
+    "yumurta": "Yumurta",
+    "susam": "Susam",
+    "yemis": "Sert kabuklu yemiş"
+  },
+  "nutritionNotice": {
+    "title": "Kalori ve alerjen bilgisi",
+    "lines": [
+      "Kalori değerleri yaklaşıktır; ortalama porsiyon ve standart tarif üzerinden hesaplanmıştır. Gramaj, ekmek ve sos tercihine göre değişebilir. Döner çeşitlerinde değerler 100 / 150 / 200 gram et için ayrı ayrı verilmiştir.",
+      "Tüm ürünler gluten (buğday), süt, yumurta, susam ve sert kabuklu yemiş içeren gıdalarla aynı mutfakta hazırlanır. \"İçerir\" listesinde olmayan ürünlerde de bu alerjenler eser miktarda bulunabilir.",
+      "Alerjiniz veya gıda hassasiyetiniz varsa siparişten önce lütfen personelimize bildirin."
+    ]
+  }
+}
