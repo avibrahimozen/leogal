@@ -32,6 +32,30 @@ Alan adı bağlanana kadar aynı sayfalar `https://avibrahimozen.github.io/leoga
 
 `domainActive` kapalıyken sayfalar `avibrahimozen.github.io/leogal/` adresini kullanır ve `CNAME` üretilmez. Anahtar DNS'ten önce açılırsa GitHub, github.io adreslerini henüz çalışmayan alan adına yönlendirir ve mevcut QR kodlar kırılır; o yüzden sıra önemli.
 
+## FTP ile klasik hostinge yükleme (GitHub Pages yerine)
+
+Sunucuda Node.js gerekmez; sayfalar düz HTML'dir.
+
+```bash
+cd 7-23-restaurant
+npm run dist
+```
+
+Komut `7-23-restaurant/dist/` klasörünü üretir. Bu klasörün **içindekileri** (klasörün kendisini değil) alan adının köküne yükleyin; cPanel'de bu genelde `public_html/` olur:
+
+```
+public_html/
+  index.html            web sitesi
+  menu/index.html       QR menü  -> antalyagecedonercisi.com/menu/
+  7-23-restaurant/index.html   ilk basılan QR'ların adresi (aynı menü)
+  404.html
+  sitemap.xml
+  robots.txt
+  .htaccess             404 sayfası, HTTPS ve www yönlendirmesi, önbellek
+```
+
+`.htaccess` gizli dosyadır; FTP programında "gizli dosyaları göster" açık olsun. Sunucu Apache değilse (örneğin Nginx) `.htaccess` işe yaramaz; 404 sayfası ve HTTPS yönlendirmesi sunucu ayarından yapılır. Fiyat değiştirince `npm run dist` çalıştırıp aynı dosyaları yeniden yükleyin.
+
 ## Kurulum ve komutlar
 
 Node.js 18 veya üstü yeterlidir; harici paket yoktur (`npm install` gerekmez).
