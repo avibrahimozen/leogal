@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Masa Kartı · 7/23 Dönercisi</title>
+<title>Masa Kartı · 7 23 Gece Dönercisi</title>
 <style>
   /* Yazı tipleri gömülü (Bebas Neue, Source Sans 3 — SIL Open Font License); kart internet olmadan da aynı basılır. */
 @font-face {
@@ -56,7 +56,7 @@
 }
 
   /* A6 dikey masa kartı. JS yok; QR kod sayfaya gömülüdür. */
-  @page { size: A6 portrait; margin: 0; }
+  @page { size: 105mm 148mm; margin: 0; }
   :root {
     --komur: #141210; --koz: #e8871e; --koz-koyu: #b8630f; --kul: #6f675f; --pide: #f3ead9;
     --display: "Bebas Neue", "Arial Narrow", Impact, sans-serif;
@@ -67,15 +67,15 @@
   body { font-family: var(--body); color: var(--komur); display: grid; place-items: center; min-height: 100vh; padding: 24px; }
   .card {
     width: 105mm; height: 148mm; background: #fff; overflow: hidden;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
     display: grid; grid-template-rows: auto 1fr auto; text-align: center;
     box-shadow: 0 12px 40px rgba(0,0,0,.35);
   }
   .top { background: var(--komur); color: var(--pide); padding: 7mm 8mm 6mm; }
-  .top .n { font-family: var(--display); font-size: 15mm; line-height: .9; letter-spacing: .02em; }
-  .top .n em { font-style: normal; color: var(--koz); }
+  .top .n { font-family: var(--display); font-size: 15mm; line-height: .9; letter-spacing: .06em; color: var(--koz); }
   .top .s { font-family: var(--display); font-size: 6.5mm; letter-spacing: .14em; line-height: 1; margin-top: 2mm; }
-  .mid { display: grid; align-content: center; justify-items: center; gap: 3mm; padding: 4mm 8mm; min-height: 0; }
-  .mid .q { width: 54mm; height: 54mm; display: block; }
+  .mid { display: grid; align-content: center; justify-items: center; gap: 5mm; padding: 4mm 8mm; min-height: 0; }
+  .mid .q { width: 50mm; height: 50mm; display: block; }
   .mid .t { font-family: var(--display); font-size: 7.5mm; line-height: 1; color: var(--koz-koyu); letter-spacing: .04em; }
   .mid .u { font-size: 3.2mm; color: var(--kul); word-break: break-all; }
   .bot { border-top: 1px dashed #d9d2c6; padding: 4mm 8mm 5mm; display: grid; gap: 1mm; }
@@ -92,8 +92,8 @@
 <body>
 <div class="card">
   <div class="top">
-    <div class="n"><em>7</em>/<em>23</em></div>
-    <div class="s">DÖNERCİSİ</div>
+    <div class="n">7 23</div>
+    <div class="s">GECE DÖNERCİSİ</div>
   </div>
   <div class="mid">
     <div class="t">Menü için okutun</div>

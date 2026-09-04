@@ -1,4 +1,4 @@
-# 7/23 Dönercisi (7-23 Restaurant) — QR Menü
+# 7 23 Gece Dönercisi — QR Menü
 
 Broşürdeki menünün telefonda okunacak, tek dosyalık statik sürümü. Kurulum, derleme veya sunucu gerekmez.
 
@@ -11,13 +11,12 @@ Broşürdeki menünün telefonda okunacak, tek dosyalık statik sürümü. Kurul
 | `masa-karti.html` | Hazır QR gömülü, A6 boyutunda basılabilir masa kartı. Yazı tipleri gömülüdür; internet gerekmez. |
 | `qr/menu-qr.png`, `qr/menu-qr.svg` | Kalıcı menü adresinin QR kodu. Broşüre, tabelaya, sosyal medyaya koyabilirsiniz. |
 | `qr/masa-karti.pdf`, `qr/masa-karti.png` | Masa kartının baskıya hazır hali (A6, 105 × 148 mm). |
-| `qr/onizleme-qr.png`, `qr/onizleme-qr.svg` | Geçici önizleme adresinin QR kodu. Yalnızca önizleme bağlantısı paylaşıma açıksa çalışır. |
 
 ## QR kod hangi adrese gidiyor?
 
 Kalıcı QR şu adresi açar: `https://avibrahimozen.github.io/leogal/7-23-restaurant/`
 
-Bu adres, aşağıdaki GitHub Pages adımları tamamlanıp bu klasör `master` dalına alındığında çalışır. QR kodu şimdiden bastırabilirsiniz; adres değişmeyecek.
+Adres GitHub Pages üzerinden yayında. Klasör adı (`7-23-restaurant`) bu adresin parçasıdır; klasörü yeniden adlandırırsanız basılı QR kodlar çalışmaz.
 
 ## Yayınlama (GitHub Pages)
 
@@ -45,5 +44,6 @@ Döner bölümü 100 / 150 / 200 gr sütunlu tablodur; bir gramajda ürün yoksa
 
 ## İletişim bilgileri
 
+- İşletme: 7 23 Gece Dönercisi
 - Alo Paket: 0552 990 07 23 (arama ve WhatsApp bağlantısı alt çubukta)
 - Adres: Arapsuyu Mah. Belediye Cad. No: 12/B, Konyaaltı / Antalya
