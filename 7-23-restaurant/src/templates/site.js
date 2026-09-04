@@ -31,18 +31,20 @@ const CSS = `
 ${LANG_CSS}
   /* ---------- Üst çubuk ---------- */
   .top { position: sticky; top: 0; z-index: 10; background: rgba(20,18,16,.9); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid var(--is-2); }
-  .top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 64px; }
+  .top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 14px; height: 64px; min-width: 0; }
+  .top .lang a span { display: none; }
+  .top .lang a { padding: 5px 6px; }
   .brandlink { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--pide); font-family: var(--display); font-size: 24px; letter-spacing: .06em; line-height: 1; }
   .brandlink b { color: var(--koz); font-weight: 400; }
   .brandlink span { white-space: nowrap; }
   .brandlink .logo-mark { width: 54px; height: 29px; }
-  .top nav.main { display: flex; gap: 22px; }
-  .top nav.main a { text-decoration: none; color: var(--kul); font-weight: 600; font-size: 16px; white-space: nowrap; }
+  .top nav.main { display: flex; gap: 18px; }
+  .top nav.main a { text-decoration: none; color: var(--kul); font-weight: 600; font-size: 15px; white-space: nowrap; }
   .top nav.main a:hover { color: var(--pide); }
   .top .right { display: flex; align-items: center; gap: 12px; }
   .top .call { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; color: var(--komur); background: var(--koz); font-family: var(--display); font-size: 20px; letter-spacing: .05em; padding: 9px 14px 7px; border-radius: 6px; white-space: nowrap; }
   .top .call svg { width: 18px; height: 18px; }
-  @media (max-width: 1240px) { .brandlink span { display: none; } }
+  @media (max-width: 1400px) { .brandlink span { display: none; } }
   @media (max-width: 960px) { .top nav.main { display: none; } }
 
   /* ---------- Giriş ---------- */
