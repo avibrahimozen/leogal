@@ -1,10 +1,12 @@
+import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Linking, Modal, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import MapView, { Marker, Polyline } from 'react-native-maps';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '../../api/client';
 import { getSocket } from '../../api/socket';
+import { CarMarker } from '../../components/CarMarker';
 import { LocationPermissionCard } from '../../components/LocationPermissionCard';
 import { MyLocationButton } from '../../components/MyLocationButton';
 import { Badge, Button, Card, rideStatusLabel } from '../../components/ui';
@@ -12,10 +14,29 @@ import { KKTC_CENTER } from '../../data/places';
 import { fetchEndedRide, useActiveRideSync } from '../../hooks/useActiveRideSync';
 import { useCenterOnMe } from '../../hooks/useCenterOnMe';
 import { useLocationPermission } from '../../hooks/useLocationPermission';
+import { useRoadRoute } from '../../hooks/useRoadRoute';
+import {
+  driverLegTargets,
+  followTargets,
+  movedBeyond,
+  resolveHeading,
+  routeKey,
+  trimRouteToPosition,
+} from '../../logic/geo';
 import { applyDriverRideUpdate } from '../../logic/rideUpdates';
 import { useAuth } from '../../store/auth';
-import { colors, radius, spacing } from '../../theme';
-import type { Ride, RideOffer, RideUpdatePayload } from '../../types';
+import { colors, radius, shadow, spacing } from '../../theme';
+import type { LatLng, Ride, RideOffer, RideUpdatePayload } from '../../types';
+
+/** Sürücünün kendi konumu + gidiş yönü */
+type MyPosition = LatLng & { heading: number | null };
+
+/** Bu kadar ilerlemeden sürücü→hedef yol rotası yeniden istenmez (km) */
+const REROUTE_KM = 0.12;
+/** Takip kamerası: araç ve hedef, üst durum çubuğu ile alttaki çağrı kartının arasında kalır */
+const FOLLOW_PADDING = { top: 200, right: 70, bottom: 380, left: 70 };
+
+const toCoordinate = (p: LatLng) => ({ latitude: p.lat, longitude: p.lng });
 
 export default function DriverHomeScreen() {
   const { user, refreshUser } = useAuth();
@@ -27,12 +48,23 @@ export default function DriverHomeScreen() {
   const [busy, setBusy] = useState(false);
   const [ratingRide, setRatingRide] = useState<Ride | null>(null);
   const watcher = useRef<Location.LocationSubscription | null>(null);
+  const [myPos, setMyPos] = useState<MyPosition | null>(null);
+  const myPosRef = useRef<MyPosition | null>(null);
+  const centeredOnce = useRef(false);
+  // Uber tarzı takip: aktif çağrıda harita aracı ve sıradaki hedefi çerçeveler; elle kaydırınca durur
+  const [follow, setFollow] = useState(true);
+  const followRef = useRef(true);
+  const [legOrigin, setLegOrigin] = useState<LatLng | null>(null);
   const locationGranted = useLocationPermission();
   const insets = useSafeAreaInsets();
   const mapRef = useRef<MapView>(null);
   const { centerOnMe, locating } = useCenterOnMe(mapRef);
 
   const approved = user?.driver?.status === 'approved';
+
+  useEffect(() => {
+    followRef.current = follow;
+  }, [follow]);
 
   const applyRide = useCallback((next: Ride | null) => {
     rideRef.current = next;
@@ -45,10 +77,13 @@ export default function DriverHomeScreen() {
       const previous = rideRef.current;
       applyRide(fetched);
       if (!previous || fetched) return;
-      // Biz dinlemezken kapanmış: yolcu iptal ettiyse haber ver
+      // Biz dinlemezken kapanmış: yolcu iptal ettiyse / bitirdiyse haber ver
       fetchEndedRide(previous.id).then((ended) => {
-        if (ended?.status === 'cancelled' && ended.cancelReason === 'passenger_cancelled') {
+        if (ended?.status !== 'cancelled') return;
+        if (ended.cancelReason === 'passenger_cancelled') {
           Alert.alert('Çağrı iptal edildi', 'Yolcu çağrıyı iptal etti.');
+        } else if (ended.cancelReason === 'passenger_ended') {
+          Alert.alert('Yolcu yolculuğu bitirdi', 'Yolculuk sona erdi; ücret ve komisyon işlenmedi.');
         }
       });
     },
@@ -74,6 +109,8 @@ export default function DriverHomeScreen() {
       applyRide(next);
       if (event === 'passenger_cancelled') {
         Alert.alert('Çağrı iptal edildi', 'Yolcu çağrıyı iptal etti.');
+      } else if (event === 'passenger_ended') {
+        Alert.alert('Yolcu yolculuğu bitirdi', 'Yolculuk sona erdi; ücret ve komisyon işlenmedi.');
       }
     };
     const onDriverStatus = () => {
@@ -92,7 +129,7 @@ export default function DriverHomeScreen() {
     };
   }, [applyRide, refreshUser]);
 
-  // Çevrimiçiyken konum yayını (10 sn / 100 m aralıkla)
+  // Çevrimiçiyken konum + yön yayını (3 sn / 10 m aralıkla; yolcu aracı akıcı görür)
   useEffect(() => {
     if (!online) return;
     let cancelled = false;
@@ -100,14 +137,28 @@ export default function DriverHomeScreen() {
       const { granted } = await Location.requestForegroundPermissionsAsync();
       if (!granted || cancelled) return;
       const subscription = await Location.watchPositionAsync(
-        { accuracy: Location.Accuracy.Balanced, timeInterval: 10_000, distanceInterval: 100 },
+        { accuracy: Location.Accuracy.High, timeInterval: 3_000, distanceInterval: 10 },
         (pos) => {
-          const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          const next = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          const prev = myPosRef.current;
+          // GPS yönü (iOS geçersizde -1 verir) yoksa son iki konumdan hesaplanır
+          const heading = resolveHeading(prev, next, pos.coords.heading, prev?.heading ?? null);
+          const mine = { ...next, heading };
+          myPosRef.current = mine;
+          setMyPos(mine);
+          const payload = heading === null ? next : { ...next, heading };
           const socket = getSocket();
           if (socket?.connected) {
-            socket.emit('driver:location', coords);
+            socket.emit('driver:location', payload);
           } else {
-            api.post('/driver/location', coords).catch(() => {});
+            api.post('/driver/location', payload).catch(() => {});
+          }
+          if (!centeredOnce.current) {
+            centeredOnce.current = true;
+            mapRef.current?.animateToRegion(
+              { latitude: next.lat, longitude: next.lng, latitudeDelta: 0.02, longitudeDelta: 0.02 },
+              600,
+            );
           }
         },
       );
@@ -210,6 +261,30 @@ export default function DriverHomeScreen() {
     ]);
   }, [ride, applyRide]);
 
+  /** Yolculuk sırasında bitirme: ücret ve komisyon işlenmez (ücret için "Yolculuğu Tamamla"). */
+  const endRide = useCallback(async () => {
+    if (!ride) return;
+    Alert.alert(
+      'Yolculuğu bitir',
+      "Yolculuk ücretsiz sona erecek: ücret ve komisyon işlenmez. Ücret almak için 'Yolculuğu Tamamla' kullan.",
+      [
+        { text: 'Vazgeç', style: 'cancel' },
+        {
+          text: 'Ücretsiz Bitir',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await api.post(`/rides/${ride.id}/cancel`);
+              applyRide(null);
+            } catch (e) {
+              Alert.alert('Olmadı', e instanceof Error ? e.message : 'Bir hata oluştu');
+            }
+          },
+        },
+      ],
+    );
+  }, [ride, applyRide]);
+
   const submitRating = useCallback(
     async (rating: number) => {
       if (!ratingRide) return;
@@ -222,6 +297,55 @@ export default function DriverHomeScreen() {
     },
     [ratingRide],
   );
+
+  // Yolculuk rotası (alış → duraklar → varış) gerçek yol üzerinden
+  const tripPoints = useMemo(() => (ride ? [ride.pickup, ...(ride.stops ?? []), ride.drop] : null), [ride]);
+  const tripRoute = useRoadRoute(tripPoints);
+  const tripLine = tripRoute ? tripRoute.points.map(toCoordinate) : [];
+
+  // Ben → sıradaki hedef (alış noktası ya da duraklar + varış)
+  const legTargets = useMemo(() => (ride ? driverLegTargets(ride) : []), [ride]);
+  const legTargetKey = routeKey(legTargets);
+  useEffect(() => {
+    if (!myPos || legTargets.length === 0) {
+      setLegOrigin(null);
+      return;
+    }
+    setLegOrigin((origin) => (movedBeyond(origin, myPos, REROUTE_KM) ? { lat: myPos.lat, lng: myPos.lng } : origin));
+  }, [myPos, legTargets, legTargetKey]);
+  const legPoints = useMemo(
+    () => (legOrigin && legTargets.length > 0 ? [legOrigin, ...legTargets] : null),
+    [legOrigin, legTargets],
+  );
+  const legRoute = useRoadRoute(legPoints);
+  const legLine = legRoute && myPos ? trimRouteToPosition(legRoute.points, myPos).map(toCoordinate) : null;
+
+  // Çağrı kabul edilince takip başlar
+  const rideId = ride?.id ?? null;
+  const rideStatus = ride?.status ?? null;
+  useEffect(() => {
+    if (rideStatus === 'accepted') setFollow(true);
+  }, [rideId, rideStatus]);
+
+  // Takip kamerası: araç + sıradaki hedef çerçevelenir, yaklaştıkça yakınlaşır
+  useEffect(() => {
+    if (!follow || !ride || !myPos) return;
+    const pts = followTargets(myPos, ride).map(toCoordinate);
+    if (pts.length >= 2) {
+      mapRef.current?.fitToCoordinates(pts, { edgePadding: FOLLOW_PADDING, animated: true });
+    }
+  }, [follow, myPos, ride]);
+
+  const showFollowChip = ride !== null && !follow;
+
+  const etaText = (() => {
+    if (!ride || !legRoute) return null;
+    const dist = `${legRoute.distanceKm.toFixed(1)} km`;
+    const mins = legRoute.durationMin;
+    if (ride.status === 'in_progress') return mins ? `Varışa ~${mins} dk · ${dist}` : `Varışa ~${dist}`;
+    if (ride.status === 'arrived') return 'Alış noktasındasın';
+    return mins ? `Alış noktasına ~${mins} dk · ${dist}` : `Alış noktasına ~${dist}`;
+  })();
 
   const advanceLabel =
     ride?.status === 'accepted'
@@ -241,9 +365,16 @@ export default function DriverHomeScreen() {
           latitudeDelta: 0.35,
           longitudeDelta: 0.35,
         }}
-        showsUserLocation
+        onPanDrag={() => {
+          if (followRef.current) setFollow(false);
+        }}
+        // Çevrimiçiyken kendi aracımız kırmızı araba olarak çizilir; mavi nokta yalnızca çevrimdışıyken
+        showsUserLocation={!(online && myPos)}
         showsMyLocationButton
       >
+        {online && myPos && (
+          <CarMarker lat={myPos.lat} lng={myPos.lng} heading={myPos.heading} title="Sen" zIndex={10} />
+        )}
         {ride && (
           <>
             <Marker
@@ -264,6 +395,10 @@ export default function DriverHomeScreen() {
                 pinColor={colors.orange}
               />
             ))}
+            {tripLine.length > 1 && <Polyline coordinates={tripLine} strokeColor={colors.ink} strokeWidth={4} />}
+            {legLine && legLine.length > 1 && (
+              <Polyline coordinates={legLine} strokeColor={colors.info} strokeWidth={4} />
+            )}
           </>
         )}
       </MapView>
@@ -308,6 +443,7 @@ export default function DriverHomeScreen() {
             <View style={styles.passengerRow}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.passengerName}>{ride.passenger.name}</Text>
+                {etaText && <Text style={styles.etaText}>{etaText}</Text>}
                 <Text style={styles.routeText}>
                   📍 {ride.pickup.address}
                   {(ride.stops ?? []).map((stop, i) => `\n🟠 ${i + 1}. durak: ${stop.address}`).join('')}
@@ -324,18 +460,36 @@ export default function DriverHomeScreen() {
               </Pressable>
             </View>
             <Button title={advanceLabel} onPress={advanceRide} loading={busy} />
-            {ride.status !== 'in_progress' && (
-              <>
-                <View style={{ height: spacing(2) }} />
-                <Button title="İptal Et" variant="outline" onPress={cancelRide} />
-              </>
+            <View style={{ height: spacing(2) }} />
+            {ride.status === 'in_progress' ? (
+              <Button title="Yolculuğu Bitir (ücretsiz)" variant="outline" onPress={endRide} />
+            ) : (
+              <Button title="İptal Et" variant="outline" onPress={cancelRide} />
             )}
           </Card>
         )}
       </SafeAreaView>
 
       {/* Durum kartının altında: tek dokunuşla konuma yakınlaş */}
-      <MyLocationButton onPress={centerOnMe} busy={locating} style={{ top: insets.top + 104 }} />
+      <MyLocationButton
+        onPress={() => {
+          setFollow(false);
+          centerOnMe();
+        }}
+        busy={locating}
+        style={{ top: insets.top + 104 }}
+      />
+
+      {showFollowChip && (
+        <Pressable
+          onPress={() => setFollow(true)}
+          accessibilityRole="button"
+          style={({ pressed }) => [styles.followChip, { top: insets.top + 164 }, pressed && { opacity: 0.8 }]}
+        >
+          <Ionicons name="navigate" size={16} color={colors.ink} />
+          <Text style={styles.followChipText}>Rotayı takip et</Text>
+        </Pressable>
+      )}
 
       {/* Gelen çağrı teklifi */}
       <Modal visible={offer !== null} transparent animationType="slide">
@@ -412,6 +566,7 @@ const styles = StyleSheet.create({
   rideFare: { fontSize: 20, fontWeight: '800', color: colors.ink },
   passengerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing(3) },
   passengerName: { fontSize: 16, fontWeight: '700', color: colors.ink },
+  etaText: { fontSize: 13, color: colors.info, fontWeight: '700', marginTop: 2 },
   routeText: { fontSize: 13, color: colors.inkSoft, marginTop: spacing(1), lineHeight: 20 },
   callButton: {
     width: 44,
@@ -422,6 +577,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginLeft: spacing(2),
   },
+  followChip: {
+    position: 'absolute',
+    right: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(1.5),
+    paddingHorizontal: spacing(3),
+    height: 40,
+    borderRadius: radius.full,
+    backgroundColor: colors.card,
+    ...shadow.card,
+  },
+  followChipText: { fontSize: 13, fontWeight: '700', color: colors.ink },
   offerBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(15,23,42,0.6)',

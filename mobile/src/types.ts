@@ -78,12 +78,46 @@ export interface RideOffer {
   pickupDistanceKm: number;
 }
 
+/** Ham koordinat (adres bilgisi olmadan) */
+export type LatLng = { lat: number; lng: number };
+
 /** Üyeliksiz harita için anonim sürücü konumu (~100 m hassasiyet). */
 export interface NearbyDriver {
+  /** Sunucunun ürettiği anonim ama kalıcı kimlik: yenilemeler arasında aynı taksiyi eşleyip kaydırarak taşımak için */
+  id?: string;
   lat: number;
   lng: number;
   vehicleModel: string;
   distanceKm: number;
+  /** Gidiş yönü (pusula derecesi, 0 = kuzey); bilinmiyorsa null */
+  heading?: number | null;
+}
+
+/** POST /api/rides/estimate yanıtı */
+export interface RideEstimate {
+  distanceKm: number;
+  fare: number;
+  /** Yol rotasından gelen tahmini süre; rota alınamadıysa null */
+  durationMin?: number | null;
+  /** Mesafenin kaynağı: gerçek yol (osrm) ya da kuş uçuşu × yol çarpanı (straight) */
+  route?: 'osrm' | 'straight';
+  tariff?: { baseFare: number; perKm: number; minFare: number };
+}
+
+/** GET /api/public/route yanıtı: yol geometrisi, mesafe ve süre */
+export interface RoadRoute {
+  points: LatLng[];
+  distanceKm: number;
+  durationMin: number | null;
+  source: 'osrm' | 'straight';
+}
+
+/** Sunucudan gelen `driver:location` olayı (yalnızca aktif çağrının yolcusuna) */
+export interface DriverLocationPayload {
+  rideId?: number;
+  lat: number;
+  lng: number;
+  heading?: number | null;
 }
 
 export interface Earnings {

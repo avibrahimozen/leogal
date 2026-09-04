@@ -1,10 +1,11 @@
 import * as Location from 'expo-location';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import MapView from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { api } from '../api/client';
+import { CarMarker } from '../components/CarMarker';
 import { LocationPermissionCard } from '../components/LocationPermissionCard';
 import { MyLocationButton } from '../components/MyLocationButton';
 import { Button, Card } from '../components/ui';
@@ -83,9 +84,13 @@ export default function GuestMapScreen({ navigation }: Props) {
         showsMyLocationButton
       >
         {drivers.map((d, i) => (
-          <Marker key={`${d.lat}-${d.lng}-${i}`} coordinate={{ latitude: d.lat, longitude: d.lng }} title={d.vehicleModel}>
-            <Text style={{ fontSize: 28 }}>🚕</Text>
-          </Marker>
+          <CarMarker
+            key={d.id ?? `nearby-${i}`}
+            lat={d.lat}
+            lng={d.lng}
+            heading={d.heading ?? null}
+            title={d.vehicleModel}
+          />
         ))}
       </MapView>
 

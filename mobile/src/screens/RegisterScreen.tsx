@@ -55,7 +55,7 @@ export default function RegisterScreen() {
             <>
               <Text style={styles.title}>Ulak'a katıl</Text>
               <Text style={styles.subtitle}>
-                Birkaç saniyede hesabını oluştur, taksin kapında olsun.
+                Birkaç saniyede ücretsiz hesabını oluştur, taksin kapında olsun.
               </Text>
               <Field label="Ad Soyad" placeholder="Ayşe Yılmaz" value={name} onChangeText={setName} />
               <Field

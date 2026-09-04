@@ -246,11 +246,7 @@ describe('çağrı akışı', () => {
       .set('Authorization', `Bearer ${driverToken}`);
     expect(started.body.ride.status).toBe('in_progress');
 
-    // Yolculuk başladıktan sonra yolcu iptal edemez
-    const cancel = await request(app)
-      .post(`/api/rides/${rideId}/cancel`)
-      .set('Authorization', `Bearer ${passengerToken}`);
-    expect(cancel.status).toBe(409);
+    // (Yolculuk sırasında bitirme hakkı cancel.test.ts içinde sınanır)
 
     const completed = await request(app)
       .post(`/api/rides/${rideId}/complete`)

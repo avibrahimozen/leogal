@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { Router } from 'express';
 import { z } from 'zod';
 import { config, rateLimits } from '../config.js';
@@ -31,6 +32,11 @@ function blur(coord: number): number {
  * Üyelik gerektirmeyen uçlar. Uygulamaya girmeden "yakınımda taksi var mı?"
  * sorusuna cevap verir; kimlik bilgisi (isim, plaka, telefon) dönmez.
  */
+/** Sürücü kimliğini dışarı sızdırmadan, süreç boyunca sabit kalan kısa anonim kimlik. */
+function anonId(userId: number): string {
+  return createHash('sha256').update(`${config.jwtSecret}:nearby:${userId}`).digest('hex').slice(0, 10);
+}
+
 export function publicRoutes(db: Db): Router {
   const router = Router();
 
@@ -50,13 +56,15 @@ export function publicRoutes(db: Db): Router {
     const freshAfter = new Date(Date.now() - config.driverLocationTtlMs).toISOString();
     const rows = db
       .prepare(
-        `SELECT lat, lng, heading, vehicle_model FROM drivers
+        `SELECT user_id, lat, lng, heading, vehicle_model FROM drivers
          WHERE status = 'approved' AND is_online = 1 AND lat IS NOT NULL AND location_at >= ?`,
       )
-      .all(freshAfter) as unknown as Array<{ lat: number; lng: number; heading: number | null; vehicle_model: string }>;
+      .all(freshAfter) as unknown as Array<{ user_id: number; lat: number; lng: number; heading: number | null; vehicle_model: string }>;
 
     const drivers = rows
       .map((r) => ({
+        // Kalıcı ama anonim kimlik: uygulama aynı taksiyi yenilemeler arasında eşleyip kaydırarak taşır
+        id: anonId(r.user_id),
         lat: blur(r.lat),
         lng: blur(r.lng),
         vehicleModel: r.vehicle_model,

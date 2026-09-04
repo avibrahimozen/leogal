@@ -4,6 +4,7 @@ import { createApp } from '../src/app.js';
 import { createDb } from '../src/db.js';
 import { config } from '../src/config.js';
 import { bearing, routeVia, straightRoute } from '../src/lib/routing.js';
+import { loginAdmin, readyDriver } from './helpers.js';
 
 // Testlerde yol rotalama kapalıdır (NODE_ENV=test): düz çizgi yedeği ve uçların şekli sınanır.
 const db = createDb(':memory:');
@@ -109,5 +110,31 @@ describe('sürücü yönü (heading)', () => {
     expect(res.body.settings.per_km).toBe(33);
     const tr = await request(app).get('/api/admin/settings?country=TR').set('Authorization', `Bearer ${adminToken}`);
     expect(tr.body.settings.per_km).toBe(33);
+  });
+});
+
+describe('tahmin tarifesi ve anonim taksi kimliği', () => {
+  it('tahmin yanıtı tarife (açılış / km / asgari) ve mesafe kaynağını taşır', async () => {
+    const res = await request(app)
+      .post('/api/rides/estimate')
+      .send({ pickup: { ...DEREBOYU, address: 'Dereboyu' }, drop: { ...ERCAN, address: 'Ercan' } });
+    expect(res.status).toBe(200);
+    expect(res.body.tariff).toEqual({ baseFare: 90, perKm: 33, minFare: 150 });
+    expect(res.body.route).toBe('straight');
+    // Ücret = açılış + km × mesafe, 5 TL'ye yuvarlı (asgarinin üstünde)
+    const expected = Math.round((90 + 33 * res.body.distanceKm) / 5) * 5;
+    expect(res.body.fare).toBe(Math.max(150, expected));
+  });
+
+  it('yakındaki taksiler yenilemeler arasında sabit, anonim bir kimlik taşır', async () => {
+    const adminToken = await loginAdmin(app);
+    const driver = await readyDriver(app, adminToken, 'Kimlik Şoför', 'GM 777', 35.19, 33.36);
+    const first = await request(app).get('/api/public/nearby-drivers?lat=35.19&lng=33.36');
+    const second = await request(app).get('/api/public/nearby-drivers?lat=35.19&lng=33.36');
+    const a = (first.body.drivers as Array<{ id: string; vehicleModel: string }>).find((d) => d.vehicleModel === 'Toyota Corolla');
+    const b = (second.body.drivers as Array<{ id: string }>).find((d) => d.id === a?.id);
+    expect(a?.id).toMatch(/^[0-9a-f]{10}$/);
+    expect(b).toBeDefined();
+    expect(JSON.stringify(first.body)).not.toContain(`"id":${driver.id}`);
   });
 });

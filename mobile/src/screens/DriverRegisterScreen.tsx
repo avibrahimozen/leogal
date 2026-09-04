@@ -141,8 +141,8 @@ export default function DriverRegisterScreen() {
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <Text style={styles.title}>Ulak sürücüsü ol</Text>
           <Text style={styles.subtitle}>
-            Boş beklemek yok: Ulak sana müşteri getirir, sen sadece tamamlanan yolculuklardan küçük bir
-            komisyon ödersin.
+            Üyelik ücretsiz, boş beklemek yok: Ulak sana müşteri getirir, sen sadece tamamlanan
+            yolculuklardan küçük bir komisyon ödersin. Hesabın yönetici onayından sonra çağrı almaya başlar.
           </Text>
           <Field label="Ad Soyad" placeholder="Mehmet Kaya" value={name} onChangeText={setName} />
           <Field

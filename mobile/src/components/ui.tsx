@@ -109,6 +109,24 @@ export function rideStatusLabel(status: string): { label: string; tone: 'info' |
   }
 }
 
+/** İptal nedeninin Türkçe karşılığı (geçmiş listesi için); bilinmeyen neden olduğu gibi döner. */
+export function cancelReasonLabel(reason: string | null | undefined): string | null {
+  switch (reason) {
+    case 'no_driver':
+      return 'Sürücü bulunamadı';
+    case 'passenger_cancelled':
+      return 'Yolcu iptal etti';
+    case 'driver_cancelled':
+      return 'Sürücü iptal etti';
+    case 'passenger_ended':
+      return 'Yolcu yolculuğu bitirdi';
+    case 'driver_ended':
+      return 'Sürücü yolculuğu bitirdi';
+    default:
+      return reason ? reason : null;
+  }
+}
+
 const styles = StyleSheet.create({
   button: {
     height: 52,

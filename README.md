@@ -9,11 +9,14 @@ taksiyi çağırır, sürücüsünü haritada canlı takip eder.
 
 1. **Taksici kaydolur** — araç plakası, model ve ruhsat bilgileriyle başvurur; hesap `onay bekliyor` durumuna düşer.
 2. **Yönetici onaylar** — admin API üzerinden başvuru incelenir ve onaylanır.
-3. **Sürücü çevrimiçi olur** — uygulama konumunu 10 saniyede bir platforma bildirir.
+3. **Sürücü çevrimiçi olur** — uygulama konumunu ve gidiş yönünü birkaç saniyede bir platforma bildirir.
 4. **Yolcu taksi çağırır** — hedefini seçer, tahmini ücreti görür, çağrı oluşturur.
 5. **Eşleştirme** — çağrı, alış noktasına en yakın 8 müsait sürücüye anlık teklif olarak gider; **ilk kabul eden kazanır**.
-6. **Yolculuk** — sürücü yolda → kapıda → yolculuk → tamamlandı akışı; yolcu sürücüyü canlı izler.
+6. **Yolculuk** — sürücü yolda → kapıda → yolculuk → tamamlandı akışı; yolcu sürücüyü canlı izler
+   (kırmızı araç gerçek yol üzerinde ilerler, kamera Uber gibi yaklaştıkça takip eder). **Yolcu da sürücü de
+   istediği an yolculuğu ücretsiz bitirebilir** — ücret ve komisyon işlenmez, ceza yoktur.
 7. **Komisyon** — yolculuk tamamlanınca ücretin %15'i (ayarlanabilir) sürücünün komisyon borcuna işlenir. Sürücü borcunu Ulak'a öder, yönetici tahsilatı deftere kaydeder.
+8. **Üyelik ücretsiz** — yolcu ve sürücü hesapları için ücret yoktur; sürücü hesabı yönetici onayıyla açılır.
 
 ## Depo yapısı
 
@@ -43,6 +46,8 @@ Ortam değişkenleri (hepsi opsiyonel):
 | `ULAK_ADMIN_PHONE` | `+903920000000` | İlk açılışta oluşturulan yönetici |
 | `ULAK_ADMIN_PASSWORD` | `ulak-admin` | **Üretimde mutlaka değiştirin** |
 | `SMS_PROVIDER` | `console` | `console` (kod loga + yanıta yazılır) veya `twilio` |
+| `ULAK_ROUTING` | `osrm` | `none` yapılırsa yol rotalama kapanır (kuş uçuşu × 1.3 ile devam eder) |
+| `ULAK_OSRM_URL` | `https://router.project-osrm.org` | OSRM sunucusu; üretimde kendi OSRM'ini ver |
 | `ULAK_OTP_REQUIRED` | `true` | `false` yapılırsa kayıtta SMS doğrulaması istenmez |
 | `TWILIO_ACCOUNT_SID` | — | Twilio hesap SID (yalnızca `SMS_PROVIDER=twilio`) |
 | `TWILIO_AUTH_TOKEN` | — | Twilio auth token |
@@ -59,7 +64,7 @@ Ulak iki ülkede çalışır: **Kuzey Kıbrıs** (6 ilçe) ve **Türkiye** (81 i
 - Tarife ülkeye göre belirlenir: alış noktası Kıbrıs adasındaysa KKTC, değilse Türkiye
   tarifesi. Panelde **Tarife & Komisyon → Ülke** seçiciyle ülkeye özel değer girilir;
   girilmeyen alanlar genel tarifeden gelir (`GET/PUT /api/admin/settings?country=TR`).
-  Türkiye başlangıç değerleri **yer tutucudur** (açılış 42 / km 28 / asgari 150 TL);
+  Türkiye başlangıç değerleri **yer tutucudur** (açılış 42 / km 33 / asgari 150 TL);
   gerçek değerleri panelden girin.
 - **Nereden / Nereye / Duraklar:** alış noktası varsayılan olarak GPS'tir ama elle de seçilir
   ("Konumum" ile GPS'e dönülür); hedef ve **en fazla 5 ara durak** çağrı öncesinde ya da
@@ -183,7 +188,8 @@ Aynı uygulama iki modda çalışır: **yolcu** hesabıyla girince harita + ça�
 | `PUT /api/rides/:id/stops` | Yolcu durak listesini günceller (beklerken veya yolculukta); ücret yeniden hesaplanır |
 | `POST /api/rides/:id/accept` | Sürücü kabulü — ilk kabul eden kazanır |
 | `POST /api/rides/:id/arrived · start · complete` | Yolculuk durum geçişleri |
-| `POST /api/rides/:id/cancel` | İptal (sürücü iptalinde çağrı yeniden yayınlanır) |
+| `POST /api/rides/:id/cancel` | İptal / yolculuğu bitir — yolcu her aşamada, sürücü kabulden sonra; yolculuk sırasında iki taraf için de **ücretsiz** (kabul sonrası sürücü iptalinde çağrı yeniden yayınlanır) |
+| `GET /api/public/route?points=lat,lng\|lat,lng` | Gerçek yol rotası (OSRM): geometri, km, dakika (2–7 nokta) |
 | `POST /api/rides/:id/rate` | Karşılıklı puanlama (1–5) |
 | `GET /api/driver/earnings` | Brüt/net kazanç, komisyon borcu, hesap defteri |
 | `GET /api/admin/drivers?status=pending` | Onay bekleyen sürücüler |
@@ -194,13 +200,33 @@ Aynı uygulama iki modda çalışır: **yolcu** hesabıyla girince harita + ça�
 Gerçek zamanlı olaylar (Socket.IO): `ride:offer`, `ride:offer_closed`, `ride:update`,
 `driver:location`, `driver:status`.
 
+## Harita: gerçek yol rotası, kırmızı araç, takip kamerası
+
+- **Yol rotası:** yolculuk çizgisi ve sürücü→yolcu yolu OSRM'den (OpenStreetMap) gerçek yol
+  geometrisiyle çizilir; taksiler denizin/tarlanın üstünden gitmez. Sunucu `GET /api/public/route`
+  ile vekillik eder ve rotaları 10 dk önbellekler. OSRM'e ulaşılamazsa düz çizgiye düşülür
+  (`source: 'straight'`), uygulama çalışmaya devam eder.
+- **Kırmızı araç:** emoji yerine üstten görünüm araç görseli (`mobile/assets/car-red*.png`);
+  sürücünün gidiş yönüne göre döner (GPS yönü yoksa son iki konumdan hesaplanır) ve yeni konuma
+  kayarak gider.
+- **Takip kamerası:** sürücü atanınca harita aracı ve sıradaki hedefi (alış noktası / durak / varış)
+  birlikte çerçeveler; araç yaklaştıkça yakınlaşır. Haritayı elle kaydırınca takip durur,
+  **"Sürücüyü takip et"** ile yeniden başlar. Sürücü uygulamasında da aynı takip vardır.
+- **Süre tahmini:** ücret tahmininde ve çağrı kartında OSRM süresi gösterilir (`durationMin`).
+- Sahte taksiler (`npm run bots`) yola oturur ve OSRM rotasını yön bilgisiyle izler.
+- Telefon sunucuya, sunucu OSRM'e bağlanır: sunucunun çalıştığı bilgisayarın internete çıkışı
+  yeterlidir. `router.project-osrm.org` bir demo sunucusudur; üretimde `ULAK_OSRM_URL` ile kendi
+  OSRM'ini kullan.
+
 ## Ücret modeli (varsayılanlar)
 
-- Açılış: **90 TL** · Km başına: **25 TL** · Asgari: **150 TL**
-- Mesafe: kuş uçuşu × 1.3 yol çarpanı; ücret 5 TL'ye yuvarlanır
+- Açılış: **90 TL** · Km başına: **33 TL** · Asgari: **150 TL**
+- Mesafe: yolcunun **alış noktası ile varış noktası** (varsa duraklar dahil) arasındaki gerçek yol
+  mesafesi (OSRM); rota alınamazsa kuş uçuşu × 1.3. Ücret = açılış + km × mesafe, 5 TL'ye yuvarlanır.
 - Komisyon: **%15** — tümü `PUT /api/admin/settings` ile çalışırken değiştirilebilir
+- Yolculuk sırasında bitirilen çağrılarda ücret ve komisyon işlenmez.
 
-Örnek: Lefkoşa → Girne ≈ 23 km → **665 TL**, komisyon 99,75 TL.
+Örnek: Lefkoşa → Girne ≈ 23 km → 90 + 33 × 23 = 849 → **850 TL**, komisyon 127,50 TL.
 
 ## Demo hesaplar
 
@@ -268,7 +294,8 @@ curl -s -X POST localhost:4000/api/admin/drivers/2/approve -H "Authorization: Be
 - [x] Türkiye desteği: 81 il, ülkeye göre tarife, adres arama ve haritadan seçim
 - [x] Gerçek zamanlı entegrasyon testleri, hız sınırları, güvenlik başlıkları, bakım süpürmesi
 - [ ] Kart ile ödeme + otomatik komisyon kesintisi
-- [ ] Gerçek yol rotası ve süre tahmini (OSRM / Google Directions)
+- [x] Gerçek yol rotası ve süre tahmini (OSRM), yöne göre dönen araç ikonu, takip kamerası
+- [x] Yolculuğu istediğin an ücretsiz bitirme (yolcu ve sürücü)
 - [ ] Anlık bildirimler (Expo Push)
 - [ ] Sürücü belge yükleme (ruhsat/ehliyet fotoğrafı)
 

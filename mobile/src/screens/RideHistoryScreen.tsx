@@ -3,7 +3,7 @@ import React, { useCallback, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '../api/client';
-import { Badge, Card, rideStatusLabel } from '../components/ui';
+import { Badge, Card, cancelReasonLabel, rideStatusLabel } from '../components/ui';
 import { colors, spacing } from '../theme';
 import type { Ride } from '../types';
 
@@ -48,7 +48,7 @@ export default function RideHistoryScreen() {
               <View style={styles.rideTop}>
                 <Badge text={label} tone={tone} />
                 <Text style={styles.fare}>
-                  {item.finalFare ?? item.estFare} TL
+                  {item.status === 'cancelled' ? 'Ücret yok' : `${item.finalFare ?? item.estFare} TL`}
                 </Text>
               </View>
               <Text style={styles.route} numberOfLines={2}>
@@ -57,6 +57,9 @@ export default function RideHistoryScreen() {
               </Text>
               <Text style={styles.date}>
                 {new Date(item.requestedAt).toLocaleString('tr-TR')} · ~{item.estDistanceKm.toFixed(1)} km
+                {item.status === 'cancelled' && cancelReasonLabel(item.cancelReason)
+                  ? ` · ${cancelReasonLabel(item.cancelReason)}`
+                  : ''}
               </Text>
             </Card>
           );

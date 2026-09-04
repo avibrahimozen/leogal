@@ -154,3 +154,42 @@ describe('applyDriverRideUpdate', () => {
     expect(applyDriverRideUpdate(makeRide(), { rideId: 7, status: 'requested' })).toEqual({ ride: null, event: null });
   });
 });
+
+describe('yolculuk sırasında bitirme (ücretsiz)', () => {
+  it('yolcu: sürücü bitirince kart kapanır ve uyarı ister', () => {
+    const result = applyPassengerRideUpdate(makeRide({ status: 'in_progress' }), {
+      rideId: 7,
+      status: 'cancelled',
+      cancelReason: 'driver_ended',
+    });
+    expect(result.ride).toBeNull();
+    expect(result.event).toEqual({ type: 'driver_ended' });
+  });
+
+  it('yolcu: kendi bitirmesi sessizce kapanır', () => {
+    const result = applyPassengerRideUpdate(makeRide({ status: 'in_progress' }), {
+      rideId: 7,
+      status: 'cancelled',
+      cancelReason: 'passenger_ended',
+    });
+    expect(result).toEqual({ ride: null, event: null });
+  });
+
+  it('sürücü: yolcu bitirince çağrı kapanır ve uyarı ister', () => {
+    const result = applyDriverRideUpdate(makeRide({ status: 'in_progress' }), {
+      rideId: 7,
+      status: 'cancelled',
+      cancelReason: 'passenger_ended',
+    });
+    expect(result).toEqual({ ride: null, event: 'passenger_ended' });
+  });
+
+  it('sürücü: kendi bitirmesinde uyarı vermez', () => {
+    const result = applyDriverRideUpdate(makeRide({ status: 'in_progress' }), {
+      rideId: 7,
+      status: 'cancelled',
+      cancelReason: 'driver_ended',
+    });
+    expect(result).toEqual({ ride: null, event: null });
+  });
+});

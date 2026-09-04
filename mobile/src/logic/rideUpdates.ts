@@ -4,7 +4,9 @@ import type { Ride, RideUpdatePayload } from '../types';
 export type PassengerRideEvent =
   | { type: 'completed'; ride: Ride }
   | { type: 'no_driver' }
-  | { type: 'reassigned' };
+  | { type: 'reassigned' }
+  /** Sürücü yolculuk sırasında bitirdi (ücret alınmaz) */
+  | { type: 'driver_ended' };
 
 export interface PassengerRideResult {
   ride: Ride | null;
@@ -51,14 +53,15 @@ export function applyPassengerRideUpdate(current: Ride | null, payload: RideUpda
         event: null,
       };
     }
-    // passenger_cancelled: yolcu zaten biliyor, sessizce kapat
+    if (reason === 'driver_ended') return { ride: null, event: { type: 'driver_ended' } };
+    // passenger_cancelled / passenger_ended: yolcu zaten biliyor, sessizce kapat
     return { ride: null, event: null };
   }
   // requested / accepted / arrived / in_progress
   return { ride: payload.ride ?? (current ? { ...current, status } : null), event: null };
 }
 
-export type DriverRideEvent = 'passenger_cancelled' | null;
+export type DriverRideEvent = 'passenger_cancelled' | 'passenger_ended' | null;
 
 export interface DriverRideResult {
   ride: Ride | null;
@@ -72,8 +75,9 @@ export function applyDriverRideUpdate(current: Ride | null, payload: RideUpdateP
   if (current && id !== current.id) return { ride: current, event: null };
 
   if (status === 'cancelled') {
-    // Elimizde olmayan çağrının iptali ya da sürücünün kendi iptali: uyarı yok
-    if (!current || reason === 'driver_cancelled') return { ride: null, event: null };
+    // Elimizde olmayan çağrının iptali ya da sürücünün kendi iptali/bitirmesi: uyarı yok
+    if (!current || reason === 'driver_cancelled' || reason === 'driver_ended') return { ride: null, event: null };
+    if (reason === 'passenger_ended') return { ride: null, event: 'passenger_ended' };
     return { ride: null, event: 'passenger_cancelled' };
   }
   // Tamamlandı (puanlama zaten POST yanıtıyla açılır) veya yeniden yayına düştü: artık bizim değil

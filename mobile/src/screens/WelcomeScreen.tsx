@@ -17,7 +17,8 @@ export default function WelcomeScreen({ navigation }: Props) {
         </Text>
         <Text style={styles.tagline}>Kıbrıs ve Türkiye'nin taksi ağı</Text>
         <Text style={styles.subtitle}>
-          Tek dokunuşla en yakın taksiyi çağır, sürücünü canlı takip et, yolculuğunu güvenle tamamla.
+          Tek dokunuşla en yakın taksiyi çağır, sürücünü canlı takip et, yolculuğunu güvenle tamamla. Üyelik
+          yolcu ve sürücü için ücretsiz.
         </Text>
       </View>
       <View style={styles.actions}>

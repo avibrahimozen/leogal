@@ -188,16 +188,66 @@ describe('iptal yetkisi ve durum makinesi', () => {
     });
   });
 
-  it('yolculuk başladıktan sonra sürücü de iptal edemez; tamamlama tek seferliktir', async () => {
+  it('yolculuk sırasında yolcu istediği an bitirebilir: ücret ve komisyon işlenmez, sürücüye haber gider', async () => {
     const res = await requestRide(app, passenger.token);
     const rideId = res.body.ride.id as number;
     expect((await rideAction(app, driverA.token, rideId, 'accept')).status).toBe(200);
     expect((await rideAction(app, driverA.token, rideId, 'arrived')).status).toBe(200);
     expect((await rideAction(app, driverA.token, rideId, 'start')).status).toBe(200);
-    expect((await rideAction(app, driverA.token, rideId, 'cancel')).status).toBe(409);
-    expect(cancellationsOf(driverA.id)).toBe(2);
+    emit.mockClear();
+
+    const ended = await rideAction(app, passenger.token, rideId, 'cancel');
+    expect(ended.status).toBe(200);
+    expect(ended.body.ride.status).toBe('cancelled');
+    expect(ended.body.ride.cancelReason).toBe('passenger_ended');
+    expect(ended.body.ride.finalFare).toBeNull();
+    expect(rideRow(rideId)).toMatchObject({ status: 'cancelled', cancel_reason: 'passenger_ended' });
+    const ledger = db.prepare('SELECT COUNT(*) AS n FROM ledger WHERE ride_id = ?').get(rideId) as { n: number };
+    expect(ledger.n).toBe(0);
+    // Sürücü anında öğrenir; yeniden yayın olmaz
+    const toDriver = payloadsFor<RideUpdate>(driverA.id, 'ride:update');
+    expect(toDriver).toHaveLength(1);
+    expect(toDriver[0]).toMatchObject({ rideId, status: 'cancelled', cancelReason: 'passenger_ended' });
+    expect(offersFor(rideId)).toEqual([]);
+    // Bitmiş yolculuk tamamlanamaz
+    expect((await rideAction(app, driverA.token, rideId, 'complete')).status).toBe(409);
+  });
+
+  it('yolculuk sırasında sürücü de bitirebilir: iptal sayacı artmaz, yolcuya haber gider, komisyon yok', async () => {
+    const before = cancellationsOf(driverA.id);
+    const res = await requestRide(app, passenger.token);
+    const rideId = res.body.ride.id as number;
+    expect((await rideAction(app, driverA.token, rideId, 'accept')).status).toBe(200);
+    expect((await rideAction(app, driverA.token, rideId, 'arrived')).status).toBe(200);
+    expect((await rideAction(app, driverA.token, rideId, 'start')).status).toBe(200);
+    emit.mockClear();
+
+    const ended = await rideAction(app, driverA.token, rideId, 'cancel');
+    expect(ended.status).toBe(200);
+    expect(ended.body.ride.cancelReason).toBe('driver_ended');
+    expect(rideRow(rideId)).toMatchObject({ status: 'cancelled', cancel_reason: 'driver_ended', driver_id: driverA.id });
+    expect(cancellationsOf(driverA.id)).toBe(before);
+    const toPassenger = payloadsFor<RideUpdate>(passenger.id, 'ride:update');
+    expect(toPassenger).toHaveLength(1);
+    expect(toPassenger[0]).toMatchObject({ rideId, status: 'cancelled', cancelReason: 'driver_ended' });
+    expect(toPassenger[0]!.reassigned).toBeUndefined();
+    const ledger = db.prepare('SELECT COUNT(*) AS n FROM ledger WHERE ride_id = ?').get(rideId) as { n: number };
+    expect(ledger.n).toBe(0);
+    // İkinci bitirme denemesi 409
+    expect((await rideAction(app, passenger.token, rideId, 'cancel')).status).toBe(409);
+  });
+
+  it('tamamlama tek seferliktir', async () => {
+    const res = await requestRide(app, passenger.token);
+    const rideId = res.body.ride.id as number;
+    expect((await rideAction(app, driverA.token, rideId, 'accept')).status).toBe(200);
+    expect((await rideAction(app, driverA.token, rideId, 'arrived')).status).toBe(200);
+    expect((await rideAction(app, driverA.token, rideId, 'start')).status).toBe(200);
 
     expect((await rideAction(app, driverA.token, rideId, 'complete')).status).toBe(200);
+    // Tamamlanmış yolculuk artık bitirilemez / iptal edilemez
+    expect((await rideAction(app, passenger.token, rideId, 'cancel')).status).toBe(409);
+    expect((await rideAction(app, driverA.token, rideId, 'cancel')).status).toBe(409);
     // Aynı çağrı ikinci kez tamamlanamaz: komisyon deftere iki kez işlenmez
     expect((await rideAction(app, driverA.token, rideId, 'complete')).status).toBe(409);
     const ledger = db

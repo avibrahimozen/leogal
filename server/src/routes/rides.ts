@@ -36,10 +36,12 @@ const stopsUpdateSchema = z.object({ stops: stopsSchema });
  */
 async function priceRoute(points: LatLng[], params: FareParams) {
   const route = await routeVia(points);
-  if (route.source !== 'osrm') return { ...estimateRouteFare(points, params), durationMin: null as number | null };
+  if (route.source !== 'osrm') {
+    return { ...estimateRouteFare(points, params), durationMin: null as number | null, source: route.source };
+  }
   const raw = params.baseFare + params.perKm * route.distanceKm;
   const fare = Math.max(params.minFare, Math.round(raw / 5) * 5);
-  return { distanceKm: route.distanceKm, fare, durationMin: route.durationMin };
+  return { distanceKm: route.distanceKm, fare, durationMin: route.durationMin, source: route.source };
 }
 
 /** Durak sınırı gibi anlaşılır Türkçe mesajları ilet; diğer doğrulama hataları için genel mesaj. */
@@ -103,8 +105,19 @@ export function rideRoutes(db: Db, hub: Hub, matcher: Matcher): Router {
     const stops = parsed.data.stops ?? [];
     // Tarife, alış noktasının ülkesine göre belirlenir; mesafe tüm rota (alış → duraklar → varış)
     const country = regionForPoint(pickup.lat, pickup.lng);
-    const est = await priceRoute([pickup, ...stops, drop], fareParams(db, country));
-    res.json({ distanceKm: est.distanceKm, fare: est.fare, durationMin: est.durationMin, currency: 'TL', country, stopCount: stops.length });
+    const params = fareParams(db, country);
+    const est = await priceRoute([pickup, ...stops, drop], params);
+    res.json({
+      distanceKm: est.distanceKm,
+      fare: est.fare,
+      durationMin: est.durationMin,
+      // Uygulama "Açılış X TL + Y TL/km" satırını ve mesafenin kaynağını (yol / kuş uçuşu) gösterir
+      route: est.source,
+      tariff: { baseFare: params.baseFare, perKm: params.perKm, minFare: params.minFare },
+      currency: 'TL',
+      country,
+      stopCount: stops.length,
+    });
     } catch (e) {
       next(e);
     }
@@ -385,9 +398,31 @@ export function rideRoutes(db: Db, hub: Hub, matcher: Matcher): Router {
       res.status(403).json({ error: 'Bu çağrı size ait değil' });
       return;
     }
-    const cancellable = isPassenger ? ['requested', 'accepted', 'arrived'] : ['accepted', 'arrived'];
+    // Özgür iptal: yolcu her aşamada, sürücü kabulden sonra her aşamada vazgeçebilir.
+    const cancellable = isPassenger
+      ? ['requested', 'accepted', 'arrived', 'in_progress']
+      : ['accepted', 'arrived', 'in_progress'];
     if (!cancellable.includes(ride.status)) {
       res.status(409).json({ error: 'Bu aşamada iptal edilemez' });
+      return;
+    }
+
+    // Yolculuk başladıktan sonra iki taraf da istediği an yolculuğu bitirebilir:
+    // ücret ve komisyon işlenmez, sürücünün iptal sayacı artmaz, yeniden yayın yapılmaz.
+    if (ride.status === 'in_progress') {
+      const reason = isPassenger ? 'passenger_ended' : 'driver_ended';
+      const changed = db
+        .prepare(
+          "UPDATE rides SET status = 'cancelled', cancel_reason = ?, cancelled_at = ? WHERE id = ? AND status = 'in_progress'",
+        )
+        .run(reason, nowIso(), rideId).changes;
+      if (changed !== 1) {
+        res.status(409).json({ error: 'Bu aşamada iptal edilemez' });
+        return;
+      }
+      const ended = getRide(db, rideId)!;
+      notifyRide(ended, { cancelReason: reason });
+      res.json({ ride: rideToJson(db, ended) });
       return;
     }
 
