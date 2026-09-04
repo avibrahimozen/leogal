@@ -157,6 +157,36 @@ describe('sürücü onayı', () => {
   });
 });
 
+describe('askıya alma', () => {
+  it('askıya alınan sürücü çevrimdışına düşer, tekrar çevrimiçi olamaz', async () => {
+    const before = await request(app).get('/api/auth/me').set('Authorization', `Bearer ${driver2Token}`);
+    expect(before.body.user.driver.isOnline).toBe(true);
+    const suspend = await request(app)
+      .post(`/api/admin/drivers/${driver2Id}/suspend`)
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(suspend.status).toBe(200);
+    const after = await request(app).get('/api/auth/me').set('Authorization', `Bearer ${driver2Token}`);
+    expect(after.body.user.driver.status).toBe('suspended');
+    expect(after.body.user.driver.isOnline).toBe(false);
+    const online = await request(app)
+      .post('/api/driver/status')
+      .set('Authorization', `Bearer ${driver2Token}`)
+      .send({ online: true });
+    expect(online.status).toBe(403);
+    // Yeniden onaylayınca çevrimiçi olabilir (akışın devamı için)
+    await request(app).post(`/api/admin/drivers/${driver2Id}/approve`).set('Authorization', `Bearer ${adminToken}`);
+    const reOnline = await request(app)
+      .post('/api/driver/status')
+      .set('Authorization', `Bearer ${driver2Token}`)
+      .send({ online: true });
+    expect(reOnline.status).toBe(200);
+    await request(app)
+      .post('/api/driver/location')
+      .set('Authorization', `Bearer ${driver2Token}`)
+      .send({ lat: 35.19, lng: 33.38 });
+  });
+});
+
 describe('çağrı akışı', () => {
   it('ücret tahmini herkese açık', async () => {
     const res = await request(app).post('/api/rides/estimate').send({ pickup: LEFKOSA, drop: ERCAN });

@@ -99,7 +99,10 @@ export function adminRoutes(db: Db, hub: Hub): Router {
   });
 
   function setDriverStatus(driverId: number, status: 'approved' | 'rejected' | 'suspended'): boolean {
-    const changed = db.prepare('UPDATE drivers SET status = ? WHERE user_id = ?').run(status, driverId).changes;
+    // Onay dışına çıkan sürücü çevrimdışına da alınır; yoksa panelde 'çevrimiçi' görünmeye devam ederdi
+    const changed = db
+      .prepare('UPDATE drivers SET status = ?, is_online = CASE WHEN ? = ? THEN is_online ELSE 0 END WHERE user_id = ?')
+      .run(status, status, 'approved', driverId).changes;
     if (changed === 1) {
       hub.emitToUser(driverId, 'driver:status', { status });
     }
