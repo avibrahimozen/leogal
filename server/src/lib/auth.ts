@@ -4,6 +4,8 @@ import { config } from '../config.js';
 
 export type Role = 'passenger' | 'driver' | 'admin';
 
+const ROLES: readonly string[] = ['passenger', 'driver', 'admin'];
+
 export interface AuthUser {
   id: number;
   role: Role;
@@ -21,10 +23,16 @@ export function signToken(user: AuthUser): string {
   });
 }
 
+/**
+ * Oturum token'ını çözer. Algoritma HS256'ya sabitlenir; `sub` pozitif tam sayı ve
+ * `role` bilinen rollerden biri olmalıdır — böylece amaç dışı token'lar
+ * (örn. telefon doğrulama token'ı: sub=telefon, role yok) oturum yerine geçemez.
+ */
 export function verifyToken(token: string): AuthUser | null {
   try {
-    const payload = jwt.verify(token, config.jwtSecret) as jwt.JwtPayload;
-    if (!payload.sub || !payload.role) return null;
+    const payload = jwt.verify(token, config.jwtSecret, { algorithms: ['HS256'] }) as jwt.JwtPayload;
+    if (typeof payload.sub !== 'string' || !/^[1-9][0-9]*$/.test(payload.sub)) return null;
+    if (typeof payload.role !== 'string' || !ROLES.includes(payload.role)) return null;
     return { id: Number(payload.sub), role: payload.role as Role };
   } catch {
     return null;

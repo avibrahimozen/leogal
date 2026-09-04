@@ -1,4 +1,4 @@
-import { createHmac, randomInt } from 'node:crypto';
+import { createHmac, randomInt, timingSafeEqual } from 'node:crypto';
 import jwt from 'jsonwebtoken';
 import { config } from './config.js';
 import { nowIso, type Db } from './db.js';
@@ -85,8 +85,9 @@ export class OtpService {
     return {
       expiresInSec: Math.floor(config.otpTtlMs / 1000),
       resendAfterSec: Math.floor(config.otpResendCooldownMs / 1000),
-      // Sadece console sağlayıcısında: geliştirme/test kolaylığı için kod yanıtta döner
-      ...(this.sms.kind === 'console' ? { devCode: code } : {}),
+      // Sadece console sağlayıcısında ve üretim dışında: geliştirme/test kolaylığı için kod yanıtta döner.
+      // Üretimde (NODE_ENV=production) asla dönmez; aksi halde herkes her numarayı doğrulayabilirdi.
+      ...(this.sms.kind === 'console' && config.nodeEnv !== 'production' ? { devCode: code } : {}),
     };
   }
 
@@ -104,7 +105,10 @@ export class OtpService {
       this.db.prepare('DELETE FROM otp_codes WHERE phone = ?').run(phone);
       throw new OtpError(429, 'Çok fazla hatalı deneme. Yeni kod isteyin');
     }
-    if (row.code_hash !== this.hash(phone, code)) {
+    // Sabit zamanlı karşılaştırma (iki taraf da 64 karakterlik hex SHA-256; uzunluk farkı = eşleşmez)
+    const expected = Buffer.from(row.code_hash, 'utf8');
+    const actual = Buffer.from(this.hash(phone, code), 'utf8');
+    if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) {
       this.db.prepare('UPDATE otp_codes SET attempts = attempts + 1 WHERE phone = ?').run(phone);
       throw new OtpError(400, 'Kod hatalı');
     }
