@@ -52,6 +52,8 @@ export interface Ride {
   status: RideStatus;
   pickup: GeoPoint;
   drop: GeoPoint;
+  /** Ara duraklar (en fazla 5); eski kayıtlarda boş */
+  stops?: GeoPoint[];
   estDistanceKm: number;
   estFare: number;
   /** Alış noktasının ülkesi (eski kayıtlarda null) */
@@ -70,6 +72,7 @@ export interface RideOffer {
   rideId: number;
   pickup: GeoPoint;
   drop: GeoPoint;
+  stops?: GeoPoint[];
   estDistanceKm: number;
   estFare: number;
   pickupDistanceKm: number;
@@ -111,4 +114,6 @@ export interface RideUpdatePayload {
   /** Sürücü iptal etti ve çağrı yeniden yayınlandı (yalnızca yolcuya) */
   reassigned?: boolean;
   previousDriverCancelled?: boolean;
+  /** Yolcu durak listesini değiştirdi (ücret yeniden hesaplandı) */
+  stopsChanged?: boolean;
 }

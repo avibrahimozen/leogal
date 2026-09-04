@@ -22,6 +22,10 @@ export interface DestinationPickerProps {
   onSelect: (place: Place) => void;
   /** Verilirse listenin en üstünde "📍 Haritadan seç" satırı görünür ve bu çağrılır. */
   onPickOnMap?: () => void;
+  /** Verilirse en üstte "📡 Mevcut konumum" satırı görünür (alış noktası seçerken). */
+  onUseCurrentLocation?: () => void;
+  /** Haritadan seç satırının alt açıklaması */
+  mapHint?: string;
   title?: string;
 }
 
@@ -30,7 +34,15 @@ const MIN_QUERY_LENGTH = 3;
 
 type Row = { key: string; place: Place; detail: string; source: 'local' | 'osm' };
 
-export default function DestinationPicker({ visible, onClose, onSelect, onPickOnMap, title = 'Nereye?' }: DestinationPickerProps) {
+export default function DestinationPicker({
+  visible,
+  onClose,
+  onSelect,
+  onPickOnMap,
+  onUseCurrentLocation,
+  mapHint = 'Hedefi haritada işaretle',
+  title = 'Nereye?',
+}: DestinationPickerProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<GeocodeResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -127,10 +139,16 @@ export default function DestinationPicker({ visible, onClose, onSelect, onPickOn
           keyboardShouldPersistTaps="handled"
           ListHeaderComponent={
             <>
+              {onUseCurrentLocation && (
+                <Pressable style={styles.mapRow} onPress={onUseCurrentLocation}>
+                  <Text style={styles.mapRowText}>📡 Mevcut konumum</Text>
+                  <Text style={styles.mapRowHint}>GPS konumunu kullan</Text>
+                </Pressable>
+              )}
               {onPickOnMap && (
                 <Pressable style={styles.mapRow} onPress={onPickOnMap}>
                   <Text style={styles.mapRowText}>📍 Haritadan seç</Text>
-                  <Text style={styles.mapRowHint}>Hedefi haritada işaretle</Text>
+                  <Text style={styles.mapRowHint}>{mapHint}</Text>
                 </Pressable>
               )}
               {error !== '' && <Text style={styles.error}>{error}</Text>}

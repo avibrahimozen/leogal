@@ -30,7 +30,7 @@ mobile/   Expo / React Native uygulaması — yolcu ve sürücü modları (TypeS
 cd server
 npm install
 npm run dev        # http://localhost:4000
-npm test           # 175 test: ücret, auth, çağrı akışı, gerçek zamanlı olaylar, bölgeler, güvenlik
+npm test           # 184 test: ücret, auth, çağrı akışı, gerçek zamanlı olaylar, bölgeler, güvenlik
 ```
 
 Ortam değişkenleri (hepsi opsiyonel):
@@ -61,6 +61,10 @@ Ulak iki ülkede çalışır: **Kuzey Kıbrıs** (6 ilçe) ve **Türkiye** (81 i
   girilmeyen alanlar genel tarifeden gelir (`GET/PUT /api/admin/settings?country=TR`).
   Türkiye başlangıç değerleri **yer tutucudur** (açılış 42 / km 28 / asgari 150 TL);
   gerçek değerleri panelden girin.
+- **Nereden / Nereye / Duraklar:** alış noktası varsayılan olarak GPS'tir ama elle de seçilir
+  ("Konumum" ile GPS'e dönülür); hedef ve **en fazla 5 ara durak** çağrı öncesinde ya da
+  **yolculuk sırasında** eklenip çıkarılabilir — ücret tüm rota üzerinden yeniden hesaplanır,
+  sürücü durakları haritada ve kartta anında görür (`PUT /api/rides/:id/stops`).
 - Hedef seçici: OpenStreetMap (Nominatim) ile Türkiye+Kıbrıs genelinde adres arama,
   KKTC hızlı yerler ve **haritadan seçim** (pimi istediğin noktaya getir). Alış adresi
   otomatik ters-geocode edilir. Nominatim geliştirme için uygundur; üretimde ücretli
@@ -175,7 +179,8 @@ Aynı uygulama iki modda çalışır: **yolcu** hesabıyla girince harita + ça�
 | `POST /api/auth/login` | Giriş (telefon + şifre → JWT) |
 | `GET /api/public/nearby-drivers?lat=&lng=` | Yakındaki çevrimiçi taksiler (girişsiz, anonim) |
 | `POST /api/rides/estimate` | Ücret tahmini (girişsiz kullanılabilir) |
-| `POST /api/rides` | Çağrı oluştur → en yakın sürücülere teklif yayınlanır |
+| `POST /api/rides` | Çağrı oluştur (`stops`: en fazla 5 ara durak) → en yakın sürücülere teklif yayınlanır |
+| `PUT /api/rides/:id/stops` | Yolcu durak listesini günceller (beklerken veya yolculukta); ücret yeniden hesaplanır |
 | `POST /api/rides/:id/accept` | Sürücü kabulü — ilk kabul eden kazanır |
 | `POST /api/rides/:id/arrived · start · complete` | Yolculuk durum geçişleri |
 | `POST /api/rides/:id/cancel` | İptal (sürücü iptalinde çağrı yeniden yayınlanır) |

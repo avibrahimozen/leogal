@@ -250,6 +250,14 @@ export default function DriverHomeScreen() {
               title={`Varış: ${ride.drop.address}`}
               pinColor={colors.ink}
             />
+            {(ride.stops ?? []).map((stop, i) => (
+              <Marker
+                key={`stop-${i}-${stop.lat}-${stop.lng}`}
+                coordinate={{ latitude: stop.lat, longitude: stop.lng }}
+                title={`${i + 1}. durak: ${stop.address}`}
+                pinColor={colors.orange}
+              />
+            ))}
           </>
         )}
       </MapView>
@@ -294,8 +302,9 @@ export default function DriverHomeScreen() {
             <View style={styles.passengerRow}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.passengerName}>{ride.passenger.name}</Text>
-                <Text style={styles.routeText} numberOfLines={2}>
+                <Text style={styles.routeText}>
                   📍 {ride.pickup.address}
+                  {(ride.stops ?? []).map((stop, i) => `\n🟠 ${i + 1}. durak: ${stop.address}`).join('')}
                   {'\n'}🏁 {ride.drop.address} · ~{ride.estDistanceKm.toFixed(1)} km
                 </Text>
               </View>
@@ -328,6 +337,9 @@ export default function DriverHomeScreen() {
             <View style={styles.offerDetails}>
               <Text style={styles.offerRow}>📍 {offer?.pickup.address}</Text>
               <Text style={styles.offerRow}>🏁 {offer?.drop.address}</Text>
+              {(offer?.stops?.length ?? 0) > 0 && (
+                <Text style={styles.offerRow}>🟠 {offer?.stops?.length} ara durak</Text>
+              )}
               <Text style={styles.offerMeta}>
                 Yolcuya uzaklığın ~{offer?.pickupDistanceKm} km · Yolculuk ~
                 {offer?.estDistanceKm.toFixed(1)} km

@@ -24,11 +24,33 @@ import { fetchEndedRide, useActiveRideSync } from '../../hooks/useActiveRideSync
 import { useLocationPermission } from '../../hooks/useLocationPermission';
 import { applyPassengerRideUpdate } from '../../logic/rideUpdates';
 import { colors, radius, spacing } from '../../theme';
-import type { NearbyDriver, Ride, RideUpdatePayload } from '../../types';
+import type { GeoPoint, NearbyDriver, Ride, RideUpdatePayload } from '../../types';
 
 type Coords = { lat: number; lng: number };
 
+/** Alış noktası: GPS'ten gelir ya da kullanıcı elle seçer (manual). */
+type PickupPoint = GeoPoint & { manual: boolean };
+
+/** Seçici / haritadan seçim hedefi: alış noktası, varış noktası veya yeni durak. */
+type Target = 'pickup' | 'drop' | 'stop';
+
 const NEARBY_REFRESH_MS = 15_000;
+/** Sunucuyla aynı sınır: bir çağrıda en fazla 5 ara durak */
+const MAX_STOPS = 5;
+
+const TARGET_TITLES: Record<Target, string> = { pickup: 'Nereden?', drop: 'Nereye?', stop: 'Durak ekle' };
+const MAP_PICK_TITLES: Record<Target, string> = {
+  pickup: 'Alış noktasını pime getir',
+  drop: 'Hedefi pime getir',
+  stop: 'Durağı pime getir',
+};
+
+/** Seçilen yeri sunucunun beklediği noktaya çevirir (adres = ad + şehir). */
+function toGeoPoint(place: Place): GeoPoint {
+  return { lat: place.lat, lng: place.lng, address: place.city ? `${place.name}, ${place.city}` : place.name };
+}
+
+const ACTIVE_STATUSES = new Set(['requested', 'accepted', 'arrived', 'in_progress']);
 
 export default function PassengerHomeScreen() {
   const mapRef = useRef<MapView>(null);
@@ -37,13 +59,14 @@ export default function PassengerHomeScreen() {
   // Socket işleyicileri güncel çağrıyı closure yerine buradan okur (bayat state'e düşmemek için)
   const rideRef = useRef<Ride | null>(null);
   const [driverPos, setDriverPos] = useState<Coords | null>(null);
+  const [pickup, setPickup] = useState<PickupPoint>({ ...KKTC_CENTER, address: 'Mevcut Konum', manual: false });
   const [destination, setDestination] = useState<Place | null>(null);
+  const [stops, setStops] = useState<GeoPoint[]>([]);
   const [estimate, setEstimate] = useState<{ distanceKm: number; fare: number } | null>(null);
-  const [pickerOpen, setPickerOpen] = useState(false);
-  // Haritadan seçim modu: harita kaydırılır, ortadaki pim hedefi gösterir
-  const [mapPick, setMapPick] = useState(false);
+  const [pickerTarget, setPickerTarget] = useState<Target | null>(null);
+  // Haritadan seçim modu: harita kaydırılır, ortadaki pim seçilen noktayı gösterir
+  const [mapPick, setMapPick] = useState<Target | null>(null);
   const mapCenterRef = useRef<Coords>(KKTC_CENTER);
-  const [pickupAddress, setPickupAddress] = useState('Mevcut Konum');
   const [busy, setBusy] = useState(false);
   const [ratingRide, setRatingRide] = useState<Ride | null>(null);
   const [nearby, setNearby] = useState<NearbyDriver[]>([]);
@@ -75,7 +98,7 @@ export default function PassengerHomeScreen() {
   );
   useActiveRideSync(onSynced);
 
-  // Aktif çağrı yokken çevredeki çevrimiçi taksileri göster
+  // Aktif çağrı yokken alış noktasının çevresindeki çevrimiçi taksileri göster
   const hasRide = ride !== null;
   useEffect(() => {
     if (hasRide) {
@@ -85,7 +108,7 @@ export default function PassengerHomeScreen() {
     let cancelled = false;
     const load = () =>
       api
-        .get<{ drivers: NearbyDriver[] }>(`/public/nearby-drivers?lat=${myLocation.lat}&lng=${myLocation.lng}`)
+        .get<{ drivers: NearbyDriver[] }>(`/public/nearby-drivers?lat=${pickup.lat}&lng=${pickup.lng}`)
         .then((res) => {
           if (!cancelled) setNearby(res.drivers);
         })
@@ -96,7 +119,7 @@ export default function PassengerHomeScreen() {
       cancelled = true;
       clearInterval(timer);
     };
-  }, [hasRide, myLocation]);
+  }, [hasRide, pickup.lat, pickup.lng]);
 
   // Konum izni verilince mevcut konuma git
   useEffect(() => {
@@ -120,16 +143,19 @@ export default function PassengerHomeScreen() {
     };
   }, [locationGranted]);
 
-  // Alış adresi: konum oturunca bir kez ters geocode (her GPS tikinde değil, kota dostu)
+  // Alış noktası elle seçilmediyse GPS'i izler; adres bir kez ters geocode edilir (kota dostu)
+  const pickupIsManual = pickup.manual;
   useEffect(() => {
+    if (pickupIsManual) return;
     let cancelled = false;
+    setPickup((p) => (p.manual ? p : { ...p, lat: myLocation.lat, lng: myLocation.lng }));
     reverseGeocode(myLocation.lat, myLocation.lng).then((addr) => {
-      if (!cancelled && addr) setPickupAddress(addr);
+      if (!cancelled && addr) setPickup((p) => (p.manual ? p : { ...p, address: addr }));
     });
     return () => {
       cancelled = true;
     };
-  }, [myLocation]);
+  }, [myLocation, pickupIsManual]);
 
   // Socket olaylarına abone ol
   useEffect(() => {
@@ -167,7 +193,7 @@ export default function PassengerHomeScreen() {
     };
   }, [applyRide]);
 
-  // Hedef seçilince ücret tahmini al
+  // Rota değişince (alış, duraklar, hedef) ücret tahmini al
   useEffect(() => {
     if (!destination) {
       setEstimate(null);
@@ -177,8 +203,9 @@ export default function PassengerHomeScreen() {
     setEstimate(null);
     api
       .post<{ distanceKm: number; fare: number }>('/rides/estimate', {
-        pickup: { ...myLocation, address: pickupAddress },
-        drop: { lat: destination.lat, lng: destination.lng, address: destination.name },
+        pickup: { lat: pickup.lat, lng: pickup.lng, address: pickup.address },
+        drop: toGeoPoint(destination),
+        stops,
       })
       .then((res) => {
         if (!cancelled) setEstimate(res);
@@ -187,30 +214,32 @@ export default function PassengerHomeScreen() {
         if (!cancelled) setEstimate(null);
       });
     return () => {
-      cancelled = true; // hedef hızla değişirse eski tahmin yeniyi ezmesin
+      cancelled = true; // rota hızla değişirse eski tahmin yeniyi ezmesin
     };
-  }, [destination, myLocation, pickupAddress]);
+  }, [destination, pickup.lat, pickup.lng, pickup.address, stops]);
 
   const requestRide = useCallback(async () => {
     if (!destination) return;
     setBusy(true);
     try {
       const res = await api.post<{ ride: Ride; noDriver?: boolean }>('/rides', {
-        pickup: { ...myLocation, address: pickupAddress },
-        drop: { lat: destination.lat, lng: destination.lng, address: destination.name },
+        pickup: { lat: pickup.lat, lng: pickup.lng, address: pickup.address },
+        drop: toGeoPoint(destination),
+        stops,
       });
       if (res.noDriver) {
         Alert.alert('Sürücü bulunamadı', 'Şu an çevrimiçi sürücü yok. Biraz sonra tekrar dene.');
       } else {
         applyRide(res.ride);
         setDestination(null);
+        setStops([]);
       }
     } catch (e) {
       Alert.alert('Çağrı oluşturulamadı', e instanceof Error ? e.message : 'Bir hata oluştu');
     } finally {
       setBusy(false);
     }
-  }, [destination, myLocation, pickupAddress, applyRide]);
+  }, [destination, pickup, stops, applyRide]);
 
   const cancelRide = useCallback(async () => {
     if (!ride) return;
@@ -225,6 +254,24 @@ export default function PassengerHomeScreen() {
     }
   }, [ride, applyRide]);
 
+  /** Yolculuk sırasında durak listesini sunucuda günceller; sürücü anında görür. */
+  const updateRideStops = useCallback(
+    async (next: GeoPoint[]) => {
+      const current = rideRef.current;
+      if (!current) return;
+      setBusy(true);
+      try {
+        const res = await api.put<{ ride: Ride }>(`/rides/${current.id}/stops`, { stops: next });
+        applyRide(res.ride);
+      } catch (e) {
+        Alert.alert('Durak güncellenemedi', e instanceof Error ? e.message : 'Bir hata oluştu');
+      } finally {
+        setBusy(false);
+      }
+    },
+    [applyRide],
+  );
+
   const submitRating = useCallback(
     async (rating: number) => {
       if (!ratingRide) return;
@@ -238,22 +285,56 @@ export default function PassengerHomeScreen() {
     [ratingRide],
   );
 
+  const resetPickupToGps = useCallback(() => {
+    setPickup({ lat: myLocation.lat, lng: myLocation.lng, address: 'Mevcut Konum', manual: false });
+  }, [myLocation]);
+
+  /** Seçilen noktayı hedefe göre yerleştirir (alış / varış / durak; çağrı sırasında durak sunucuya gider). */
+  const placePoint = useCallback(
+    (target: Target, point: GeoPoint) => {
+      if (target === 'pickup') {
+        setPickup({ ...point, manual: true });
+        return;
+      }
+      if (target === 'drop') {
+        setDestination({ name: point.address, city: '', country: regionForPoint(point.lat, point.lng), lat: point.lat, lng: point.lng });
+        return;
+      }
+      const current = rideRef.current;
+      if (current) {
+        const existing = current.stops ?? [];
+        if (existing.length >= MAX_STOPS) {
+          Alert.alert('Durak sınırı', `En fazla ${MAX_STOPS} durak ekleyebilirsin.`);
+          return;
+        }
+        void updateRideStops([...existing, point]);
+        return;
+      }
+      setStops((prev) => (prev.length >= MAX_STOPS ? prev : [...prev, point]));
+    },
+    [updateRideStops],
+  );
+
   const confirmMapPick = useCallback(async () => {
+    const target = mapPick;
+    if (!target) return;
     const c = mapCenterRef.current;
     setBusy(true);
     const addr = await reverseGeocode(c.lat, c.lng);
     setBusy(false);
-    setDestination({
-      name: addr ?? 'Haritadan seçilen nokta',
-      city: '',
-      country: regionForPoint(c.lat, c.lng),
-      lat: c.lat,
-      lng: c.lng,
-    });
-    setMapPick(false);
-  }, []);
+    placePoint(target, { lat: c.lat, lng: c.lng, address: addr ?? 'Haritadan seçilen nokta' });
+    setMapPick(null);
+  }, [mapPick, placePoint]);
 
-  const activeDrop = ride ? ride.drop : destination ? { lat: destination.lat, lng: destination.lng } : null;
+  // Harita üzerinde çizilecek rota: çağrı varsa sunucudaki, yoksa hazırlanan
+  const rideStops = ride?.stops ?? [];
+  const routePoints: GeoPoint[] = ride
+    ? [ride.pickup, ...rideStops, ride.drop]
+    : destination
+      ? [{ lat: pickup.lat, lng: pickup.lng, address: pickup.address }, ...stops, toGeoPoint(destination)]
+      : [];
+  const shownStops = ride ? rideStops : stops;
+  const canEditRideStops = ride !== null && ACTIVE_STATUSES.has(ride.status);
 
   return (
     <View style={styles.container}>
@@ -267,19 +348,31 @@ export default function PassengerHomeScreen() {
         showsUserLocation
         showsMyLocationButton
       >
-        {activeDrop && (
+        {(ride || pickup.manual) && (
           <Marker
-            coordinate={{ latitude: activeDrop.lat, longitude: activeDrop.lng }}
+            coordinate={{ latitude: ride ? ride.pickup.lat : pickup.lat, longitude: ride ? ride.pickup.lng : pickup.lng }}
+            title={`Alış: ${ride ? ride.pickup.address : pickup.address}`}
+            pinColor={colors.success}
+          />
+        )}
+        {shownStops.map((s, i) => (
+          <Marker
+            key={`stop-${i}-${s.lat}-${s.lng}`}
+            coordinate={{ latitude: s.lat, longitude: s.lng }}
+            title={`${i + 1}. durak: ${s.address}`}
+            pinColor={colors.orange}
+          />
+        ))}
+        {routePoints.length > 0 && (
+          <Marker
+            coordinate={{ latitude: routePoints[routePoints.length - 1]!.lat, longitude: routePoints[routePoints.length - 1]!.lng }}
             title={ride ? ride.drop.address : destination?.name}
             pinColor={colors.ink}
           />
         )}
-        {activeDrop && (
+        {routePoints.length > 1 && (
           <Polyline
-            coordinates={[
-              { latitude: ride ? ride.pickup.lat : myLocation.lat, longitude: ride ? ride.pickup.lng : myLocation.lng },
-              { latitude: activeDrop.lat, longitude: activeDrop.lng },
-            ]}
+            coordinates={routePoints.map((p) => ({ latitude: p.lat, longitude: p.lng }))}
             strokeColor={colors.ink}
             strokeWidth={3}
             lineDashPattern={[8, 6]}
@@ -315,13 +408,13 @@ export default function PassengerHomeScreen() {
       <SafeAreaView style={styles.overlay} edges={['bottom']} pointerEvents="box-none">
         {locationGranted === false && <LocationPermissionCard />}
 
-        {!ride && mapPick && (
+        {mapPick && (
           <Card>
-            <Text style={styles.mapPickTitle}>Haritayı kaydırıp hedefi pime getir</Text>
-            <Text style={styles.nearbyText}>Türkiye ve Kıbrıs'ta herhangi bir noktayı seçebilirsin.</Text>
+            <Text style={styles.mapPickTitle}>{MAP_PICK_TITLES[mapPick]}</Text>
+            <Text style={styles.nearbyText}>Haritayı kaydır; Türkiye ve Kıbrıs'ta herhangi bir noktayı seçebilirsin.</Text>
             <Button title="Bu Noktayı Seç" onPress={confirmMapPick} loading={busy} />
             <View style={{ height: spacing(2) }} />
-            <Button title="Vazgeç" variant="outline" onPress={() => setMapPick(false)} />
+            <Button title="Vazgeç" variant="outline" onPress={() => setMapPick(null)} />
           </Card>
         )}
 
@@ -334,30 +427,72 @@ export default function PassengerHomeScreen() {
                   : `Yakında ${nearby.length} taksi çevrimiçi · en yakını ~${nearby[0]?.distanceKm} km`}
               </Text>
             )}
-            <Pressable style={styles.searchBox} onPress={() => setPickerOpen(true)}>
-              <Text style={styles.searchIcon}>🔍</Text>
-              <Text style={destination ? styles.searchTextActive : styles.searchText}>
-                {destination
-                  ? destination.city
-                    ? `${destination.name} · ${destination.city}`
-                    : destination.name
-                  : 'Nereye gitmek istiyorsun?'}
-              </Text>
+
+            {/* Nereden */}
+            <Pressable style={styles.routeRow} onPress={() => setPickerTarget('pickup')}>
+              <Text style={styles.routeIcon}>📍</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.rowLabel}>Nereden</Text>
+                <Text style={styles.rowValue} numberOfLines={1}>
+                  {pickup.address}
+                </Text>
+              </View>
+              {pickup.manual ? (
+                <Pressable onPress={resetPickupToGps} hitSlop={8}>
+                  <Text style={styles.linkText}>Konumum</Text>
+                </Pressable>
+              ) : (
+                <Text style={styles.rowHint}>GPS</Text>
+              )}
             </Pressable>
+
+            {/* Duraklar */}
+            {stops.map((s, i) => (
+              <View key={`prestop-${i}`} style={styles.routeRow}>
+                <Text style={styles.routeIcon}>🟠</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.rowLabel}>{i + 1}. durak</Text>
+                  <Text style={styles.rowValue} numberOfLines={1}>
+                    {s.address}
+                  </Text>
+                </View>
+                <Pressable onPress={() => setStops((prev) => prev.filter((_, j) => j !== i))} hitSlop={8}>
+                  <Text style={styles.removeText}>✕</Text>
+                </Pressable>
+              </View>
+            ))}
+
+            {/* Nereye */}
+            <Pressable style={styles.routeRow} onPress={() => setPickerTarget('drop')}>
+              <Text style={styles.routeIcon}>🏁</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.rowLabel}>Nereye</Text>
+                <Text style={destination ? styles.rowValue : styles.rowPlaceholder} numberOfLines={1}>
+                  {destination
+                    ? destination.city
+                      ? `${destination.name} · ${destination.city}`
+                      : destination.name
+                    : 'Hedef seç (ara, hızlı yerler veya haritadan)'}
+                </Text>
+              </View>
+            </Pressable>
+
+            {stops.length < MAX_STOPS && (
+              <Pressable onPress={() => setPickerTarget('stop')} hitSlop={6} style={styles.addStopRow}>
+                <Text style={styles.linkText}>+ Durak ekle ({stops.length}/{MAX_STOPS})</Text>
+              </Pressable>
+            )}
+
             {destination && (
               <>
                 <View style={styles.estimateRow}>
                   <View>
                     <Text style={styles.estimateLabel}>Tahmini ücret</Text>
-                    <Text style={styles.estimateFare}>
-                      {estimate ? `${estimate.fare} TL` : '...'}
-                    </Text>
+                    <Text style={styles.estimateFare}>{estimate ? `${estimate.fare} TL` : '...'}</Text>
                   </View>
                   <View style={{ alignItems: 'flex-end' }}>
                     <Text style={styles.estimateLabel}>Mesafe</Text>
-                    <Text style={styles.estimateKm}>
-                      {estimate ? `~${estimate.distanceKm.toFixed(1)} km` : '...'}
-                    </Text>
+                    <Text style={styles.estimateKm}>{estimate ? `~${estimate.distanceKm.toFixed(1)} km` : '...'}</Text>
                   </View>
                 </View>
                 <Button title="🚕 Taksi Çağır" onPress={requestRide} loading={busy} disabled={!estimate} />
@@ -366,7 +501,7 @@ export default function PassengerHomeScreen() {
           </Card>
         )}
 
-        {ride && (
+        {ride && !mapPick && (
           <Card>
             <View style={styles.rideHeader}>
               <Badge {...toBadge(ride.status)} />
@@ -402,8 +537,29 @@ export default function PassengerHomeScreen() {
               )
             )}
             <Text style={styles.routeText} numberOfLines={1}>
-              📍 {ride.pickup.address} → {ride.drop.address}
+              📍 {ride.pickup.address} → 🏁 {ride.drop.address}
             </Text>
+            {rideStops.map((s, i) => (
+              <View key={`ridestop-${i}`} style={styles.stopLine}>
+                <Text style={styles.stopText} numberOfLines={1}>
+                  🟠 {i + 1}. durak: {s.address}
+                </Text>
+                {canEditRideStops && (
+                  <Pressable
+                    onPress={() => updateRideStops(rideStops.filter((_, j) => j !== i))}
+                    hitSlop={8}
+                    disabled={busy}
+                  >
+                    <Text style={styles.removeText}>✕</Text>
+                  </Pressable>
+                )}
+              </View>
+            ))}
+            {canEditRideStops && rideStops.length < MAX_STOPS && (
+              <Pressable onPress={() => setPickerTarget('stop')} hitSlop={6} style={styles.addStopRow} disabled={busy}>
+                <Text style={styles.linkText}>+ Durak ekle ({rideStops.length}/{MAX_STOPS})</Text>
+              </Pressable>
+            )}
             {ride.status !== 'in_progress' && (
               <Button title="Çağrıyı İptal Et" variant="outline" onPress={cancelRide} loading={busy} />
             )}
@@ -411,19 +567,32 @@ export default function PassengerHomeScreen() {
         )}
       </SafeAreaView>
 
-      {/* Hedef seçici: OpenStreetMap araması + KKTC hızlı yerler + haritadan seçim */}
+      {/* Yer seçici: OpenStreetMap araması + KKTC hızlı yerler + haritadan seçim (+ alış için GPS) */}
       <DestinationPicker
-        visible={pickerOpen}
-        onClose={() => setPickerOpen(false)}
+        visible={pickerTarget !== null}
+        title={pickerTarget ? TARGET_TITLES[pickerTarget] : 'Nereye?'}
+        mapHint={pickerTarget === 'pickup' ? 'Alış noktasını haritada işaretle' : pickerTarget === 'stop' ? 'Durağı haritada işaretle' : 'Hedefi haritada işaretle'}
+        onClose={() => setPickerTarget(null)}
         onSelect={(place) => {
-          setDestination(place);
-          setPickerOpen(false);
+          const target = pickerTarget;
+          setPickerTarget(null);
+          if (!target) return;
+          if (target === 'drop') setDestination(place);
+          else placePoint(target, toGeoPoint(place));
         }}
         onPickOnMap={() => {
-          setPickerOpen(false);
-          setDestination(null);
-          setMapPick(true);
+          const target = pickerTarget;
+          setPickerTarget(null);
+          if (target) setMapPick(target);
         }}
+        onUseCurrentLocation={
+          pickerTarget === 'pickup'
+            ? () => {
+                setPickerTarget(null);
+                resetPickupToGps();
+              }
+            : undefined
+        }
       />
 
       {/* Puanlama */}
@@ -466,24 +635,33 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     padding: spacing(4),
   },
-  searchBox: {
+  nearbyText: { fontSize: 13, fontWeight: '600', color: colors.muted, marginBottom: spacing(2.5) },
+  routeRow: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.bg,
     borderRadius: radius.md,
     borderWidth: 1.5,
     borderColor: colors.line,
-    paddingHorizontal: spacing(3.5),
-    height: 52,
+    paddingHorizontal: spacing(3),
+    paddingVertical: spacing(2),
+    marginBottom: spacing(2),
+    minHeight: 52,
   },
-  searchIcon: { marginRight: spacing(2.5), fontSize: 16 },
-  nearbyText: { fontSize: 13, fontWeight: '600', color: colors.muted, marginBottom: spacing(2.5) },
-  searchText: { fontSize: 16, color: colors.muted },
-  searchTextActive: { fontSize: 16, color: colors.ink, fontWeight: '600' },
+  routeIcon: { marginRight: spacing(2.5), fontSize: 16 },
+  rowLabel: { fontSize: 11, fontWeight: '700', color: colors.muted, textTransform: 'uppercase', letterSpacing: 0.4 },
+  rowValue: { fontSize: 15, color: colors.ink, fontWeight: '600', marginTop: 1 },
+  rowPlaceholder: { fontSize: 15, color: colors.muted, marginTop: 1 },
+  rowHint: { fontSize: 12, color: colors.muted, fontWeight: '600', marginLeft: spacing(2) },
+  linkText: { fontSize: 14, fontWeight: '700', color: colors.info },
+  removeText: { fontSize: 16, fontWeight: '700', color: colors.danger, paddingHorizontal: spacing(2) },
+  addStopRow: { alignSelf: 'flex-start', paddingVertical: spacing(1), marginBottom: spacing(1) },
+  stopLine: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing(1.5) },
+  stopText: { flex: 1, fontSize: 13, color: colors.inkSoft },
   estimateRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginVertical: spacing(4),
+    marginVertical: spacing(3),
   },
   estimateLabel: { fontSize: 12, color: colors.muted, fontWeight: '600' },
   estimateFare: { fontSize: 28, fontWeight: '800', color: colors.ink },
@@ -517,7 +695,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  routeText: { fontSize: 13, color: colors.inkSoft, marginBottom: spacing(3) },
+  routeText: { fontSize: 13, color: colors.inkSoft, marginBottom: spacing(2) },
   centerPin: {
     position: 'absolute',
     top: 0,
