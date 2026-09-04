@@ -67,9 +67,12 @@ ${LANG_CSS}
 
   /* ---------- Vaat şeridi ---------- */
   .perks { border-bottom: 1px solid var(--is-2); background: var(--is); }
-  .perks ul { list-style: none; margin: 0; padding: 18px 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px 28px; }
-  .perks li { display: flex; align-items: center; gap: 12px; font-weight: 600; }
-  .perks svg { width: 26px; height: 26px; flex: 0 0 auto; color: var(--koz); }
+  .perks .wrap { max-width: 1320px; }
+  .perks ul { list-style: none; margin: 0; padding: 16px 0; display: flex; flex-wrap: nowrap; justify-content: space-between; align-items: center; gap: 20px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .perks ul::-webkit-scrollbar { display: none; }
+  .perks li { display: flex; align-items: center; gap: 9px; font-weight: 600; font-size: clamp(13px, 1.15vw, 16px); white-space: nowrap; flex: 0 0 auto; }
+  .perks svg { width: 22px; height: 22px; flex: 0 0 auto; color: var(--koz); }
+  @media (max-width: 720px) { .perks .wrap { padding-right: 0; } .perks ul { gap: 22px; padding-right: 22px; } .perks li { font-size: 14px; } }
 
   /* ---------- Bölüm düzeni ---------- */
   section.block { padding: 72px 0; border-bottom: 1px solid var(--is-2); }
