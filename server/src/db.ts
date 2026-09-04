@@ -37,7 +37,9 @@ CREATE TABLE IF NOT EXISTS drivers (
   lng REAL,
   location_at TEXT,
   rating_sum INTEGER NOT NULL DEFAULT 0,
-  rating_count INTEGER NOT NULL DEFAULT 0
+  rating_count INTEGER NOT NULL DEFAULT 0,
+  -- Sürücünün kabul ettikten sonra vazgeçtiği çağrı sayısı
+  cancellations INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS rides (
@@ -104,9 +106,14 @@ export function createDb(path: string = config.dbPath): Db {
 
 /** Eski veritabanlarına sonradan eklenen sütunları uygular. */
 function migrate(db: Db): void {
-  const userCols = db.prepare('PRAGMA table_info(users)').all() as unknown as Array<{ name: string }>;
-  if (!userCols.some((c) => c.name === 'phone_verified_at')) {
-    db.exec('ALTER TABLE users ADD COLUMN phone_verified_at TEXT');
+  addColumnIfMissing(db, 'users', 'phone_verified_at', 'TEXT');
+  addColumnIfMissing(db, 'drivers', 'cancellations', 'INTEGER NOT NULL DEFAULT 0');
+}
+
+function addColumnIfMissing(db: Db, table: string, column: string, definition: string): void {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all() as unknown as Array<{ name: string }>;
+  if (!cols.some((c) => c.name === column)) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
   }
 }
 

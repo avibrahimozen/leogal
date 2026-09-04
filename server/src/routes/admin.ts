@@ -27,7 +27,7 @@ export function adminRoutes(db: Db, hub: Hub): Router {
     const status = typeof req.query.status === 'string' ? req.query.status : null;
     const rows = db
       .prepare(
-        `SELECT u.id, u.name, u.phone, u.created_at, d.license_no, d.vehicle_plate, d.vehicle_model, d.city, d.status, d.is_online, d.rating_sum, d.rating_count, d.lat, d.lng, d.location_at,
+        `SELECT u.id, u.name, u.phone, u.created_at, d.license_no, d.vehicle_plate, d.vehicle_model, d.city, d.status, d.is_online, d.rating_sum, d.rating_count, d.cancellations, d.lat, d.lng, d.location_at,
            (SELECT COALESCE(SUM(CASE WHEN l.type = 'commission' THEN l.amount ELSE -l.amount END), 0) FROM ledger l WHERE l.driver_id = u.id) AS commission_due
          FROM users u JOIN drivers d ON d.user_id = u.id
          WHERE (? IS NULL OR d.status = ?)
@@ -53,6 +53,7 @@ export function adminRoutes(db: Db, hub: Hub): Router {
             ? Math.round(((r.rating_sum as number) / (r.rating_count as number)) * 10) / 10
             : null,
         commissionDue: r.commission_due,
+        cancellations: r.cancellations,
         createdAt: r.created_at,
       })),
     });
