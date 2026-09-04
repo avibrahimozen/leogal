@@ -1,0 +1,21 @@
+name: 7-23-restaurant
+
+on:
+  push:
+    paths: ["7-23-restaurant/**", ".github/workflows/7-23-restaurant.yml"]
+  pull_request:
+    paths: ["7-23-restaurant/**", ".github/workflows/7-23-restaurant.yml"]
+
+jobs:
+  check:
+    name: Üretilen sayfalar güncel ve tutarlı mı
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: 7-23-restaurant
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm test

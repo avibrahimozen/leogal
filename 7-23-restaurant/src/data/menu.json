@@ -1,0 +1,128 @@
+{
+  "business": {
+    "name": "7 23 Gece Dönercisi",
+    "shortName": "7 23",
+    "tagline": "Gece Dönercisi",
+    "slogan": "Geceyi değil, açlığı bitir.",
+    "description": "Konyaaltı Antalya'da her gün 07:00–23:00 açık et dönercisi. Dürüm, pilav üstü, İskender, çorba ve tatlı. Alo Paket 0552 990 07 23.",
+    "phoneDisplay": "0552 990 07 23",
+    "phoneE164": "+905529900723",
+    "whatsappText": "Merhaba, sipariş vermek istiyorum.",
+    "address": {
+      "street": "Arapsuyu Mahallesi, Belediye Cad. No: 12/B",
+      "district": "Konyaaltı",
+      "city": "Antalya",
+      "country": "TR"
+    },
+    "mapQuery": "Arapsuyu Mahallesi Belediye Caddesi 12/B Konyaaltı Antalya",
+    "hours": { "opens": "07:00", "closes": "23:00" },
+    "cuisine": "Döner, Türk mutfağı",
+    "priceRange": "₺₺",
+    "perks": [
+      "Gece gündüz hizmetinizdeyiz",
+      "Taze malzeme, lezzetin sırrı",
+      "Alo paket, hızlı teslimat",
+      "Temizlik önceliğimiz"
+    ]
+  },
+  "site": {
+    "baseUrl": "https://avibrahimozen.github.io/leogal/7-23-restaurant/",
+    "menuPath": "",
+    "sitePath": "site/",
+    "locale": "tr_TR",
+    "keywords": ["döner", "et döner", "dönerci", "Konyaaltı", "Antalya", "Arapsuyu", "alo paket", "iskender", "dürüm", "gece açık restoran"]
+  },
+  "updated": "2026-09-04",
+  "currency": "TRY",
+  "gramSizes": [100, 150, 200],
+  "sections": [
+    {
+      "id": "doner",
+      "title": "Döner Çeşitleri",
+      "navLabel": "Döner",
+      "note": "Fiyatlar et gramajına göre",
+      "style": "kor",
+      "type": "grams",
+      "items": [
+        { "id": "et-doner-durum", "name": "Et Döner Dürüm", "prices": [410, 600, 790] },
+        { "id": "gobit-doner", "name": "Gobit Döner", "prices": [410, 600, 790] },
+        { "id": "somun-doner", "name": "Somun Döner", "prices": [410, 600, 790] },
+        { "id": "et-doner-burger", "name": "Et Döner Burger", "prices": [450, 650, 790] },
+        { "separator": true },
+        { "id": "sade-et-doner", "name": "Sade Et Döner", "prices": [470, 670, 880] },
+        { "id": "pilav-ustu-et-doner", "name": "Pilav Üstü Et Döner", "prices": [500, 700, 900] },
+        { "id": "iskender", "name": "İskender", "prices": [650, 850, null] }
+      ]
+    },
+    {
+      "id": "menuler",
+      "title": "Menüler",
+      "navLabel": "Menüler",
+      "style": "koz",
+      "type": "list",
+      "items": [
+        { "id": "icli-kofte", "name": "İçli Köfte", "price": 140 },
+        { "id": "patates-kizartmasi", "name": "Patates Kızartması", "price": 160 }
+      ],
+      "feature": { "id": "cocuk-menu", "name": "Çocuk Menü", "price": 400, "detail": "65 gr döner · Sürpriz hediyeli!" }
+    },
+    {
+      "id": "corbalar",
+      "title": "Çorbalar",
+      "navLabel": "Çorbalar",
+      "note": "Sıcacık, limonlu",
+      "style": "kor",
+      "type": "list",
+      "items": [
+        { "id": "mercimek-corbasi", "name": "Mercimek Çorbası", "price": 190 },
+        { "id": "ezogelin-corbasi", "name": "Ezogelin Çorbası", "price": 190 },
+        { "id": "domates-corbasi", "name": "Domates Çorbası", "price": 190 },
+        { "id": "tavuk-corbasi", "name": "Tavuk Çorbası", "price": 190 }
+      ]
+    },
+    {
+      "id": "tatlilar",
+      "title": "Tatlılar",
+      "navLabel": "Tatlılar",
+      "style": "kor",
+      "type": "list",
+      "items": [
+        { "id": "sutlac", "name": "Sütlaç", "price": 170 },
+        { "id": "kabak-tatlisi", "name": "Kabak Tatlısı", "price": 200 },
+        { "id": "havuc-dilimi", "name": "Havuç Dilimi", "price": 260 },
+        { "id": "dondurma", "name": "Dondurma", "price": 90 },
+        { "id": "kaymak", "name": "Kaymak", "price": 90 }
+      ]
+    },
+    {
+      "id": "icecekler",
+      "title": "İçecekler",
+      "navLabel": "İçecekler",
+      "style": "yesil",
+      "type": "list",
+      "items": [
+        { "id": "ayran", "name": "Ayran", "price": 75 },
+        { "id": "yayik-ayran", "name": "Yayık Ayran", "price": 75 },
+        { "id": "limonata", "name": "Limonata", "price": 70 },
+        { "id": "sira", "name": "Şıra", "price": 95 },
+        { "id": "salgam", "name": "Şalgam", "price": 95 },
+        { "id": "kola", "name": "Kola", "price": 90 },
+        { "id": "fanta", "name": "Fanta", "price": 90 },
+        { "id": "sprite", "name": "Sprite", "price": 90 },
+        { "id": "fuse-tea", "name": "Fuse Tea", "price": 90 },
+        { "id": "meyve-suyu", "name": "Meyve Suyu", "price": 90 },
+        { "id": "soda", "name": "Soda", "price": 50 },
+        { "id": "su", "name": "Su", "price": 40 },
+        { "id": "kola-1lt", "name": "Kola", "sub": "1 litre", "price": 145 }
+      ]
+    }
+  ],
+  "featured": [
+    { "id": "et-doner-durum", "blurb": "Lavaşta, közlenmiş domates ve biberle. En çok giden." },
+    { "id": "pilav-ustu-et-doner", "blurb": "Tereyağlı pirinç pilavının üzerinde, yanında közlenmiş biber." },
+    { "id": "iskender", "blurb": "Pide üstünde, domates soslu, kızgın tereyağı ve yoğurtla." },
+    { "id": "et-doner-burger", "blurb": "Susamlı ekmekte döner, cheddar ve taze yeşillik." },
+    { "id": "mercimek-corbasi", "label": "Sıcak Çorbalar", "unit": "Kase", "blurb": "Mercimek, ezogelin, domates, tavuk. Limon ve kıtır ekmekle." },
+    { "id": "cocuk-menu", "unit": "Menü", "blurb": "65 gr döner, patates ve içecek. Sürpriz hediyeli.", "child": true }
+  ]
+}

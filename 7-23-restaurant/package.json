@@ -1,0 +1,16 @@
+{
+  "name": "7-23-gece-donercisi",
+  "version": "1.0.0",
+  "private": true,
+  "description": "7 23 Gece Dönercisi: QR menü, web sitesi ve SEO dosyalarını tek veri kaynağından üreten Node.js projesi.",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "node src/build.js",
+    "dev": "node src/dev.js",
+    "test": "node src/check.js"
+  },
+  "license": "UNLICENSED"
+}
