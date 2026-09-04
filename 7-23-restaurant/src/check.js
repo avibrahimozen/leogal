@@ -2,7 +2,7 @@
 //   npm test
 import { readFile, access } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
-import { build, loadData, ROOT } from './build.js';
+import { build, loadData, OUT } from './build.js';
 
 const errors = [];
 const fail = (m) => errors.push(m);
@@ -36,10 +36,11 @@ if (process.exitCode) { fail('Üretilen dosyalar güncel değil'); process.exitC
 const pages = [
   { rel: join(data.site.menuPath, 'index.html'), canonical: data.site.baseUrl + data.site.menuPath },
   { rel: join(data.site.sitePath, 'index.html'), canonical: data.site.baseUrl + data.site.sitePath },
+  ...(data.site.menuAliases ?? []).map((a) => ({ rel: join(a, 'index.html'), canonical: data.site.baseUrl + data.site.menuPath, alias: true })),
 ];
 const hrefRe = /(?:href|src)="([^"]+)"/g;
 for (const page of pages) {
-  const abs = join(ROOT, page.rel);
+  const abs = join(OUT, page.rel);
   const html = await readFile(abs, 'utf8');
   const must = [
     ['<html lang="tr">', 'lang="tr"'],
@@ -73,7 +74,7 @@ for (const page of pages) {
 }
 
 // 4. Menü sayfasında her ürün ve fiyat görünüyor mu
-const menuHtml = await readFile(join(ROOT, pages[0].rel), 'utf8');
+const menuHtml = await readFile(join(OUT, pages[0].rel), 'utf8');
 for (const sec of data.sections) {
   for (const it of sec.items) {
     if (it.separator) continue;
@@ -84,8 +85,12 @@ for (const sec of data.sections) {
 }
 
 // 5. Site haritası
-const sitemap = await readFile(join(ROOT, 'sitemap.xml'), 'utf8');
+const sitemap = await readFile(join(OUT, 'sitemap.xml'), 'utf8');
 for (const page of pages) if (!sitemap.includes(`<loc>${page.canonical}</loc>`)) fail(`sitemap.xml: ${page.canonical} eksik`);
+const cname = await readFile(join(OUT, 'CNAME'), 'utf8').catch(() => '');
+if (cname.trim() !== data.site.domain) fail(`CNAME dosyası "${data.site.domain}" olmalı`);
+const robots = await readFile(join(OUT, 'robots.txt'), 'utf8').catch(() => '');
+if (!robots.includes('Sitemap: ' + data.site.baseUrl + 'sitemap.xml')) fail('robots.txt sitemap satırı eksik');
 
 if (errors.length) {
   console.error(`${errors.length} sorun:\n- ` + errors.join('\n- '));

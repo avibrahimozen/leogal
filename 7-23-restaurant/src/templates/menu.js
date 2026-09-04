@@ -176,11 +176,18 @@ ${body}
   </section>`;
 }
 
-export function renderMenu(data) {
+/** Göreli üst dizin öneki: 'menu/' -> '../', '' -> ''. */
+function up(path) {
+  const depth = path.split('/').filter(Boolean).length;
+  return '../'.repeat(depth);
+}
+
+export function renderMenu(data, { path = data.site.menuPath } = {}) {
   const b = data.business;
   const s = data.site;
   const l = links(b);
   const canonical = url(s, s.menuPath);
+  const siteHref = up(path) + s.sitePath || './';
   const title = `${b.name} · Menü ve Fiyatlar`;
   const description = `${b.name} güncel menü: döner çeşitleri (100/150/200 gr), çorbalar, tatlılar, içecekler. ${b.address.district} / ${b.address.city}. Alo Paket ${b.phoneDisplay}.`;
 
@@ -231,7 +238,7 @@ ${b.perks.map((p) => `      <li>${esc(p)}</li>`).join('\n')}
       <b>${esc(b.name)}</b><br>
       ${esc(b.address.street)}<br>
       ${esc(b.address.district)} / ${esc(b.address.city)}<br>
-      <a href="${esc(l.map)}" target="_blank" rel="noopener">Haritada aç</a> · <a href="${esc(s.sitePath)}">Web sitemiz</a>
+      <a href="${esc(l.map)}" target="_blank" rel="noopener">Haritada aç</a> · <a href="${esc(siteHref)}">Web sitemiz</a>
     </address>
     <p class="fine">Fiyatlar TL cinsindendir. Fiyat değişikliği hakkı saklıdır.</p>
   </div>

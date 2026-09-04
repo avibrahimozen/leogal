@@ -178,7 +178,7 @@ export function renderSite(data) {
   const s = data.site;
   const l = links(b);
   const canonical = url(s, s.sitePath);
-  const menuHref = '../' + s.menuPath;
+  const menuHref = s.menuPath;
   const title = `${b.name} · ${b.address.district}, ${b.address.city}`;
   const description = b.description;
   const [open, close] = [b.hours.opens, b.hours.closes];

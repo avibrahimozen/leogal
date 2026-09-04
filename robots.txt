@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /docs/
+Disallow: /7-23-restaurant/src/
+Sitemap: https://antalyagecedonercisi.com/sitemap.xml

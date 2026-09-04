@@ -6,9 +6,12 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { renderMenu } from './templates/menu.js';
 import { renderSite } from './templates/site.js';
-import { sitemapXml } from './lib/seo.js';
+import { renderNotFound } from './templates/notfound.js';
+import { sitemapXml, robotsTxt } from './lib/seo.js';
 
 export const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+/** Yayın kökü: depo kökü. GitHub Pages ve özel alan adı buradan servis edilir. */
+export const OUT = join(ROOT, '..');
 const DATA = join(ROOT, 'src', 'data', 'menu.json');
 
 export async function loadData() {
@@ -20,10 +23,15 @@ export async function render(data = null) {
   data ??= await loadData();
   const s = data.site;
   const out = new Map();
-  out.set(join(s.menuPath, 'index.html'), renderMenu(data));
   out.set(join(s.sitePath, 'index.html'), renderSite(data));
+  out.set(join(s.menuPath, 'index.html'), renderMenu(data));
+  // Basılı QR kodların adresi: aynı menü, canonical /menu/ adresini gösterir.
+  for (const alias of s.menuAliases ?? []) out.set(join(alias, 'index.html'), renderMenu(data, { path: alias }));
+  out.set('404.html', renderNotFound(data));
   // lastmod veri dosyasındaki "updated" alanından gelir; fiyat değiştirince o tarihi güncelleyin.
   out.set('sitemap.xml', sitemapXml(data, data.updated));
+  out.set('robots.txt', robotsTxt(data));
+  out.set('CNAME', s.domain + '\n');
   return out;
 }
 
@@ -31,7 +39,7 @@ export async function build({ check = false } = {}) {
   const files = await render();
   const stale = [];
   for (const [rel, content] of files) {
-    const abs = join(ROOT, rel);
+    const abs = join(OUT, rel);
     if (check) {
       const current = await readFile(abs, 'utf8').catch(() => null);
       if (current !== content) stale.push(rel);

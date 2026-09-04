@@ -1,16 +1,34 @@
-# 7 23 Gece Dönercisi — QR Menü ve Web Sitesi
+# 7 23 Gece Dönercisi — Web Sitesi ve QR Menü
 
-Tek bir veri dosyasından (`src/data/menu.json`) QR menüyü, web sitesini ve arama motoru dosyalarını üreten Node.js projesi. Çıktılar statik HTML'dir; GitHub Pages üzerinde yayınlanır, sunucu gerekmez.
+Tek bir veri dosyasından (`src/data/menu.json`) web sitesini, QR menüyü ve arama motoru dosyalarını üreten Node.js projesi. Çıktılar statik HTML'dir; GitHub Pages üzerinde **antalyagecedonercisi.com** alan adıyla yayınlanır, sunucu gerekmez.
 
 ## Adresler
 
 | Sayfa | Adres |
 | --- | --- |
-| QR menü | https://avibrahimozen.github.io/leogal/7-23-restaurant/ |
-| Web sitesi | https://avibrahimozen.github.io/leogal/7-23-restaurant/site/ |
-| Site haritası | https://avibrahimozen.github.io/leogal/7-23-restaurant/sitemap.xml |
+| Web sitesi | https://antalyagecedonercisi.com/ |
+| QR menü | https://antalyagecedonercisi.com/menu/ |
+| Eski QR adresi (aynı menü) | https://antalyagecedonercisi.com/7-23-restaurant/ |
+| Site haritası | https://antalyagecedonercisi.com/sitemap.xml |
 
-QR kodlar menü adresine gider. Klasör adı (`7-23-restaurant`) bu adresin parçasıdır; klasörü yeniden adlandırırsanız basılı QR kodlar çalışmaz.
+Alan adı bağlanana kadar aynı sayfalar `https://avibrahimozen.github.io/leogal/` altında açılır. Alan adı bağlandıktan sonra GitHub bu eski adresleri yeni alan adına yönlendirir; ilk basılan QR kodlar (`/7-23-restaurant/`) çalışmaya devam eder.
+
+## Alan adını bağlama (tek seferlik)
+
+1. `antalyagecedonercisi.com` alan adını bir kayıt firmasından alın.
+2. Alan adının DNS ayarlarına şu kayıtları ekleyin:
+
+   | Tür | Ad | Değer |
+   | --- | --- | --- |
+   | A | `@` | `185.199.108.153` |
+   | A | `@` | `185.199.109.153` |
+   | A | `@` | `185.199.110.153` |
+   | A | `@` | `185.199.111.153` |
+   | CNAME | `www` | `avibrahimozen.github.io` |
+
+3. Depoda `CNAME` dosyası hazır (içeriği alan adı). GitHub, dalı yayınlarken bunu okur ve **Settings → Pages → Custom domain** alanına yazar.
+4. DNS yayıldıktan sonra (genelde 1 saat, en fazla 1 gün) aynı sayfada **Enforce HTTPS** kutusunu işaretleyin.
+5. Tarayıcıda https://antalyagecedonercisi.com/menu/ açılıyorsa QR kodları bastırabilirsiniz.
 
 ## Kurulum ve komutlar
 
@@ -18,12 +36,12 @@ Node.js 18 veya üstü yeterlidir; harici paket yoktur (`npm install` gerekmez).
 
 ```bash
 cd 7-23-restaurant
-npm run build   # src/ altındaki veriden index.html, site/index.html ve sitemap.xml üretir
+npm run build   # depo köküne index.html, menu/, 7-23-restaurant/index.html, 404.html, sitemap.xml, robots.txt, CNAME üretir
 npm run dev     # http://localhost:4723 adresinde yayınlar, src/ değişince yeniden üretir
 npm test        # veri tutarlılığı, güncel çıktı, SEO ve bağlantı kontrolleri
 ```
 
-`npm test` GitHub Actions'ta her push'ta çalışır (`.github/workflows/7-23-restaurant.yml`). Üretilen dosyalar commit edildiği için Pages ayarını değiştirmek gerekmez.
+`npm test` GitHub Actions'ta her push'ta çalışır (`.github/workflows/7-23-restaurant.yml`). Üretilen dosyalar commit edilir; Pages ayarı "Deploy from a branch, / (root)" olarak kalır.
 
 ## Fiyat veya ürün güncelleme
 
@@ -49,32 +67,32 @@ Web sitesindeki "öne çıkanlar" kartları `featured` listesinden gelir; ürün
 
 | Dosya | Ne işe yarar |
 | --- | --- |
-| `src/data/menu.json` | İşletme bilgileri, menü, fiyatlar, öne çıkanlar. Tek doğruluk kaynağı. |
-| `src/templates/menu.js` | QR menü şablonu. |
-| `src/templates/site.js` | Web sitesi şablonu. |
-| `src/lib/seo.js` | `<head>` etiketleri, schema.org Restaurant ve Menu nesneleri, sitemap. |
+| `src/data/menu.json` | İşletme bilgileri, alan adı, menü, fiyatlar, öne çıkanlar. Tek doğruluk kaynağı. |
+| `src/templates/site.js`, `menu.js`, `notfound.js` | Web sitesi, QR menü ve 404 şablonları. |
+| `src/lib/seo.js` | `<head>` etiketleri, schema.org Restaurant ve Menu nesneleri, sitemap, robots. |
 | `src/build.js`, `src/dev.js`, `src/check.js` | Üretim, geliştirme sunucusu, kontrol. |
-| `index.html`, `site/index.html`, `sitemap.xml` | **Üretilen** dosyalar; elle düzenlemeyin, `npm run build` ile yenileyin. |
+| Depo kökünde `index.html`, `menu/`, `7-23-restaurant/index.html`, `404.html`, `sitemap.xml`, `robots.txt`, `CNAME` | **Üretilen** dosyalar; elle düzenlemeyin, `npm run build` ile yenileyin. |
 | `masa-karti.html` | Hazır QR gömülü, A6 basılabilir masa kartı. Yazı tipleri gömülüdür. |
-| `qr.html` | İstediğiniz adres için QR üretici (adres değişirse diye). |
-| `qr/menu-qr.png`, `qr/menu-qr.svg` | Menü adresinin QR kodu. Broşüre, tabelaya, sosyal medyaya. |
+| `qr.html` | İstediğiniz adres için QR üretici. |
+| `qr/menu-qr.png`, `qr/menu-qr.svg` | `antalyagecedonercisi.com/menu/` adresinin QR kodu. Broşüre, tabelaya, sosyal medyaya. |
 | `qr/masa-karti.pdf`, `qr/masa-karti.png` | Masa kartının baskıya hazır hali (105 × 148 mm). |
 
 ## SEO: neler yapıldı, neler sizde
 
 Sayfalarda hazır olanlar:
 
-- Her sayfada ayrı başlık, açıklama ve canonical adres; Open Graph ve Twitter etiketleri.
-- schema.org **Restaurant** (adres, telefon, çalışma saatleri, sipariş eylemi) ve menü sayfasında gramaja göre fiyat teklifleriyle tam **Menu** yapısı. Google bunları zengin sonuçlarda kullanabilir.
-- `sitemap.xml`, `lang="tr"`, tek `h1`, anlamlı başlık hiyerarşisi, telefon ve harita bağlantıları.
+- Her sayfada ayrı başlık, açıklama ve canonical adres; Open Graph ve Twitter etiketleri. Eski QR adresi canonical olarak `/menu/` adresini gösterir, arama motorunda tek sayfa sayılır.
+- schema.org **Restaurant** (adres, telefon, çalışma saatleri, sipariş eylemi) ve menü sayfasında gramaja göre fiyat teklifleriyle tam **Menu** yapısı.
+- Alan adı kökünde `sitemap.xml` ve `robots.txt`; `lang="tr"`, tek `h1`, anlamlı başlık hiyerarşisi.
 - Tek dosya, satır içi CSS, harici kütüphane yok: hızlı açılır.
 
 Sizin yapmanız gerekenler:
 
-1. **Google Business Profile** açın; adres, telefon ve saatleri buradakiyle birebir girin ve web sitesi olarak site adresini verin. Yerel aramada asıl etkiyi bu yapar.
-2. **Google Search Console**'a siteyi ekleyin ve `sitemap.xml` adresini gönderin.
-3. Mümkün olduğunda **özel alan adı** alın (örn. `723gecedonercisi.com`). Pages ayarında alan adını tanımlayıp `src/data/menu.json` içindeki `baseUrl`'i değiştirmek ve yeniden üretmek yeterlidir. QR kodlar eski adrese gideceği için o zaman yeniden basılmalı; bu yüzden alan adı kararını erken vermek iyi olur.
-4. Gerçek yemek fotoğrafları ekleyin; şablonlara `<img>` olarak `alt` metniyle konabilir.
+1. **Google Business Profile** açın; adres, telefon ve saatleri buradakiyle birebir girin, web sitesi olarak `https://antalyagecedonercisi.com/` yazın. Yerel aramada asıl etkiyi bu yapar.
+2. **Google Search Console**'a alan adını ekleyin ve `https://antalyagecedonercisi.com/sitemap.xml` adresini gönderin.
+3. Gerçek yemek fotoğrafları ekleyin; şablonlara `<img>` olarak `alt` metniyle konabilir.
+
+Not: Depo kökündeki `docs/` klasörü de alan adı altında erişilebilir olur; `robots.txt` bu klasörü taramadan hariç tutar. İleride restoranı ayrı bir depoya taşımak daha temiz olur.
 
 ## İletişim bilgileri
 

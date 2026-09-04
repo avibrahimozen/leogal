@@ -4,7 +4,7 @@ import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { watch } from 'node:fs';
 import { join, extname, normalize } from 'node:path';
-import { build, ROOT } from './build.js';
+import { build, ROOT, OUT } from './build.js';
 
 const PORT = Number(process.env.PORT) || 4723;
 const TYPES = {
@@ -17,8 +17,8 @@ const TYPES = {
 async function serve(req, res) {
   let path = decodeURIComponent(new URL(req.url, 'http://x').pathname);
   if (path.endsWith('/')) path += 'index.html';
-  const abs = normalize(join(ROOT, path));
-  if (!abs.startsWith(ROOT)) { res.writeHead(403).end(); return; }
+  const abs = normalize(join(OUT, path));
+  if (!abs.startsWith(OUT)) { res.writeHead(403).end(); return; }
   try {
     const info = await stat(abs);
     if (info.isDirectory()) { res.writeHead(301, { Location: path + '/' }).end(); return; }
@@ -38,7 +38,7 @@ function rebuild() {
 await build();
 watch(join(ROOT, 'src'), { recursive: true }, rebuild);
 createServer(serve).listen(PORT, () => {
-  console.log(`Menü:  http://localhost:${PORT}/`);
-  console.log(`Site:  http://localhost:${PORT}/site/`);
+  console.log(`Site:  http://localhost:${PORT}/`);
+  console.log(`Menü:  http://localhost:${PORT}/menu/`);
   console.log('src/ altındaki değişiklikler otomatik üretilir. Durdurmak için Ctrl+C.');
 });

@@ -122,6 +122,16 @@ export function menuJsonLd(data) {
   };
 }
 
+/** robots.txt: her şey açık; depodaki belge klasörleri ve kaynak kodu taranmasın. */
+export function robotsTxt(data) {
+  return `User-agent: *
+Allow: /
+Disallow: /docs/
+Disallow: /7-23-restaurant/src/
+Sitemap: ${url(data.site, 'sitemap.xml')}
+`;
+}
+
 /** Site haritası (sitemap.xml). */
 export function sitemapXml(data, lastmod) {
   const s = data.site;
