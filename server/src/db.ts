@@ -40,7 +40,9 @@ CREATE TABLE IF NOT EXISTS drivers (
   lng REAL,
   location_at TEXT,
   rating_sum INTEGER NOT NULL DEFAULT 0,
-  rating_count INTEGER NOT NULL DEFAULT 0
+  rating_count INTEGER NOT NULL DEFAULT 0,
+  -- Sürücünün kabul ettikten sonra vazgeçtiği çağrı sayısı
+  cancellations INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS rides (
@@ -122,6 +124,7 @@ function migrate(db: Db): void {
   addColumnIfMissing(db, 'users', 'phone_verified_at', 'TEXT');
   addColumnIfMissing(db, 'drivers', 'country', "TEXT NOT NULL DEFAULT 'KKTC'");
   addColumnIfMissing(db, 'rides', 'country', 'TEXT');
+  addColumnIfMissing(db, 'drivers', 'cancellations', 'INTEGER NOT NULL DEFAULT 0');
 }
 
 function addColumnIfMissing(db: Db, table: string, column: string, definition: string): void {

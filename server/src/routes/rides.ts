@@ -1,12 +1,16 @@
-import { Router } from 'express';
+import { Router, type Response } from 'express';
 import { z } from 'zod';
 import { config } from '../config.js';
 import { getSetting, nowIso, type Db } from '../db.js';
 import { requireAuth } from '../lib/auth.js';
 import { commissionOf, estimateFare } from '../lib/geo.js';
 import { regionForPoint, type CountryCode } from '../lib/regions.js';
-import type { Matcher, RideRow } from '../matching.js';
+import { getRide, rideToJson, type RideRow } from '../lib/rides.js';
+import type { Matcher } from '../matching.js';
 import type { Hub } from '../realtime.js';
+
+// Geriye dönük uyumluluk: çağrı yardımcıları lib/rides.ts'e taşındı
+export { getRide, rideToJson } from '../lib/rides.js';
 
 const pointSchema = z.object({
   lat: z.number().min(-90).max(90),
@@ -23,6 +27,10 @@ const rateSchema = z.object({
   rating: z.number().int().min(1).max(5),
 });
 
+/** Geçmiş listesi sayfa boyutu: varsayılan ve üst sınır. */
+const HISTORY_DEFAULT_LIMIT = 50;
+const HISTORY_MAX_LIMIT = 100;
+
 /** Tarife ülkeye göre seçilir: ülkeye özel ayar yoksa genel ayar geçerlidir. */
 function fareParams(db: Db, country: CountryCode) {
   return {
@@ -33,67 +41,16 @@ function fareParams(db: Db, country: CountryCode) {
   };
 }
 
-/** rides.country sütunu: ülke sütunu eklenmeden önceki kayıtlarda NULL. */
-export type RideRowWithCountry = RideRow & { country: CountryCode | null };
-
-export function getRide(db: Db, id: number): RideRowWithCountry | undefined {
-  return db.prepare('SELECT * FROM rides WHERE id = ?').get(id) as unknown as RideRowWithCountry | undefined;
+/** URL'deki çağrı kimliğini pozitif tam sayıya çevirir; geçersizse null döner. */
+function parseRideId(raw: unknown): number | null {
+  if (typeof raw !== 'string' || !/^[1-9][0-9]{0,15}$/.test(raw)) return null;
+  return Number(raw);
 }
 
-export function rideToJson(db: Db, ride: RideRow & { country?: CountryCode | null }) {
-  let driver: Record<string, unknown> | null = null;
-  if (ride.driver_id) {
-    const row = db
-      .prepare(
-        `SELECT u.name, d.vehicle_plate, d.vehicle_model, d.rating_sum, d.rating_count, d.lat, d.lng, u.phone
-         FROM users u JOIN drivers d ON d.user_id = u.id WHERE u.id = ?`,
-      )
-      .get(ride.driver_id) as unknown as {
-      name: string;
-      phone: string;
-      vehicle_plate: string;
-      vehicle_model: string;
-      rating_sum: number;
-      rating_count: number;
-      lat: number | null;
-      lng: number | null;
-    };
-    driver = {
-      id: ride.driver_id,
-      name: row.name,
-      phone: row.phone,
-      vehiclePlate: row.vehicle_plate,
-      vehicleModel: row.vehicle_model,
-      rating: row.rating_count > 0 ? Math.round((row.rating_sum / row.rating_count) * 10) / 10 : null,
-      lat: row.lat,
-      lng: row.lng,
-    };
-  }
-  const passenger = db.prepare('SELECT name, phone FROM users WHERE id = ?').get(ride.passenger_id) as unknown as {
-    name: string;
-    phone: string;
-  };
-  return {
-    id: ride.id,
-    status: ride.status,
-    pickup: { lat: ride.pickup_lat, lng: ride.pickup_lng, address: ride.pickup_address },
-    drop: { lat: ride.drop_lat, lng: ride.drop_lng, address: ride.drop_address },
-    estDistanceKm: ride.est_distance_km,
-    estFare: ride.est_fare,
-    country: ride.country ?? null,
-    finalFare: ride.final_fare,
-    cancelReason: ride.cancel_reason,
-    passengerRating: ride.passenger_rating,
-    driverRating: ride.driver_rating,
-    requestedAt: ride.requested_at,
-    acceptedAt: ride.accepted_at,
-    arrivedAt: ride.arrived_at,
-    startedAt: ride.started_at,
-    completedAt: ride.completed_at,
-    cancelledAt: ride.cancelled_at,
-    driver,
-    passenger: { id: ride.passenger_id, name: passenger.name, phone: passenger.phone },
-  };
+/** Sayfa boyutu: sayısal değilse varsayılan, her durumda [1, max] aralığına çekilir. */
+function parseLimit(raw: unknown, fallback: number, max: number): number {
+  const n = typeof raw === 'string' && /^[0-9]+$/.test(raw) ? Number(raw) : fallback;
+  return Math.min(Math.max(n, 1), max);
 }
 
 export function rideRoutes(db: Db, hub: Hub, matcher: Matcher): Router {
@@ -103,6 +60,10 @@ export function rideRoutes(db: Db, hub: Hub, matcher: Matcher): Router {
     const payload = { rideId: ride.id, status: ride.status, ride: rideToJson(db, ride), ...extra };
     hub.emitToUser(ride.passenger_id, 'ride:update', payload);
     if (ride.driver_id) hub.emitToUser(ride.driver_id, 'ride:update', payload);
+  }
+
+  function notFound(res: Response): void {
+    res.status(404).json({ error: 'Çağrı bulunamadı' });
   }
 
   /** Ücret tahmini — giriş gerektirmez ki kayıt öncesi de fiyat görülebilsin. */
@@ -179,24 +140,48 @@ export function rideRoutes(db: Db, hub: Hub, matcher: Matcher): Router {
     res.json({ ride: ride ? rideToJson(db, ride) : null });
   });
 
-  /** Geçmiş çağrılar. */
+  /**
+   * Geçmiş çağrılar — id'ye göre azalan, anahtar tabanlı sayfalama.
+   * ?limit=20 (varsayılan 50, en çok 100) ve ?before=<rideId> ile sonraki sayfa.
+   * `nextBefore`: dönen en küçük id; sayfa dolmadıysa null (son sayfa).
+   */
   router.get('/history', requireAuth('passenger', 'driver'), (req, res) => {
     const column = req.user!.role === 'driver' ? 'driver_id' : 'passenger_id';
+    const limit = parseLimit(req.query.limit, HISTORY_DEFAULT_LIMIT, HISTORY_MAX_LIMIT);
+    let before: number | null = null;
+    if (req.query.before !== undefined) {
+      before = parseRideId(req.query.before);
+      if (before === null) {
+        res.status(400).json({ error: 'Geçersiz sayfalama parametresi' });
+        return;
+      }
+    }
     const rides = db
-      .prepare(`SELECT * FROM rides WHERE ${column} = ? ORDER BY id DESC LIMIT 50`)
-      .all(req.user!.id) as unknown as RideRow[];
-    res.json({ rides: rides.map((r) => rideToJson(db, r)) });
+      .prepare(`SELECT * FROM rides WHERE ${column} = ? AND (? IS NULL OR id < ?) ORDER BY id DESC LIMIT ?`)
+      .all(req.user!.id, before, before, limit) as unknown as RideRow[];
+    const last = rides[rides.length - 1];
+    const nextBefore = rides.length === limit && last ? last.id : null;
+    res.json({ rides: rides.map((r) => rideToJson(db, r)), nextBefore });
   });
 
   /** Sürücü teklifi kabul eder — ilk kabul eden kazanır. */
   router.post('/:id/accept', requireAuth('driver'), (req, res) => {
-    const rideId = Number(req.params.id);
+    const rideId = parseRideId(req.params.id);
+    if (rideId === null) {
+      notFound(res);
+      return;
+    }
     const driverId = req.user!.id;
     const driver = db
-      .prepare("SELECT status, is_online FROM drivers WHERE user_id = ?")
+      .prepare('SELECT status, is_online FROM drivers WHERE user_id = ?')
       .get(driverId) as { status: string; is_online: number } | undefined;
     if (!driver || driver.status !== 'approved') {
       res.status(403).json({ error: 'Sürücü hesabınız onaylı değil' });
+      return;
+    }
+    // Teklifler yalnızca çevrimiçi sürücülere gider; çevrimdışıyken kabul tutarsız bir yolculuk yaratır.
+    if (driver.is_online !== 1) {
+      res.status(409).json({ error: 'Çağrı kabul etmek için çevrimiçi olmalısınız' });
       return;
     }
     const busy = db
@@ -232,14 +217,18 @@ export function rideRoutes(db: Db, hub: Hub, matcher: Matcher): Router {
   });
 
   function transition(
-    idParam: string | undefined,
+    idParam: unknown,
     driverId: number,
     from: string,
     to: string,
     timestampColumn: string,
-    res: Parameters<Parameters<Router['post']>[1]>[1],
+    res: Response,
   ): void {
-    const rideId = Number(idParam);
+    const rideId = parseRideId(idParam);
+    if (rideId === null) {
+      notFound(res);
+      return;
+    }
     const changed = db
       .prepare(`UPDATE rides SET status = ?, ${timestampColumn} = ? WHERE id = ? AND driver_id = ? AND status = ?`)
       .run(to, nowIso(), rideId, driverId, from).changes;
@@ -254,7 +243,11 @@ export function rideRoutes(db: Db, hub: Hub, matcher: Matcher): Router {
 
   /** Yolculuk tamamlandı: nihai ücret kesinleşir, komisyon deftere işlenir. */
   router.post('/:id/complete', requireAuth('driver'), (req, res) => {
-    const rideId = Number(req.params.id);
+    const rideId = parseRideId(req.params.id);
+    if (rideId === null) {
+      notFound(res);
+      return;
+    }
     const driverId = req.user!.id;
     const ride = getRide(db, rideId);
     if (!ride || ride.driver_id !== driverId || ride.status !== 'in_progress') {
@@ -266,9 +259,16 @@ export function rideRoutes(db: Db, hub: Hub, matcher: Matcher): Router {
     const country = ride.country ?? regionForPoint(ride.pickup_lat, ride.pickup_lng);
     const rate = getSetting(db, 'commission_rate', country);
     const commission = commissionOf(finalFare, rate);
-    db.prepare(
-      "UPDATE rides SET status = 'completed', completed_at = ?, final_fare = ?, commission = ? WHERE id = ?",
-    ).run(nowIso(), finalFare, commission, rideId);
+    // Koşullu güncelleme: aynı çağrı iki kez tamamlanıp komisyon iki kez işlenemez
+    const changed = db
+      .prepare(
+        "UPDATE rides SET status = 'completed', completed_at = ?, final_fare = ?, commission = ? WHERE id = ? AND driver_id = ? AND status = 'in_progress'",
+      )
+      .run(nowIso(), finalFare, commission, rideId, driverId).changes;
+    if (changed !== 1) {
+      res.status(409).json({ error: 'Bu işlem şu an yapılamaz' });
+      return;
+    }
     db.prepare("INSERT INTO ledger (driver_id, ride_id, type, amount, note) VALUES (?, ?, 'commission', ?, ?)").run(
       driverId,
       rideId,
@@ -280,12 +280,16 @@ export function rideRoutes(db: Db, hub: Hub, matcher: Matcher): Router {
     res.json({ ride: rideToJson(db, updated) });
   });
 
-  /** İptal — yolcu her aşamada (yolculuk başlamadan), sürücü kabul sonrası vazgeçebilir. */
+  /**
+   * İptal — yolcu yolculuk başlamadan her aşamada, sürücü kabul sonrası vazgeçebilir.
+   * Sürücü iptalinde çağrı (iptal eden hariç) yeniden yayınlanır: yolcuya tek bir
+   * 'requested' olayı gider; aday yoksa 'sürücü bulunamadı' iptali bildirilir.
+   */
   router.post('/:id/cancel', requireAuth('passenger', 'driver'), (req, res) => {
-    const rideId = Number(req.params.id);
-    const ride = getRide(db, rideId);
-    if (!ride) {
-      res.status(404).json({ error: 'Çağrı bulunamadı' });
+    const rideId = parseRideId(req.params.id);
+    const ride = rideId === null ? undefined : getRide(db, rideId);
+    if (rideId === null || !ride) {
+      notFound(res);
       return;
     }
     const isPassenger = req.user!.role === 'passenger' && ride.passenger_id === req.user!.id;
@@ -294,47 +298,71 @@ export function rideRoutes(db: Db, hub: Hub, matcher: Matcher): Router {
       res.status(403).json({ error: 'Bu çağrı size ait değil' });
       return;
     }
-    const cancellable = isPassenger
-      ? ['requested', 'accepted', 'arrived']
-      : ['accepted', 'arrived'];
+    const cancellable = isPassenger ? ['requested', 'accepted', 'arrived'] : ['accepted', 'arrived'];
     if (!cancellable.includes(ride.status)) {
       res.status(409).json({ error: 'Bu aşamada iptal edilemez' });
       return;
     }
-    const reason = isPassenger ? 'passenger_cancelled' : 'driver_cancelled';
-    db.prepare("UPDATE rides SET status = 'cancelled', cancel_reason = ?, cancelled_at = ? WHERE id = ?").run(
-      reason,
-      nowIso(),
-      rideId,
-    );
-    matcher.settle(rideId);
-    const updated = getRide(db, rideId)!;
-    notifyRide(updated, { cancelReason: reason });
-    // Sürücü iptal ederse çağrı yeniden yayınlanır ki yolcu beklemede kalmasın.
-    if (isDriver) {
-      const reopened = db
+
+    if (isPassenger) {
+      const changed = db
         .prepare(
-          "UPDATE rides SET status = 'requested', driver_id = NULL, accepted_at = NULL, arrived_at = NULL, cancel_reason = NULL, cancelled_at = NULL WHERE id = ?",
+          "UPDATE rides SET status = 'cancelled', cancel_reason = 'passenger_cancelled', cancelled_at = ? WHERE id = ? AND status IN ('requested','accepted','arrived')",
         )
-        .run(rideId).changes;
-      if (reopened === 1) {
-        const fresh = getRide(db, rideId)!;
-        if (!matcher.broadcast(fresh)) {
-          db.prepare(
-            "UPDATE rides SET status = 'cancelled', cancel_reason = 'no_driver', cancelled_at = ? WHERE id = ?",
-          ).run(nowIso(), rideId);
-          notifyRide(getRide(db, rideId)!);
-        } else {
-          hub.emitToUser(fresh.passenger_id, 'ride:update', {
-            rideId,
-            status: 'requested',
-            ride: rideToJson(db, fresh),
-            reassigned: true,
-          });
-        }
+        .run(nowIso(), rideId).changes;
+      if (changed !== 1) {
+        res.status(409).json({ error: 'Bu aşamada iptal edilemez' });
+        return;
       }
+      matcher.settle(rideId);
+      const updated = getRide(db, rideId)!;
+      notifyRide(updated, { cancelReason: 'passenger_cancelled' });
+      res.json({ ride: rideToJson(db, updated) });
+      return;
     }
-    res.json({ ride: rideToJson(db, getRide(db, rideId)!) });
+
+    // Sürücü iptali: çağrı tek adımda 'requested'a döner (arada 'cancelled' yazılmaz).
+    // Sürücüye kendi açısından iptal görünümü gider; yolcu yalnızca yeniden yayının sonucunu öğrenir.
+    const driverId = req.user!.id;
+    const reopened = db
+      .prepare(
+        "UPDATE rides SET status = 'requested', driver_id = NULL, accepted_at = NULL, arrived_at = NULL WHERE id = ? AND driver_id = ? AND status IN ('accepted','arrived')",
+      )
+      .run(rideId, driverId).changes;
+    if (reopened !== 1) {
+      res.status(409).json({ error: 'Bu aşamada iptal edilemez' });
+      return;
+    }
+    db.prepare('UPDATE drivers SET cancellations = cancellations + 1 WHERE user_id = ?').run(driverId);
+    const driverView = {
+      ...rideToJson(db, ride),
+      status: 'cancelled',
+      cancelReason: 'driver_cancelled',
+      cancelledAt: nowIso(),
+    };
+    hub.emitToUser(driverId, 'ride:update', {
+      rideId,
+      status: 'cancelled',
+      ride: driverView,
+      cancelReason: 'driver_cancelled',
+    });
+
+    const fresh = getRide(db, rideId)!;
+    if (matcher.broadcast(fresh, { exclude: [driverId] })) {
+      hub.emitToUser(fresh.passenger_id, 'ride:update', {
+        rideId,
+        status: 'requested',
+        ride: rideToJson(db, fresh),
+        reassigned: true,
+        previousDriverCancelled: true,
+      });
+    } else {
+      db.prepare(
+        "UPDATE rides SET status = 'cancelled', cancel_reason = 'no_driver', cancelled_at = ? WHERE id = ?",
+      ).run(nowIso(), rideId);
+      notifyRide(getRide(db, rideId)!, { cancelReason: 'no_driver' });
+    }
+    res.json({ ride: driverView });
   });
 
   /** Karşılıklı puanlama (1-5). Yolcu sürücüyü, sürücü yolcuyu puanlar. */
@@ -344,7 +372,11 @@ export function rideRoutes(db: Db, hub: Hub, matcher: Matcher): Router {
       res.status(400).json({ error: 'Puan 1-5 arası olmalı' });
       return;
     }
-    const rideId = Number(req.params.id);
+    const rideId = parseRideId(req.params.id);
+    if (rideId === null) {
+      notFound(res);
+      return;
+    }
     const ride = getRide(db, rideId);
     if (!ride || ride.status !== 'completed') {
       res.status(409).json({ error: 'Sadece tamamlanan yolculuklar puanlanabilir' });

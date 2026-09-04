@@ -2,7 +2,11 @@ import { config } from './config.js';
 import type { Db } from './db.js';
 import { nowIso } from './db.js';
 import { haversineKm } from './lib/geo.js';
+import { getRide, rideToJson, type RideRow } from './lib/rides.js';
 import type { Hub } from './realtime.js';
+
+// Geriye dönük uyumluluk: RideRow artık lib/rides.ts içinde tanımlı
+export type { RideRow } from './lib/rides.js';
 
 interface CandidateRow {
   user_id: number;
@@ -11,30 +15,9 @@ interface CandidateRow {
   location_at: string;
 }
 
-export interface RideRow {
-  id: number;
-  passenger_id: number;
-  driver_id: number | null;
-  status: string;
-  pickup_lat: number;
-  pickup_lng: number;
-  pickup_address: string;
-  drop_lat: number;
-  drop_lng: number;
-  drop_address: string;
-  est_distance_km: number;
-  est_fare: number;
-  final_fare: number | null;
-  commission: number | null;
-  cancel_reason: string | null;
-  passenger_rating: number | null;
-  driver_rating: number | null;
-  requested_at: string;
-  accepted_at: string | null;
-  arrived_at: string | null;
-  started_at: string | null;
-  completed_at: string | null;
-  cancelled_at: string | null;
+export interface Candidate {
+  driverId: number;
+  distanceKm: number;
 }
 
 /**
@@ -54,8 +37,11 @@ export class Matcher {
     private offerTimeoutMs: number = config.rideOfferTimeoutMs,
   ) {}
 
-  /** Alıcıya en yakın uygun sürücüleri bul (yakından uzağa sıralı). */
-  findCandidates(pickupLat: number, pickupLng: number): Array<{ driverId: number; distanceKm: number }> {
+  /**
+   * Alıcıya en yakın uygun sürücüleri bul (yakından uzağa sıralı).
+   * `exclude` listesindeki sürücüler (örn. çağrıyı az önce iptal eden) atlanır.
+   */
+  findCandidates(pickupLat: number, pickupLng: number, exclude: readonly number[] = []): Candidate[] {
     const freshAfter = new Date(Date.now() - config.driverLocationTtlMs).toISOString();
     const rows = this.db
       .prepare(
@@ -72,6 +58,7 @@ export class Matcher {
       .all(freshAfter) as unknown as CandidateRow[];
 
     return rows
+      .filter((r) => !exclude.includes(r.user_id))
       .map((r) => ({
         driverId: r.user_id,
         distanceKm: haversineKm(pickupLat, pickupLng, r.lat, r.lng),
@@ -82,8 +69,8 @@ export class Matcher {
   }
 
   /** Çağrıyı uygun sürücülere teklif et. Aday yoksa false döner. */
-  broadcast(ride: RideRow): boolean {
-    const candidates = this.findCandidates(ride.pickup_lat, ride.pickup_lng);
+  broadcast(ride: RideRow, options: { exclude?: readonly number[] } = {}): boolean {
+    const candidates = this.findCandidates(ride.pickup_lat, ride.pickup_lng, options.exclude ?? []);
     if (candidates.length === 0) return false;
 
     this.offered.set(
@@ -101,9 +88,7 @@ export class Matcher {
       });
     }
 
-    const timer = setTimeout(() => this.expire(ride.id), this.offerTimeoutMs);
-    timer.unref?.();
-    this.timers.set(ride.id, timer);
+    this.armTimer(ride.id, this.offerTimeoutMs);
     return true;
   }
 
@@ -121,6 +106,36 @@ export class Matcher {
     }
   }
 
+  /**
+   * Sunucu yeniden başlayınca bellekteki zamanlayıcılar kaybolur; 'requested'
+   * durumunda kalan çağrılar sonsuza dek beklerdi (yolcu yeni çağrı da açamazdı).
+   * Süresi dolmuş olanları hemen iptal eder, kalanlar için sayacı kalan süreyle
+   * yeniden kurar. İşlenen çağrı sayısını döner.
+   */
+  resume(): number {
+    const rows = this.db
+      .prepare("SELECT id, requested_at FROM rides WHERE status = 'requested'")
+      .all() as unknown as Array<{ id: number; requested_at: string }>;
+    for (const row of rows) {
+      const remaining = Date.parse(row.requested_at) + this.offerTimeoutMs - Date.now();
+      if (Number.isFinite(remaining) && remaining > 0) {
+        this.armTimer(row.id, remaining);
+      } else {
+        this.expire(row.id);
+      }
+    }
+    return rows.length;
+  }
+
+  /** Zaman aşımı sayacını kurar; aynı çağrı için eski sayaç varsa sızmaması için iptal eder. */
+  private armTimer(rideId: number, delayMs: number): void {
+    const existing = this.timers.get(rideId);
+    if (existing) clearTimeout(existing);
+    const timer = setTimeout(() => this.expire(rideId), delayMs);
+    timer.unref?.();
+    this.timers.set(rideId, timer);
+  }
+
   /** Zaman aşımı: hâlâ bekleyen çağrıyı 'sürücü bulunamadı' ile iptal et. */
   private expire(rideId: number): void {
     const changed = this.db
@@ -129,14 +144,16 @@ export class Matcher {
       )
       .run(nowIso(), rideId).changes;
     if (changed === 1) {
-      const ride = this.db.prepare('SELECT passenger_id FROM rides WHERE id = ?').get(rideId) as {
-        passenger_id: number;
-      };
-      this.hub.emitToUser(ride.passenger_id, 'ride:update', {
-        rideId,
-        status: 'cancelled',
-        cancelReason: 'no_driver',
-      });
+      const ride = getRide(this.db, rideId);
+      if (ride) {
+        // İstemciler her ride:update olayında `ride` nesnesini okur; eksik gönderilmemeli.
+        this.hub.emitToUser(ride.passenger_id, 'ride:update', {
+          rideId,
+          status: 'cancelled',
+          ride: rideToJson(this.db, ride),
+          cancelReason: 'no_driver',
+        });
+      }
     }
     this.settle(rideId);
   }
