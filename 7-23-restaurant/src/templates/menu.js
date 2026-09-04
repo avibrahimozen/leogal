@@ -80,7 +80,7 @@ ${LANG_CSS}
   .grid .nm { font-weight: 600; }
   .grid .nm small, .list .nm .al { display: block; font-weight: 400; color: var(--kul-koyu); font-size: 12px; line-height: 1.3; }
   .grid .pr { text-align: right; font-weight: 600; font-size: 17px; }
-  .grid .pr small, .list .pr small { display: block; font-weight: 600; color: var(--kul); font-size: 12px; letter-spacing: .02em; }
+  .grid .pr small, .list .pr small { display: block; font-weight: 400; color: var(--kul-koyu); font-size: 11px; letter-spacing: .02em; }
   .grid .pr.na { color: var(--kul-koyu); font-weight: 400; }
   .grid .sep { grid-column: 1 / -1; padding: 0; height: 10px; border-bottom: 1px dashed var(--is-2); margin-bottom: 4px; }
 
@@ -97,7 +97,6 @@ ${LANG_CSS}
   .feature .t { grid-column: 1; grid-row: 1; font-family: var(--display); font-size: 24px; line-height: 1; color: var(--koz); }
   .feature .d { grid-column: 1; grid-row: 2; color: var(--kul); font-size: 14px; }
   .feature .d small { display: block; color: var(--kul-koyu); font-size: 12px; margin-top: 2px; }
-  .feature .d b { color: var(--kul); font-weight: 600; }
   .feature .pr { grid-column: 2; grid-row: 1 / span 2; font-family: var(--display); font-size: 34px; line-height: 1; color: var(--pide); white-space: nowrap; }
 
   /* Kalori ve alerjen bilgisi */
@@ -177,7 +176,7 @@ function listSection(sec, data) {
     <div class="feature">
       <span class="t">${esc(f.name)}</span>
       <span class="pr">${money(f.price)}</span>
-      <span class="d">${esc(f.detail)}${f.kcal != null ? ` · <b>${esc(kcalText(f.kcal, data))}</b>` : ''}${fal ? `<small>${esc(fal)}</small>` : ''}</span>
+      <span class="d">${esc(f.detail)}${f.kcal != null ? ` · ${esc(kcalText(f.kcal, data))}` : ''}${fal ? `<small>${esc(fal)}</small>` : ''}</span>
     </div>` : '';
   return `    <ul class="list">
 ${rows}
