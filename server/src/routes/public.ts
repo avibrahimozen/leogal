@@ -10,6 +10,15 @@ const nearbySchema = z.object({
   radiusKm: z.coerce.number().min(1).max(100).default(25),
 });
 
+/**
+ * Son 'yakındaki taksiler' sorgusunun konumu — talep ipucu.
+ * Sahte taksi simülatörü (npm run bots) bunu okuyup botları yolcunun çevresine taşır.
+ */
+let lastDemand: { lat: number; lng: number; at: string } | null = null;
+export function getDemandHint() {
+  return lastDemand;
+}
+
 /** Konumu ~100 m hassasiyete indirger: sürücünün tam yerini ifşa etmeden yoğunluğu gösterir. */
 function blur(coord: number): number {
   return Math.round(coord * 1000) / 1000;
@@ -29,6 +38,9 @@ export function publicRoutes(db: Db): Router {
       return;
     }
     const { lat, lng, radiusKm } = parsed.data;
+    if (typeof req.query.lat === 'string' && typeof req.query.lng === 'string') {
+      lastDemand = { lat, lng, at: new Date().toISOString() };
+    }
     const freshAfter = new Date(Date.now() - config.driverLocationTtlMs).toISOString();
     const rows = db
       .prepare(

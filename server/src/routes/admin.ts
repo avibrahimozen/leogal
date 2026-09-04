@@ -4,6 +4,7 @@ import { setSetting, type Db } from '../db.js';
 import { requireAuth } from '../lib/auth.js';
 import { defaultSettings } from '../config.js';
 import type { Hub } from '../realtime.js';
+import { getDemandHint } from './public.js';
 
 const settingsSchema = z.object({
   base_fare: z.coerce.number().positive().optional(),
@@ -142,6 +143,11 @@ export function adminRoutes(db: Db, hub: Hub): Router {
       parsed.data.note ?? 'Komisyon ödemesi alındı',
     );
     res.json({ ok: true });
+  });
+
+  /** Son yolcu konum sorgusu (sahte taksi simülatörü botları buraya taşır). */
+  router.get('/demand-hint', (_req, res) => {
+    res.json({ hint: getDemandHint() });
   });
 
   /** Platform istatistikleri. */

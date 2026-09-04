@@ -185,6 +185,30 @@ hepsini aynı hesaba eşler. Script tekrar çalıştırılabilir (kayıtları ç
 sürücü hesabıyla girip **çevrimiçi ol**, ikinci cihazda yolcu hesabıyla **taksi çağır** —
 teklif sürücünün ekranına düşer.
 
+## Sahte taksiler — tek telefonla tam akış (`npm run bots`)
+
+İkinci telefon olmadan yolcu akışını uçtan uca denemek için sahte sürücü botları:
+
+```bash
+cd server
+npm run bots          # sunucu açıkken, ayrı bir terminalde
+```
+
+Botlar (`Taksi Bot 1..6`, plakalar `TB 101…`) gerçek sürücü hesaplarıyla bağlanır,
+çevrimiçi olur ve haritada dolaşır. Yolcu olarak taksi çağırdığında en yakın bot
+2–5 saniye içinde çağrıyı **kabul eder**, alış noktasına sürer (canlı konum yolcuya
+akar), yolculuğu başlatıp tamamlar ve yolcuyu puanlar — komisyon deftere işlenir.
+
+Botlar, uygulamada haritaya bakan yolcunun konumunu algılayıp boştaysa onun
+çevresine taşınır; yani KKTC dışından test ederken de eşleşme olur.
+
+| Değişken | Varsayılan | Açıklama |
+|---|---|---|
+| `ULAK_BOTS` | `6` | bot sayısı (1–20) |
+| `ULAK_BOT_SPEED_KMH` | `90` | sürüş hızı (demo için yüksek tutulabilir) |
+| `ULAK_BOT_CENTER` | — | `35.19,33.36` gibi sabit merkez; verilirse yolcuyu takip etmezler |
+| `ULAK_API_URL` | `http://localhost:4000` | uzak sunucuya karşı çalıştırmak için |
+
 ## Hızlı deneme senaryosu
 
 ```bash

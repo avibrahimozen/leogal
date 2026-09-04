@@ -88,6 +88,20 @@ describe('yakındaki taksiler (üyeliksiz)', () => {
     expect(res.body.count).toBe(1);
   });
 
+  it('yolcu sorgusu talep ipucunu günceller, yönetici okuyabilir', async () => {
+    await request(app).get('/api/public/nearby-drivers?lat=35.2&lng=33.4');
+    const res = await request(app).get('/api/admin/demand-hint').set('Authorization', `Bearer ${adminToken}`);
+    expect(res.status).toBe(200);
+    expect(res.body.hint.lat).toBe(35.2);
+    expect(res.body.hint.lng).toBe(33.4);
+    expect(res.body.hint.at).toBeTruthy();
+  });
+
+  it('talep ipucu yetkisiz erişime kapalı', async () => {
+    const res = await request(app).get('/api/admin/demand-hint');
+    expect(res.status).toBe(401);
+  });
+
   it('çevrimdışı olunca listeden düşer', async () => {
     await request(app).post('/api/driver/status').set('Authorization', `Bearer ${approved.token}`).send({ online: false });
     const res = await request(app).get(`/api/public/nearby-drivers?lat=${LEFKOSA.lat}&lng=${LEFKOSA.lng}`);

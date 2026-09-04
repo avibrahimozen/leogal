@@ -149,7 +149,7 @@ if (existingRides.c === 0) {
   // Sürücü ilk yolculuğun komisyonunu ödemiş olsun — panelde tahsilat örneği görünsün
   const firstCommission = db
     .prepare('SELECT amount FROM ledger WHERE ride_id = ? AND type = ?')
-    .get(ids[0], 'commission') as { amount: number };
+    .get(ids[0]!, 'commission') as { amount: number };
   db.prepare("INSERT INTO ledger (driver_id, type, amount, note) VALUES (?, 'settlement', ?, ?)").run(
     driver.id,
     firstCommission.amount,
