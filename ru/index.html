@@ -156,6 +156,7 @@
   .eyebrow { font-size: 13px; letter-spacing: .18em; text-transform: uppercase; color: var(--koz); font-weight: 600; }
   .btn { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font-family: var(--display); font-size: 22px; letter-spacing: .05em; line-height: 1; padding: 14px 22px 12px; border-radius: 6px; border: 1px solid var(--koz); background: var(--koz); color: var(--komur); white-space: nowrap; }
   .btn.ghost { background: transparent; color: var(--koz); }
+  @media (max-width: 520px) { .btn { white-space: normal; text-align: center; max-width: 100%; } }
   .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
   .lang { display: flex; gap: 4px; }
