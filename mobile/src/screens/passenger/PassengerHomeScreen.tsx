@@ -11,16 +11,18 @@ import {
   View,
 } from 'react-native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '../../api/client';
 import { reverseGeocode } from '../../api/geocode';
 import { getSocket } from '../../api/socket';
 import DestinationPicker from '../../components/DestinationPicker';
 import { LocationPermissionCard } from '../../components/LocationPermissionCard';
+import { MyLocationButton } from '../../components/MyLocationButton';
 import { Badge, Button, Card, rideStatusLabel } from '../../components/ui';
 import { DEFAULT_REGION, KKTC_CENTER, type Place } from '../../data/places';
 import { regionForPoint } from '../../data/regions';
 import { fetchEndedRide, useActiveRideSync } from '../../hooks/useActiveRideSync';
+import { useCenterOnMe } from '../../hooks/useCenterOnMe';
 import { useLocationPermission } from '../../hooks/useLocationPermission';
 import { applyPassengerRideUpdate } from '../../logic/rideUpdates';
 import { colors, radius, spacing } from '../../theme';
@@ -71,6 +73,9 @@ export default function PassengerHomeScreen() {
   const [ratingRide, setRatingRide] = useState<Ride | null>(null);
   const [nearby, setNearby] = useState<NearbyDriver[]>([]);
   const locationGranted = useLocationPermission();
+  const insets = useSafeAreaInsets();
+  // Tek dokunuşla konuma yakınlaş; bulunan konum alış noktasını da (GPS modundaysa) günceller
+  const { centerOnMe, locating } = useCenterOnMe(mapRef, setMyLocation);
 
   /** Çağrı durumunu tek yerden günceller; çağrı yokken/aranırken sürücü konumu anlamsızdır. */
   const applyRide = useCallback((next: Ride | null) => {
@@ -566,6 +571,8 @@ export default function PassengerHomeScreen() {
           </Card>
         )}
       </SafeAreaView>
+
+      <MyLocationButton onPress={centerOnMe} busy={locating} style={{ top: insets.top + 12 }} />
 
       {/* Yer seçici: OpenStreetMap araması + KKTC hızlı yerler + haritadan seçim (+ alış için GPS) */}
       <DestinationPicker

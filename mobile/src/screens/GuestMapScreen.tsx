@@ -6,8 +6,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { api } from '../api/client';
 import { LocationPermissionCard } from '../components/LocationPermissionCard';
+import { MyLocationButton } from '../components/MyLocationButton';
 import { Button, Card } from '../components/ui';
 import { DEFAULT_REGION, KKTC_CENTER } from '../data/places';
+import { useCenterOnMe } from '../hooks/useCenterOnMe';
 import { useLocationPermission } from '../hooks/useLocationPermission';
 import { colors, spacing } from '../theme';
 import type { AuthStackParamList } from '../navigation/types';
@@ -25,6 +27,7 @@ export default function GuestMapScreen({ navigation }: Props) {
   const [error, setError] = useState('');
   const [loaded, setLoaded] = useState(false);
   const locationGranted = useLocationPermission();
+  const { centerOnMe, locating } = useCenterOnMe(mapRef, setCenter);
 
   // Konum izni verilince mevcut konuma git
   useEffect(() => {
@@ -109,6 +112,8 @@ export default function GuestMapScreen({ navigation }: Props) {
           <Button title="Hesap Oluştur" variant="outline" onPress={() => navigation.navigate('Register')} />
         </Card>
       </SafeAreaView>
+
+      <MyLocationButton onPress={centerOnMe} busy={locating} style={{ top: 12 }} />
     </View>
   );
 }

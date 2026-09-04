@@ -21,6 +21,7 @@ async function verifyPhone(phone: string): Promise<string> {
 }
 
 let passengerToken = '';
+let adminToken = '';
 let driverToken = '';
 let otherPassengerToken = '';
 let rideId = 0;
@@ -30,7 +31,7 @@ beforeAll(async () => {
   const admin = await request(app)
     .post('/api/auth/login')
     .send({ phone: config.adminPhone, password: config.adminPassword });
-  const adminToken = admin.body.token as string;
+  adminToken = admin.body.token as string;
 
   const p = await request(app).post('/api/auth/register').send({
     phone: '+905428800001',
@@ -159,6 +160,23 @@ describe('çok duraklı çağrı', () => {
       .set('Authorization', `Bearer ${passengerToken}`)
       .send({ stops: [] });
     expect(late.status).toBe(409);
+  });
+
+  it('yönetici de yolcu gibi çağrı açıp iptal edebilir (uygulamada yolcu ekranı)', async () => {
+    const res = await request(app)
+      .post('/api/rides')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ pickup: DEREBOYU, drop: ERCAN });
+    expect([200, 201]).toContain(res.status);
+    if (res.status === 201) {
+      const cancel = await request(app)
+        .post(`/api/rides/${res.body.ride.id}/cancel`)
+        .set('Authorization', `Bearer ${adminToken}`);
+      expect(cancel.status).toBe(200);
+      expect(cancel.body.ride.status).toBe('cancelled');
+    }
+    const active = await request(app).get('/api/rides/active').set('Authorization', `Bearer ${adminToken}`);
+    expect(active.status).toBe(200);
   });
 
   it('duraksız çağrı boş durak listesi döner (geriye uyumluluk)', async () => {

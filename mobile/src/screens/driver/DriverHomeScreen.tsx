@@ -2,13 +2,15 @@ import * as Location from 'expo-location';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Linking, Modal, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '../../api/client';
 import { getSocket } from '../../api/socket';
 import { LocationPermissionCard } from '../../components/LocationPermissionCard';
+import { MyLocationButton } from '../../components/MyLocationButton';
 import { Badge, Button, Card, rideStatusLabel } from '../../components/ui';
 import { KKTC_CENTER } from '../../data/places';
 import { fetchEndedRide, useActiveRideSync } from '../../hooks/useActiveRideSync';
+import { useCenterOnMe } from '../../hooks/useCenterOnMe';
 import { useLocationPermission } from '../../hooks/useLocationPermission';
 import { applyDriverRideUpdate } from '../../logic/rideUpdates';
 import { useAuth } from '../../store/auth';
@@ -26,6 +28,9 @@ export default function DriverHomeScreen() {
   const [ratingRide, setRatingRide] = useState<Ride | null>(null);
   const watcher = useRef<Location.LocationSubscription | null>(null);
   const locationGranted = useLocationPermission();
+  const insets = useSafeAreaInsets();
+  const mapRef = useRef<MapView>(null);
+  const { centerOnMe, locating } = useCenterOnMe(mapRef);
 
   const approved = user?.driver?.status === 'approved';
 
@@ -228,6 +233,7 @@ export default function DriverHomeScreen() {
   return (
     <View style={styles.container}>
       <MapView
+        ref={mapRef}
         style={StyleSheet.absoluteFill}
         initialRegion={{
           latitude: KKTC_CENTER.lat,
@@ -327,6 +333,9 @@ export default function DriverHomeScreen() {
           </Card>
         )}
       </SafeAreaView>
+
+      {/* Durum kartının altında: tek dokunuşla konuma yakınlaş */}
+      <MyLocationButton onPress={centerOnMe} busy={locating} style={{ top: insets.top + 104 }} />
 
       {/* Gelen çağrı teklifi */}
       <Modal visible={offer !== null} transparent animationType="slide">

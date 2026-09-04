@@ -94,7 +94,7 @@ export function rideRoutes(db: Db, hub: Hub, matcher: Matcher): Router {
   });
 
   /** Yolcu yeni çağrı oluşturur; uygun sürücülere teklif yayınlanır. */
-  router.post('/', requireAuth('passenger'), (req, res) => {
+  router.post('/', requireAuth('passenger', 'admin'), (req, res) => {
     const parsed = requestSchema.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({ error: requestErrorMessage(parsed.error) });
@@ -145,7 +145,7 @@ export function rideRoutes(db: Db, hub: Hub, matcher: Matcher): Router {
   });
 
   /** Yolcunun veya sürücünün aktif çağrısı. */
-  router.get('/active', requireAuth('passenger', 'driver'), (req, res) => {
+  router.get('/active', requireAuth('passenger', 'driver', 'admin'), (req, res) => {
     const column = req.user!.role === 'driver' ? 'driver_id' : 'passenger_id';
     const ride = db
       .prepare(
@@ -160,7 +160,7 @@ export function rideRoutes(db: Db, hub: Hub, matcher: Matcher): Router {
    * ?limit=20 (varsayılan 50, en çok 100) ve ?before=<rideId> ile sonraki sayfa.
    * `nextBefore`: dönen en küçük id; sayfa dolmadıysa null (son sayfa).
    */
-  router.get('/history', requireAuth('passenger', 'driver'), (req, res) => {
+  router.get('/history', requireAuth('passenger', 'driver', 'admin'), (req, res) => {
     const column = req.user!.role === 'driver' ? 'driver_id' : 'passenger_id';
     const limit = parseLimit(req.query.limit, HISTORY_DEFAULT_LIMIT, HISTORY_MAX_LIMIT);
     let before: number | null = null;
@@ -184,7 +184,7 @@ export function rideRoutes(db: Db, hub: Hub, matcher: Matcher): Router {
    * Çağrı beklerken ya da yolculuk sürerken yapılabilir; ücret tüm rota üzerinden
    * yeniden hesaplanır ve sürücüye anında bildirilir.
    */
-  router.put('/:id/stops', requireAuth('passenger'), (req, res) => {
+  router.put('/:id/stops', requireAuth('passenger', 'admin'), (req, res) => {
     const rideId = parseRideId(req.params.id);
     if (rideId === null) {
       notFound(res);
@@ -346,14 +346,15 @@ export function rideRoutes(db: Db, hub: Hub, matcher: Matcher): Router {
    * Sürücü iptalinde çağrı (iptal eden hariç) yeniden yayınlanır: yolcuya tek bir
    * 'requested' olayı gider; aday yoksa 'sürücü bulunamadı' iptali bildirilir.
    */
-  router.post('/:id/cancel', requireAuth('passenger', 'driver'), (req, res) => {
+  router.post('/:id/cancel', requireAuth('passenger', 'driver', 'admin'), (req, res) => {
     const rideId = parseRideId(req.params.id);
     const ride = rideId === null ? undefined : getRide(db, rideId);
     if (rideId === null || !ride) {
       notFound(res);
       return;
     }
-    const isPassenger = req.user!.role === 'passenger' && ride.passenger_id === req.user!.id;
+    // Yönetici de yolcu tarafında hareket eder (uygulamada yolcu ekranını görür)
+    const isPassenger = req.user!.role !== 'driver' && ride.passenger_id === req.user!.id;
     const isDriver = req.user!.role === 'driver' && ride.driver_id === req.user!.id;
     if (!isPassenger && !isDriver) {
       res.status(403).json({ error: 'Bu çağrı size ait değil' });
@@ -427,7 +428,7 @@ export function rideRoutes(db: Db, hub: Hub, matcher: Matcher): Router {
   });
 
   /** Karşılıklı puanlama (1-5). Yolcu sürücüyü, sürücü yolcuyu puanlar. */
-  router.post('/:id/rate', requireAuth('passenger', 'driver'), (req, res) => {
+  router.post('/:id/rate', requireAuth('passenger', 'driver', 'admin'), (req, res) => {
     const parsed = rateSchema.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({ error: 'Puan 1-5 arası olmalı' });
@@ -444,7 +445,7 @@ export function rideRoutes(db: Db, hub: Hub, matcher: Matcher): Router {
       return;
     }
     const rating = parsed.data.rating;
-    if (req.user!.role === 'passenger') {
+    if (req.user!.role !== 'driver') {
       if (ride.passenger_id !== req.user!.id) {
         res.status(403).json({ error: 'Bu çağrı size ait değil' });
         return;
