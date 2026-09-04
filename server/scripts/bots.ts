@@ -1,32 +1,34 @@
 /**
  * Sahte taksi simülatörü.
  *
- * Gerçek sürücü hesaplarıyla sunucuya bağlanan botlar: çevrimiçi olur, haritada
- * dolaşır, gelen çağrıyı kabul eder, alış noktasına sürer, yolculuğu tamamlar ve
- * yolcuyu puanlar. Tek telefonla tam yolcu akışını denemek için.
+ * Gerçek sürücü hesaplarıyla sunucuya bağlanan botlar: çevrimiçi olur, gerçek
+ * yolları izleyerek dolaşır (OSRM rotası; servis yoksa düz çizgi), gelen çağrıyı
+ * kabul eder, alış noktasına sürer, yolculuğu tamamlar ve yolcuyu puanlar.
+ * Tek telefonla tam yolcu akışını denemek için.
  *
  * Kullanım:  npm run bots              (sunucu açıkken, ayrı bir terminalde)
  * Ortam:     ULAK_API_URL=http://localhost:4000   ULAK_BOTS=6
- *            ULAK_BOT_SPEED_KMH=90                ULAK_BOT_CENTER=35.19,33.36 (opsiyonel)
+ *            ULAK_BOT_SPEED_KMH=60                ULAK_BOT_CENTER=35.19,33.36 (opsiyonel)
+ *            ULAK_ROUTING=none                    (yol rotalamayı kapat: düz çizgi)
  *
  * Botlar, uygulamada "yakındaki taksiler" sorgusu yapan yolcunun konumunu (talep
  * ipucu) izler ve boştaysa onun çevresine taşınır — KKTC dışından test ederken de
- * eşleşme olur. ULAK_BOT_CENTER verilirse sabit kalırlar.
+ * eşleşme olur. Taşınırken en yakın yola oturtulurlar (denize düşmezler).
  */
 import bcrypt from 'bcryptjs';
 import { io, type Socket } from 'socket.io-client';
 import { config } from '../src/config.js';
 import { createDb } from '../src/db.js';
 import { haversineKm } from '../src/lib/geo.js';
+import { bearing, routeVia, snapToRoad, type LatLng } from '../src/lib/routing.js';
 
 const API = process.env.ULAK_API_URL ?? `http://localhost:${config.port}`;
 const BOT_COUNT = Math.min(20, Math.max(1, Number(process.env.ULAK_BOTS ?? 6)));
-const SPEED_KMH = Math.max(5, Number(process.env.ULAK_BOT_SPEED_KMH ?? 90));
+const SPEED_KMH = Math.max(5, Number(process.env.ULAK_BOT_SPEED_KMH ?? 60));
 const TICK_MS = 1000;
 const BOT_PASSWORD = 'demo123';
 const FIXED_CENTER = parseCenter(process.env.ULAK_BOT_CENTER);
 
-type LatLng = { lat: number; lng: number };
 type Place = LatLng & { address: string };
 
 const CITIES: Array<LatLng & { name: string }> = [
@@ -56,13 +58,14 @@ function randomAround(center: LatLng, minKm: number, maxKm: number): LatLng {
   };
 }
 
-function stepToward(pos: LatLng, target: LatLng, stepKm: number): { pos: LatLng; arrived: boolean } {
+function stepToward(pos: LatLng, target: LatLng, stepKm: number): { pos: LatLng; arrived: boolean; leftKm: number } {
   const dist = haversineKm(pos.lat, pos.lng, target.lat, target.lng);
-  if (dist <= stepKm) return { pos: target, arrived: true };
+  if (dist <= stepKm) return { pos: target, arrived: true, leftKm: stepKm - dist };
   const f = stepKm / dist;
   return {
     pos: { lat: pos.lat + (target.lat - pos.lat) * f, lng: pos.lng + (target.lng - pos.lng) * f },
     arrived: false,
+    leftKm: 0,
   };
 }
 
@@ -138,6 +141,7 @@ interface Offer {
   rideId: number;
   pickup: Place;
   drop: Place;
+  stops?: Place[];
   estFare: number;
   pickupDistanceKm: number;
 }
@@ -147,15 +151,17 @@ type State = 'idle' | 'to_pickup' | 'waiting' | 'to_drop';
 class Bot {
   state: State = 'idle';
   pos: LatLng;
-  target: LatLng;
+  heading = 0;
+  /** Bu bacakta izlenecek yol noktaları (sıradaki ilk eleman) */
+  private path: LatLng[] = [];
+  private legPending = false;
   private token = '';
   private socket: Socket | null = null;
-  private ride: { id: number; pickup: Place; drop: Place; fare: number } | null = null;
+  private ride: { id: number; pickup: Place; drop: Place; stops: Place[]; fare: number } | null = null;
   private consideringOffer = false;
 
   constructor(readonly spec: BotSpec) {
     this.pos = spec.home;
-    this.target = randomAround(spec.home, 0.3, 1.5);
   }
 
   get label(): string {
@@ -169,9 +175,10 @@ class Bot {
     });
     if (!login.ok) throw new Error(`${this.label} giriş yapamadı`);
     this.token = login.data.token;
+    this.pos = await snapToRoad(this.pos);
     this.socket = io(API, { auth: { token: this.token }, transports: ['websocket'] });
     this.socket.on('ride:offer', (offer: Offer) => void this.onOffer(offer));
-    this.socket.on('ride:update', (p: { rideId: number; status: string }) => this.onUpdate(p));
+    this.socket.on('ride:update', (p: { rideId: number; status: string; ride?: { stops?: Place[] } }) => this.onUpdate(p));
     this.socket.on('connect', () => this.emitLocation());
     await api('POST', '/driver/status', { online: true }, this.token);
     this.emitLocation();
@@ -179,7 +186,39 @@ class Bot {
   }
 
   emitLocation(): void {
-    this.socket?.emit('driver:location', { lat: this.pos.lat, lng: this.pos.lng });
+    this.socket?.emit('driver:location', { lat: this.pos.lat, lng: this.pos.lng, heading: Math.round(this.heading) });
+  }
+
+  /** Yeni bacak: hedefe giden yol rotasını alır (OSRM; yoksa düz çizgi). */
+  private async setLeg(targets: LatLng[]): Promise<void> {
+    if (this.legPending) return;
+    this.legPending = true;
+    try {
+      const route = await routeVia([this.pos, ...targets]);
+      // İlk nokta mevcut konum; kalanı izlenecek yol
+      this.path = route.points.slice(1);
+      if (this.path.length === 0) this.path = [...targets];
+    } finally {
+      this.legPending = false;
+    }
+  }
+
+  /** Yol boyunca stepKm kadar ilerler; bacak bittiyse true döner. */
+  private advance(stepKm: number): boolean {
+    let left = stepKm;
+    while (left > 0 && this.path.length > 0) {
+      const next = this.path[0]!;
+      this.heading = bearing(this.pos, next) || this.heading;
+      const r = stepToward(this.pos, next, left);
+      this.pos = r.pos;
+      if (r.arrived) {
+        this.path.shift();
+        left = r.leftKm;
+      } else {
+        left = 0;
+      }
+    }
+    return this.path.length === 0;
   }
 
   private async onOffer(offer: Offer): Promise<void> {
@@ -200,47 +239,61 @@ class Bot {
       log(`↩️  ${this.label}: çağrı #${offer.rideId} başka taksiye gitti`);
       return;
     }
-    this.ride = { id: offer.rideId, pickup: offer.pickup, drop: offer.drop, fare: offer.estFare };
+    this.ride = { id: offer.rideId, pickup: offer.pickup, drop: offer.drop, stops: offer.stops ?? [], fare: offer.estFare };
     this.state = 'to_pickup';
-    this.target = offer.pickup;
-    log(`✅ ${this.label} çağrı #${offer.rideId}'yi kabul etti → ${offer.pickup.address} adresine gidiyor`);
+    this.path = [];
+    await this.setLeg([offer.pickup]);
+    log(`✅ ${this.label} çağrı #${offer.rideId}'yi kabul etti → ${offer.pickup.address} adresine yoldan gidiyor`);
   }
 
-  private onUpdate(p: { rideId: number; status: string }): void {
+  private onUpdate(p: { rideId: number; status: string; ride?: { stops?: Place[] } }): void {
     if (!this.ride || p.rideId !== this.ride.id) return;
     if (p.status === 'cancelled') {
       log(`❌ ${this.label}: çağrı #${p.rideId} iptal edildi, boşa döndü`);
       this.reset();
+      return;
+    }
+    // Yolcu durak eklediyse rotayı güncelle
+    if (p.ride?.stops && this.state === 'to_drop') {
+      this.ride.stops = p.ride.stops;
+      this.path = [];
+      void this.setLeg([...this.ride.stops, this.ride.drop]);
+      log(`🟠 ${this.label}: durak listesi güncellendi (${this.ride.stops.length} durak)`);
     }
   }
 
   private reset(): void {
     this.ride = null;
     this.state = 'idle';
-    this.target = randomAround(this.pos, 0.3, 1.5);
+    this.path = [];
   }
 
   private async startRide(): Promise<void> {
     if (!this.ride || this.state !== 'waiting') return;
     await api('POST', `/rides/${this.ride.id}/start`, undefined, this.token);
     this.state = 'to_drop';
-    this.target = this.ride.drop;
-    log(`▶️  ${this.label} yolculuğu başlattı → ${this.ride.drop.address}`);
+    this.path = [];
+    await this.setLeg([...this.ride.stops, this.ride.drop]);
+    log(`▶️  ${this.label} yolculuğu başlattı → ${this.ride.drop.address}${this.ride.stops.length ? ` (${this.ride.stops.length} durak)` : ''}`);
   }
 
   async tick(): Promise<void> {
     const stepKm = (SPEED_KMH / 3600) * (TICK_MS / 1000);
     switch (this.state) {
       case 'idle': {
-        const r = stepToward(this.pos, this.target, stepKm * 0.4);
-        this.pos = r.pos;
-        if (r.arrived) this.target = randomAround(this.pos, 0.3, 1.5);
+        if (this.path.length === 0) {
+          if (!this.legPending) {
+            const target = await snapToRoad(randomAround(this.pos, 0.4, 1.5));
+            await this.setLeg([target]);
+          }
+          break;
+        }
+        this.advance(stepKm * 0.4);
         break;
       }
       case 'to_pickup': {
-        const r = stepToward(this.pos, this.target, stepKm);
-        this.pos = r.pos;
-        if (r.arrived && this.ride) {
+        if (this.path.length === 0 && this.legPending) break;
+        if (this.advance(stepKm) && this.ride) {
           this.state = 'waiting';
           await api('POST', `/rides/${this.ride.id}/arrived`, undefined, this.token);
           log(`📍 ${this.label} alış noktasına vardı, yolcuyu bekliyor`);
@@ -251,9 +304,8 @@ class Bot {
       case 'waiting':
         break;
       case 'to_drop': {
-        const r = stepToward(this.pos, this.target, stepKm);
-        this.pos = r.pos;
-        if (r.arrived && this.ride) {
+        if (this.path.length === 0 && this.legPending) break;
+        if (this.advance(stepKm) && this.ride) {
           const { id, fare } = this.ride;
           this.state = 'waiting';
           const done = await api<{ ride?: { finalFare: number } }>('POST', `/rides/${id}/complete`, undefined, this.token);
@@ -264,6 +316,13 @@ class Bot {
         break;
       }
     }
+    this.emitLocation();
+  }
+
+  /** Boştaki botu yeni bir merkeze taşır (yola oturtarak) ve dolaşmaya başlatır. */
+  async relocate(center: LatLng): Promise<void> {
+    this.pos = await snapToRoad(randomAround(center, 0.4, 2.5));
+    this.path = [];
     this.emitLocation();
   }
 
@@ -283,19 +342,10 @@ async function followDemand(bots: Bot[], adminToken: string): Promise<void> {
   );
   const hint = res.data.hint;
   if (!hint || Date.now() - Date.parse(hint.at) > 120_000) return;
-  let moved = 0;
-  for (const bot of bots) {
-    if (bot.state !== 'idle') continue;
-    if (haversineKm(bot.pos.lat, bot.pos.lng, hint.lat, hint.lng) > 8) {
-      bot.pos = randomAround(hint, 0.4, 2.5);
-      bot.target = randomAround(hint, 0.3, 1.5);
-      bot.emitLocation();
-      moved++;
-    }
-  }
-  if (moved > 0) {
-    log(`📡 Talep algılandı (${hint.lat.toFixed(4)}, ${hint.lng.toFixed(4)}): ${moved} boş taksi yolcunun çevresine taşındı`);
-  }
+  const far = bots.filter((b) => b.state === 'idle' && haversineKm(b.pos.lat, b.pos.lng, hint.lat, hint.lng) > 8);
+  if (far.length === 0) return;
+  await Promise.all(far.map((b) => b.relocate(hint)));
+  log(`📡 Talep algılandı (${hint.lat.toFixed(4)}, ${hint.lng.toFixed(4)}): ${far.length} boş taksi yolcunun çevresine taşındı`);
 }
 
 // ---- Başlat ----
@@ -307,7 +357,9 @@ if (!health?.ok) {
 
 const specs = ensureAccounts();
 const bots = specs.map((s) => new Bot(s));
-console.log(`🚕 ${bots.length} sahte taksi hazırlanıyor (${API}, hız ${SPEED_KMH} km/sa)${FIXED_CENTER ? ' — sabit merkez' : ' — yolcuyu takip eder'}\n`);
+console.log(
+  `🚕 ${bots.length} sahte taksi hazırlanıyor (${API}, hız ${SPEED_KMH} km/sa, rota: ${config.routing.enabled ? 'OSRM yolları' : 'düz çizgi'})${FIXED_CENTER ? ' — sabit merkez' : ' — yolcuyu takip eder'}\n`,
+);
 for (const bot of bots) {
   await bot.start();
 }
@@ -322,10 +374,11 @@ let ticking = false;
 setInterval(() => {
   if (ticking) return;
   ticking = true;
-  Promise.all(bots.map((b) => b.tick().catch((e) => log(`⚠️  ${b.label}: ${e instanceof Error ? e.message : e}`))))
-    .finally(() => {
+  Promise.all(bots.map((b) => b.tick().catch((e) => log(`⚠️  ${b.label}: ${e instanceof Error ? e.message : e}`)))).finally(
+    () => {
       ticking = false;
-    });
+    },
+  );
 }, TICK_MS);
 
 if (!FIXED_CENTER && admin.ok) {

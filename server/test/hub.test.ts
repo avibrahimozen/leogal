@@ -143,7 +143,7 @@ describe('gerçek zamanlı katman', () => {
     // Aktif çağrıdaki sürücünün konumu yolcuya akar
     const location = waitFor<{ rideId: number; lat: number; lng: number }>(passengerSocket, 'driver:location');
     driverSocket.emit('driver:location', { lat: 35.25, lng: 33.45 });
-    expect(await location).toEqual({ rideId, lat: 35.25, lng: 33.45 });
+    expect(await location).toEqual({ rideId, lat: 35.25, lng: 33.45, heading: null });
 
     // Yolcu iptal edince sürücü de haber alır
     const cancelled = waitFor<{ status: string; cancelReason: string }>(

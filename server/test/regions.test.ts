@@ -171,7 +171,7 @@ describe('ülkeye özel tarife', () => {
     const res = await adminGet('/api/admin/settings?country=TR');
     expect(res.status).toBe(200);
     expect(res.body.country).toBe('TR');
-    expect(res.body.settings).toEqual({ base_fare: 42, per_km: 28, min_fare: 150, commission_rate: 0.15 });
+    expect(res.body.settings).toEqual({ base_fare: 42, per_km: 33, min_fare: 150, commission_rate: 0.15 });
     expect(res.body.overrides.sort()).toEqual(['base_fare', 'min_fare', 'per_km']);
   });
 
@@ -180,13 +180,13 @@ describe('ülkeye özel tarife', () => {
     expect(res.status).toBe(200);
     expect(res.body.country).toBeNull();
     expect(res.body.overrides).toEqual([]);
-    expect(res.body.settings.per_km).toBe(25);
+    expect(res.body.settings.per_km).toBe(33);
   });
 
   it('KKTC için özel değer yoksa genel ayarlar geçerlidir', async () => {
     const res = await adminGet('/api/admin/settings?country=KKTC');
     expect(res.body.overrides).toEqual([]);
-    expect(res.body.settings).toEqual({ base_fare: 90, per_km: 25, min_fare: 150, commission_rate: 0.15 });
+    expect(res.body.settings).toEqual({ base_fare: 90, per_km: 33, min_fare: 150, commission_rate: 0.15 });
   });
 
   it('geçersiz ülke 400 döner', async () => {
@@ -216,7 +216,7 @@ describe('ülkeye özel tarife', () => {
     expect(put.status).toBe(200);
     const res = await adminGet('/api/admin/settings?country=TR');
     expect(res.body.overrides).not.toContain('per_km');
-    expect(res.body.settings.per_km).toBe(25); // genel değer
+    expect(res.body.settings.per_km).toBe(33); // genel değer
     expect(res.body.settings.base_fare).toBe(42); // diğer özel değerler durur
   });
 
@@ -227,7 +227,7 @@ describe('ülkeye özel tarife', () => {
     // Genel ayarda null yok sayılır, silinmez
     await adminPut('/api/admin/settings', { per_km: null });
     expect((await adminGet('/api/admin/settings')).body.settings.per_km).toBe(30);
-    await adminPut('/api/admin/settings', { per_km: 25 });
+    await adminPut('/api/admin/settings', { per_km: 33 });
   });
 });
 

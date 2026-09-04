@@ -8,6 +8,7 @@ const statusSchema = z.object({ online: z.boolean() });
 const locationSchema = z.object({
   lat: z.number().min(-90).max(90),
   lng: z.number().min(-180).max(180),
+  heading: z.number().min(0).max(360).optional(),
 });
 
 export function driverRoutes(db: Db, hub: Hub): Router {
@@ -47,7 +48,7 @@ export function driverRoutes(db: Db, hub: Hub): Router {
       res.status(400).json({ error: 'Geçersiz konum' });
       return;
     }
-    hub.updateDriverLocation(req.user!.id, parsed.data.lat, parsed.data.lng);
+    hub.updateDriverLocation(req.user!.id, parsed.data.lat, parsed.data.lng, parsed.data.heading ?? null);
     res.json({ ok: true });
   });
 

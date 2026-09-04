@@ -30,6 +30,15 @@ export const config = {
   matchRadiusKm: 15,
   // Kuş uçuşu mesafeden yol mesafesi tahmini için çarpan
   roadFactor: 1.3,
+  /**
+   * Yol rotalama (OSRM). ULAK_ROUTING=none ile kapatılır; testlerde (NODE_ENV=test)
+   * ağ erişimi olmasın diye varsayılan kapalıdır. Kapalıyken düz çizgi × yol çarpanı.
+   */
+  routing: {
+    enabled: (process.env.ULAK_ROUTING ?? (process.env.NODE_ENV === 'test' ? 'none' : 'osrm')) === 'osrm',
+    osrmBaseUrl: (process.env.ULAK_OSRM_URL ?? 'https://router.project-osrm.org').replace(/\/+$/, ''),
+    timeoutMs: 4000,
+  },
   adminPhone: process.env.ULAK_ADMIN_PHONE ?? '+903920000000',
   adminPassword: process.env.ULAK_ADMIN_PASSWORD ?? DEFAULT_ADMIN_PASSWORD,
   // SMS / OTP telefon doğrulama
@@ -70,6 +79,8 @@ export const rateLimits = {
   otpRequestPerIp: { windowMs: 60 * 60_000, max: envInt('ULAK_RL_OTP_IP', 20) },
   /** GET /api/public/nearby-drivers — IP başına */
   nearbyPerIp: { windowMs: 60_000, max: envInt('ULAK_RL_NEARBY_IP', 120) },
+  /** Yol rotası ucu (OSRM vekili): IP başına dakikada 60 */
+  routePerIp: { windowMs: 60_000, max: envInt('ULAK_RL_ROUTE_IP', 60) },
 };
 
 type Env = Record<string, string | undefined>;
@@ -133,7 +144,7 @@ export function assertProductionSecrets(env: Env, warn: (message: string) => voi
 /** Ücret ve komisyon varsayılanları (TL). Çalışma anında settings tablosundan okunur. */
 export const defaultSettings = {
   base_fare: '90',
-  per_km: '25',
+  per_km: '33',
   min_fare: '150',
   commission_rate: '0.15',
 } as const;
@@ -154,7 +165,7 @@ export const defaultCountrySettings: Readonly<
 > = {
   TR: {
     base_fare: '42',
-    per_km: '28',
+    per_km: '33',
     min_fare: '150',
   },
 };

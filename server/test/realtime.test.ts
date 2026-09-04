@@ -296,6 +296,7 @@ interface LocationPayload {
   rideId: number;
   lat: number;
   lng: number;
+  heading: number | null;
 }
 interface OfferClosedPayload {
   rideId: number;
@@ -463,7 +464,7 @@ describe('çağrı teklifi, kabul ve canlı akış', () => {
     const relayed = waitFor<LocationPayload>(passengerSocket, 'driver:location');
     driver1Socket.emit('driver:location', { lat: 35.1877, lng: 33.3765 });
     const loc = await relayed;
-    expect(loc).toEqual({ rideId, lat: 35.1877, lng: 33.3765 });
+    expect(loc).toEqual({ rideId, lat: 35.1877, lng: 33.3765, heading: null });
 
     rec.stop();
     expect(rec.events).toEqual([loc]);

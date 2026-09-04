@@ -43,22 +43,23 @@ export class Hub {
       const user = (socket.data as { user: AuthUser }).user;
       socket.join(`user:${user.id}`);
 
-      socket.on('driver:location', (payload: { lat?: unknown; lng?: unknown } | undefined) => {
+      socket.on('driver:location', (payload: { lat?: unknown; lng?: unknown; heading?: unknown } | undefined) => {
         if (user.role !== 'driver') return;
         const lat = payload?.lat;
         const lng = payload?.lng;
         // REST yolundaki zod şemasıyla aynı sınırlar: NaN, sonsuz ve aralık dışı değerler yok sayılır
         if (!inRange(lat, -90, 90) || !inRange(lng, -180, 180)) return;
-        this.updateDriverLocation(user.id, lat, lng);
+        const heading = inRange(payload?.heading, 0, 360) ? payload.heading : null;
+        this.updateDriverLocation(user.id, lat, lng, heading);
       });
     });
   }
 
   /** Sürücü konumunu kaydeder ve aktif çağrısı varsa yolcuya iletir. */
-  updateDriverLocation(driverId: number, lat: number, lng: number): void {
+  updateDriverLocation(driverId: number, lat: number, lng: number, heading: number | null = null): void {
     this.db
-      .prepare('UPDATE drivers SET lat = ?, lng = ?, location_at = ? WHERE user_id = ?')
-      .run(lat, lng, nowIso(), driverId);
+      .prepare('UPDATE drivers SET lat = ?, lng = ?, heading = COALESCE(?, heading), location_at = ? WHERE user_id = ?')
+      .run(lat, lng, heading, nowIso(), driverId);
     const active = this.db
       .prepare(
         "SELECT id, passenger_id FROM rides WHERE driver_id = ? AND status IN ('accepted','arrived','in_progress')",
@@ -69,6 +70,7 @@ export class Hub {
         rideId: active.id,
         lat,
         lng,
+        heading,
       });
     }
   }

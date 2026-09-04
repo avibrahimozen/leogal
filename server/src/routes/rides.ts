@@ -3,7 +3,8 @@ import { z } from 'zod';
 import { config } from '../config.js';
 import { getSetting, nowIso, type Db } from '../db.js';
 import { requireAuth } from '../lib/auth.js';
-import { commissionOf, estimateRouteFare } from '../lib/geo.js';
+import { commissionOf, estimateRouteFare, type FareParams } from '../lib/geo.js';
+import { routeVia, type LatLng } from '../lib/routing.js';
 import { regionForPoint, type CountryCode } from '../lib/regions.js';
 import { MAX_STOPS, getRide, parseStops, rideToJson, routePoints, type RideRow } from '../lib/rides.js';
 import type { Matcher } from '../matching.js';
@@ -28,6 +29,18 @@ const requestSchema = z.object({
 });
 
 const stopsUpdateSchema = z.object({ stops: stopsSchema });
+
+/**
+ * Rota ücreti: yol rotalama açıksa gerçek yol mesafesi (OSRM), yoksa kuş uçuşu × yol
+ * çarpanı. Açılış + km ücreti, asgari ücretin altına inmez; 5 TL'ye yuvarlanır.
+ */
+async function priceRoute(points: LatLng[], params: FareParams) {
+  const route = await routeVia(points);
+  if (route.source !== 'osrm') return { ...estimateRouteFare(points, params), durationMin: null as number | null };
+  const raw = params.baseFare + params.perKm * route.distanceKm;
+  const fare = Math.max(params.minFare, Math.round(raw / 5) * 5);
+  return { distanceKm: route.distanceKm, fare, durationMin: route.durationMin };
+}
 
 /** Durak sınırı gibi anlaşılır Türkçe mesajları ilet; diğer doğrulama hataları için genel mesaj. */
 function requestErrorMessage(error: z.ZodError): string {
@@ -79,7 +92,8 @@ export function rideRoutes(db: Db, hub: Hub, matcher: Matcher): Router {
   }
 
   /** Ücret tahmini — giriş gerektirmez ki kayıt öncesi de fiyat görülebilsin. */
-  router.post('/estimate', (req, res) => {
+  router.post('/estimate', async (req, res, next) => {
+    try {
     const parsed = requestSchema.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({ error: requestErrorMessage(parsed.error) });
@@ -89,12 +103,16 @@ export function rideRoutes(db: Db, hub: Hub, matcher: Matcher): Router {
     const stops = parsed.data.stops ?? [];
     // Tarife, alış noktasının ülkesine göre belirlenir; mesafe tüm rota (alış → duraklar → varış)
     const country = regionForPoint(pickup.lat, pickup.lng);
-    const est = estimateRouteFare([pickup, ...stops, drop], fareParams(db, country));
-    res.json({ distanceKm: est.distanceKm, fare: est.fare, currency: 'TL', country, stopCount: stops.length });
+    const est = await priceRoute([pickup, ...stops, drop], fareParams(db, country));
+    res.json({ distanceKm: est.distanceKm, fare: est.fare, durationMin: est.durationMin, currency: 'TL', country, stopCount: stops.length });
+    } catch (e) {
+      next(e);
+    }
   });
 
   /** Yolcu yeni çağrı oluşturur; uygun sürücülere teklif yayınlanır. */
-  router.post('/', requireAuth('passenger', 'admin'), (req, res) => {
+  router.post('/', requireAuth('passenger', 'admin'), async (req, res, next) => {
+    try {
     const parsed = requestSchema.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({ error: requestErrorMessage(parsed.error) });
@@ -113,7 +131,7 @@ export function rideRoutes(db: Db, hub: Hub, matcher: Matcher): Router {
     const { pickup, drop } = parsed.data;
     const stops = parsed.data.stops ?? [];
     const country = regionForPoint(pickup.lat, pickup.lng);
-    const est = estimateRouteFare([pickup, ...stops, drop], fareParams(db, country));
+    const est = await priceRoute([pickup, ...stops, drop], fareParams(db, country));
     const result = db
       .prepare(
         `INSERT INTO rides (passenger_id, pickup_lat, pickup_lng, pickup_address, drop_lat, drop_lng, drop_address, est_distance_km, est_fare, country, stops)
@@ -142,6 +160,9 @@ export function rideRoutes(db: Db, hub: Hub, matcher: Matcher): Router {
       return;
     }
     res.status(201).json({ ride: rideToJson(db, ride) });
+    } catch (e) {
+      next(e);
+    }
   });
 
   /** Yolcunun veya sürücünün aktif çağrısı. */
@@ -184,7 +205,8 @@ export function rideRoutes(db: Db, hub: Hub, matcher: Matcher): Router {
    * Çağrı beklerken ya da yolculuk sürerken yapılabilir; ücret tüm rota üzerinden
    * yeniden hesaplanır ve sürücüye anında bildirilir.
    */
-  router.put('/:id/stops', requireAuth('passenger', 'admin'), (req, res) => {
+  router.put('/:id/stops', requireAuth('passenger', 'admin'), async (req, res, next) => {
+    try {
     const rideId = parseRideId(req.params.id);
     if (rideId === null) {
       notFound(res);
@@ -210,7 +232,7 @@ export function rideRoutes(db: Db, hub: Hub, matcher: Matcher): Router {
     }
     const stops = parsed.data.stops;
     const country = ride.country ?? regionForPoint(ride.pickup_lat, ride.pickup_lng);
-    const est = estimateRouteFare(
+    const est = await priceRoute(
       [{ lat: ride.pickup_lat, lng: ride.pickup_lng }, ...stops, { lat: ride.drop_lat, lng: ride.drop_lng }],
       fareParams(db, country),
     );
@@ -223,6 +245,9 @@ export function rideRoutes(db: Db, hub: Hub, matcher: Matcher): Router {
     const updated = getRide(db, rideId)!;
     notifyRide(updated, { stopsChanged: true });
     res.json({ ride: rideToJson(db, updated) });
+    } catch (e) {
+      next(e);
+    }
   });
 
   /** Sürücü teklifi kabul eder — ilk kabul eden kazanır. */

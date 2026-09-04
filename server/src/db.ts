@@ -39,6 +39,8 @@ CREATE TABLE IF NOT EXISTS drivers (
   lat REAL,
   lng REAL,
   location_at TEXT,
+  -- Aracın gidiş yönü (pusula derecesi); araç ikonunu döndürmek için
+  heading REAL,
   rating_sum INTEGER NOT NULL DEFAULT 0,
   rating_count INTEGER NOT NULL DEFAULT 0,
   -- Sürücünün kabul ettikten sonra vazgeçtiği çağrı sayısı
@@ -117,6 +119,14 @@ export function createDb(path: string = config.dbPath): Db {
     }
     insertSetting.run(marker, new Date().toISOString());
   }
+  // Tarife güncellemesi: km ücreti 25 → 33 TL (yalnızca eski varsayılan duruyorsa, bir kez)
+  if (!hasSetting(db, 'seeded:per_km_33')) {
+    for (const key of ['per_km', 'TR:per_km']) {
+      const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key) as { value: string } | undefined;
+      if (row && (row.value === '25' || row.value === '28')) setSetting(db, key, '33');
+    }
+    insertSetting.run('seeded:per_km_33', new Date().toISOString());
+  }
   return db;
 }
 
@@ -127,6 +137,7 @@ function migrate(db: Db): void {
   addColumnIfMissing(db, 'rides', 'country', 'TEXT');
   addColumnIfMissing(db, 'drivers', 'cancellations', 'INTEGER NOT NULL DEFAULT 0');
   addColumnIfMissing(db, 'rides', 'stops', 'TEXT');
+  addColumnIfMissing(db, 'drivers', 'heading', 'REAL');
 }
 
 function addColumnIfMissing(db: Db, table: string, column: string, definition: string): void {

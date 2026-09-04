@@ -5,6 +5,7 @@ import type { Db } from '../db.js';
 import { haversineKm } from '../lib/geo.js';
 import { COUNTRIES, COUNTRY_CODES } from '../lib/regions.js';
 import { ipKey, rateLimit } from '../lib/rateLimit.js';
+import { routeVia, type LatLng } from '../lib/routing.js';
 
 const nearbySchema = z.object({
   lat: z.coerce.number().min(-90).max(90).default(35.1856),
@@ -49,16 +50,17 @@ export function publicRoutes(db: Db): Router {
     const freshAfter = new Date(Date.now() - config.driverLocationTtlMs).toISOString();
     const rows = db
       .prepare(
-        `SELECT lat, lng, vehicle_model FROM drivers
+        `SELECT lat, lng, heading, vehicle_model FROM drivers
          WHERE status = 'approved' AND is_online = 1 AND lat IS NOT NULL AND location_at >= ?`,
       )
-      .all(freshAfter) as unknown as Array<{ lat: number; lng: number; vehicle_model: string }>;
+      .all(freshAfter) as unknown as Array<{ lat: number; lng: number; heading: number | null; vehicle_model: string }>;
 
     const drivers = rows
       .map((r) => ({
         lat: blur(r.lat),
         lng: blur(r.lng),
         vehicleModel: r.vehicle_model,
+        heading: r.heading ?? null,
         distanceKm: Math.round(haversineKm(lat, lng, r.lat, r.lng) * 10) / 10,
       }))
       .filter((d) => d.distanceKm <= radiusKm)
@@ -66,6 +68,32 @@ export function publicRoutes(db: Db): Router {
       .slice(0, 50);
 
     res.json({ count: drivers.length, drivers });
+  });
+
+  /**
+   * Yol rotası: ?points=lat,lng|lat,lng|... (2–7 nokta). OSRM'den gerçek yol geometrisi,
+   * mesafe ve süre; servis yoksa düz çizgi (source: 'straight'). Uygulama rota çizgisini
+   * ve sürücü→yolcu yolunu bununla çizer.
+   */
+  const routeByIp = rateLimit({ ...rateLimits.routePerIp, keyFn: ipKey });
+  router.get('/route', routeByIp, async (req, res, next) => {
+    try {
+      const raw = typeof req.query.points === 'string' ? req.query.points : '';
+      const points: LatLng[] = [];
+      for (const part of raw.split('|')) {
+        const [lat, lng] = part.split(',').map(Number);
+        if (lat === undefined || lng === undefined || !Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+        if (lat < -90 || lat > 90 || lng < -180 || lng > 180) continue;
+        points.push({ lat, lng });
+      }
+      if (points.length < 2 || points.length > 7) {
+        res.status(400).json({ error: 'points: 2–7 nokta, biçim lat,lng|lat,lng' });
+        return;
+      }
+      res.json(await routeVia(points));
+    } catch (e) {
+      next(e);
+    }
   });
 
   /** Hizmet verilen ülkeler ve şehir listeleri — mobil uygulamanın tek kaynağı. */
