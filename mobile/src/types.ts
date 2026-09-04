@@ -1,5 +1,8 @@
 export type Role = 'passenger' | 'driver' | 'admin';
 
+/** Hizmet ülkesi: Kuzey Kıbrıs veya Türkiye */
+export type CountryCode = 'KKTC' | 'TR';
+
 export type RideStatus =
   | 'requested'
   | 'accepted'
@@ -13,6 +16,7 @@ export interface DriverProfile {
   vehiclePlate: string;
   vehicleModel: string;
   city: string;
+  country?: CountryCode;
   status: 'pending' | 'approved' | 'rejected' | 'suspended';
   isOnline: boolean;
   rating: number | null;
@@ -50,6 +54,8 @@ export interface Ride {
   drop: GeoPoint;
   estDistanceKm: number;
   estFare: number;
+  /** Alış noktasının ülkesi (eski kayıtlarda null) */
+  country?: CountryCode | null;
   finalFare: number | null;
   cancelReason: string | null;
   passengerRating: number | null;

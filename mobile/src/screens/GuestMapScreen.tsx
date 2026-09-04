@@ -7,7 +7,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { api } from '../api/client';
 import { LocationPermissionCard } from '../components/LocationPermissionCard';
 import { Button, Card } from '../components/ui';
-import { KKTC_CENTER } from '../data/places';
+import { DEFAULT_REGION, KKTC_CENTER } from '../data/places';
 import { useLocationPermission } from '../hooks/useLocationPermission';
 import { colors, spacing } from '../theme';
 import type { AuthStackParamList } from '../navigation/types';
@@ -75,12 +75,7 @@ export default function GuestMapScreen({ navigation }: Props) {
       <MapView
         ref={mapRef}
         style={StyleSheet.absoluteFill}
-        initialRegion={{
-          latitude: KKTC_CENTER.lat,
-          longitude: KKTC_CENTER.lng,
-          latitudeDelta: 0.35,
-          longitudeDelta: 0.35,
-        }}
+        initialRegion={DEFAULT_REGION}
         showsUserLocation
         showsMyLocationButton
       >

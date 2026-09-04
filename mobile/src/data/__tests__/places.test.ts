@@ -48,8 +48,8 @@ describe('filterPlaces', () => {
 
   it('verilen liste üzerinde çalışır ve kaynağı değiştirmez', () => {
     const custom: Place[] = [
-      { name: 'Test Yeri', city: 'Lefke', lat: 0, lng: 0 },
-      { name: 'Başka', city: 'Girne', lat: 0, lng: 0 },
+      { name: 'Test Yeri', city: 'Lefke', country: 'KKTC', lat: 0, lng: 0 },
+      { name: 'Başka', city: 'Girne', country: 'KKTC', lat: 0, lng: 0 },
     ];
     expect(filterPlaces('lefke', custom)).toEqual([custom[0]]);
     expect(filterPlaces('', custom)).not.toBe(custom);

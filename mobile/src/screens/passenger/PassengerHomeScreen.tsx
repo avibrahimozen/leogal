@@ -3,22 +3,23 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  FlatList,
   Linking,
   Modal,
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '../../api/client';
+import { reverseGeocode } from '../../api/geocode';
 import { getSocket } from '../../api/socket';
+import DestinationPicker from '../../components/DestinationPicker';
 import { LocationPermissionCard } from '../../components/LocationPermissionCard';
 import { Badge, Button, Card, rideStatusLabel } from '../../components/ui';
-import { KKTC_CENTER, filterPlaces, type Place } from '../../data/places';
+import { DEFAULT_REGION, KKTC_CENTER, type Place } from '../../data/places';
+import { regionForPoint } from '../../data/regions';
 import { fetchEndedRide, useActiveRideSync } from '../../hooks/useActiveRideSync';
 import { useLocationPermission } from '../../hooks/useLocationPermission';
 import { applyPassengerRideUpdate } from '../../logic/rideUpdates';
@@ -39,7 +40,10 @@ export default function PassengerHomeScreen() {
   const [destination, setDestination] = useState<Place | null>(null);
   const [estimate, setEstimate] = useState<{ distanceKm: number; fare: number } | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [search, setSearch] = useState('');
+  // Haritadan seçim modu: harita kaydırılır, ortadaki pim hedefi gösterir
+  const [mapPick, setMapPick] = useState(false);
+  const mapCenterRef = useRef<Coords>(KKTC_CENTER);
+  const [pickupAddress, setPickupAddress] = useState('Mevcut Konum');
   const [busy, setBusy] = useState(false);
   const [ratingRide, setRatingRide] = useState<Ride | null>(null);
   const [nearby, setNearby] = useState<NearbyDriver[]>([]);
@@ -116,6 +120,17 @@ export default function PassengerHomeScreen() {
     };
   }, [locationGranted]);
 
+  // Alış adresi: konum oturunca bir kez ters geocode (her GPS tikinde değil, kota dostu)
+  useEffect(() => {
+    let cancelled = false;
+    reverseGeocode(myLocation.lat, myLocation.lng).then((addr) => {
+      if (!cancelled && addr) setPickupAddress(addr);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [myLocation]);
+
   // Socket olaylarına abone ol
   useEffect(() => {
     const socket = getSocket();
@@ -162,7 +177,7 @@ export default function PassengerHomeScreen() {
     setEstimate(null);
     api
       .post<{ distanceKm: number; fare: number }>('/rides/estimate', {
-        pickup: { ...myLocation, address: 'Mevcut Konum' },
+        pickup: { ...myLocation, address: pickupAddress },
         drop: { lat: destination.lat, lng: destination.lng, address: destination.name },
       })
       .then((res) => {
@@ -174,14 +189,14 @@ export default function PassengerHomeScreen() {
     return () => {
       cancelled = true; // hedef hızla değişirse eski tahmin yeniyi ezmesin
     };
-  }, [destination, myLocation]);
+  }, [destination, myLocation, pickupAddress]);
 
   const requestRide = useCallback(async () => {
     if (!destination) return;
     setBusy(true);
     try {
       const res = await api.post<{ ride: Ride; noDriver?: boolean }>('/rides', {
-        pickup: { ...myLocation, address: 'Mevcut Konum' },
+        pickup: { ...myLocation, address: pickupAddress },
         drop: { lat: destination.lat, lng: destination.lng, address: destination.name },
       });
       if (res.noDriver) {
@@ -195,7 +210,7 @@ export default function PassengerHomeScreen() {
     } finally {
       setBusy(false);
     }
-  }, [destination, myLocation, applyRide]);
+  }, [destination, myLocation, pickupAddress, applyRide]);
 
   const cancelRide = useCallback(async () => {
     if (!ride) return;
@@ -223,7 +238,20 @@ export default function PassengerHomeScreen() {
     [ratingRide],
   );
 
-  const filteredPlaces = filterPlaces(search);
+  const confirmMapPick = useCallback(async () => {
+    const c = mapCenterRef.current;
+    setBusy(true);
+    const addr = await reverseGeocode(c.lat, c.lng);
+    setBusy(false);
+    setDestination({
+      name: addr ?? 'Haritadan seçilen nokta',
+      city: '',
+      country: regionForPoint(c.lat, c.lng),
+      lat: c.lat,
+      lng: c.lng,
+    });
+    setMapPick(false);
+  }, []);
 
   const activeDrop = ride ? ride.drop : destination ? { lat: destination.lat, lng: destination.lng } : null;
 
@@ -232,11 +260,9 @@ export default function PassengerHomeScreen() {
       <MapView
         ref={mapRef}
         style={StyleSheet.absoluteFill}
-        initialRegion={{
-          latitude: KKTC_CENTER.lat,
-          longitude: KKTC_CENTER.lng,
-          latitudeDelta: 0.35,
-          longitudeDelta: 0.35,
+        initialRegion={DEFAULT_REGION}
+        onRegionChangeComplete={(region) => {
+          mapCenterRef.current = { lat: region.latitude, lng: region.longitude };
         }}
         showsUserLocation
         showsMyLocationButton
@@ -280,10 +306,26 @@ export default function PassengerHomeScreen() {
           ))}
       </MapView>
 
+      {mapPick && (
+        <View style={styles.centerPin} pointerEvents="none">
+          <Text style={{ fontSize: 40 }}>📍</Text>
+        </View>
+      )}
+
       <SafeAreaView style={styles.overlay} edges={['bottom']} pointerEvents="box-none">
         {locationGranted === false && <LocationPermissionCard />}
 
-        {!ride && (
+        {!ride && mapPick && (
+          <Card>
+            <Text style={styles.mapPickTitle}>Haritayı kaydırıp hedefi pime getir</Text>
+            <Text style={styles.nearbyText}>Türkiye ve Kıbrıs'ta herhangi bir noktayı seçebilirsin.</Text>
+            <Button title="Bu Noktayı Seç" onPress={confirmMapPick} loading={busy} />
+            <View style={{ height: spacing(2) }} />
+            <Button title="Vazgeç" variant="outline" onPress={() => setMapPick(false)} />
+          </Card>
+        )}
+
+        {!ride && !mapPick && (
           <Card>
             {!destination && (
               <Text style={styles.nearbyText}>
@@ -295,7 +337,11 @@ export default function PassengerHomeScreen() {
             <Pressable style={styles.searchBox} onPress={() => setPickerOpen(true)}>
               <Text style={styles.searchIcon}>🔍</Text>
               <Text style={destination ? styles.searchTextActive : styles.searchText}>
-                {destination ? `${destination.name} · ${destination.city}` : 'Nereye gitmek istiyorsun?'}
+                {destination
+                  ? destination.city
+                    ? `${destination.name} · ${destination.city}`
+                    : destination.name
+                  : 'Nereye gitmek istiyorsun?'}
               </Text>
             </Pressable>
             {destination && (
@@ -365,45 +411,20 @@ export default function PassengerHomeScreen() {
         )}
       </SafeAreaView>
 
-      {/* Hedef seçici */}
-      <Modal visible={pickerOpen} animationType="slide" onRequestClose={() => setPickerOpen(false)}>
-        <SafeAreaView style={styles.pickerContainer}>
-          <View style={styles.pickerHeader}>
-            <Text style={styles.pickerTitle}>Nereye?</Text>
-            <Pressable onPress={() => setPickerOpen(false)}>
-              <Text style={styles.pickerClose}>Kapat</Text>
-            </Pressable>
-          </View>
-          <TextInput
-            style={styles.pickerSearch}
-            placeholder="Yer veya şehir ara..."
-            placeholderTextColor={colors.muted}
-            value={search}
-            onChangeText={setSearch}
-            autoFocus
-          />
-          <FlatList
-            data={filteredPlaces}
-            keyExtractor={(item) => item.name}
-            renderItem={({ item }) => (
-              <Pressable
-                style={styles.placeRow}
-                onPress={() => {
-                  setDestination(item);
-                  setPickerOpen(false);
-                  setSearch('');
-                }}
-              >
-                <Text style={styles.placeName}>{item.name}</Text>
-                <Text style={styles.placeCity}>{item.city}</Text>
-              </Pressable>
-            )}
-            ListEmptyComponent={
-              <Text style={styles.emptyText}>Sonuç bulunamadı. Başka bir arama dene.</Text>
-            }
-          />
-        </SafeAreaView>
-      </Modal>
+      {/* Hedef seçici: OpenStreetMap araması + KKTC hızlı yerler + haritadan seçim */}
+      <DestinationPicker
+        visible={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onSelect={(place) => {
+          setDestination(place);
+          setPickerOpen(false);
+        }}
+        onPickOnMap={() => {
+          setPickerOpen(false);
+          setDestination(null);
+          setMapPick(true);
+        }}
+      />
 
       {/* Puanlama */}
       <Modal visible={ratingRide !== null} transparent animationType="fade">
@@ -497,39 +518,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   routeText: { fontSize: 13, color: colors.inkSoft, marginBottom: spacing(3) },
-  pickerContainer: { flex: 1, backgroundColor: colors.bg },
-  pickerHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  centerPin: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     alignItems: 'center',
-    padding: spacing(4),
+    justifyContent: 'center',
+    paddingBottom: 40, // pimin ucu harita merkezine gelsin
   },
-  pickerTitle: { fontSize: 22, fontWeight: '800', color: colors.ink },
-  pickerClose: { fontSize: 15, fontWeight: '600', color: colors.info },
-  pickerSearch: {
-    marginHorizontal: spacing(4),
-    marginBottom: spacing(2),
-    height: 48,
-    borderRadius: radius.md,
-    borderWidth: 1.5,
-    borderColor: colors.line,
-    backgroundColor: colors.card,
-    paddingHorizontal: spacing(3.5),
-    fontSize: 16,
-    color: colors.ink,
-  },
-  placeRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: spacing(3.5),
-    paddingHorizontal: spacing(4),
-    borderBottomWidth: 1,
-    borderBottomColor: colors.line,
-  },
-  placeName: { fontSize: 16, fontWeight: '600', color: colors.ink },
-  placeCity: { fontSize: 13, color: colors.muted },
-  emptyText: { textAlign: 'center', color: colors.muted, marginTop: spacing(8) },
+  mapPickTitle: { fontSize: 17, fontWeight: '800', color: colors.ink, marginBottom: spacing(1) },
   ratingBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(15,23,42,0.6)',
