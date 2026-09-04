@@ -137,10 +137,10 @@
       <div class="card">
         <h2>⚙️ Tarife ve Komisyon Ayarları</h2>
         <div class="settings-grid">
-          <div class="field"><label>Açılış Ücreti (TL)</label><input id="set-base_fare" type="number" min="1"></div>
-          <div class="field"><label>Km Başına (TL)</label><input id="set-per_km" type="number" min="1"></div>
-          <div class="field"><label>Asgari Ücret (TL)</label><input id="set-min_fare" type="number" min="1"></div>
-          <div class="field"><label>Komisyon Oranı (0–0.5)</label><input id="set-commission_rate" type="number" step="0.01" min="0" max="0.5"></div>
+          <div class="field"><label>Açılış Ücreti (TL)</label><input id="set-base_fare" type="number" min="1" autocomplete="off"></div>
+          <div class="field"><label>Km Başına (TL)</label><input id="set-per_km" type="number" min="1" autocomplete="off"></div>
+          <div class="field"><label>Asgari Ücret (TL)</label><input id="set-min_fare" type="number" min="1" autocomplete="off"></div>
+          <div class="field"><label>Komisyon Oranı (0–0.5)</label><input id="set-commission_rate" type="number" step="0.01" min="0" max="0.5" autocomplete="off"></div>
           <button class="btn-primary" style="height:44px" id="save-settings">Kaydet</button>
         </div>
         <p class="muted" style="margin-top:12px">Değişiklikler anında yürürlüğe girer; yeni çağrı tahminleri güncel tarifeyle hesaplanır.</p>
@@ -233,7 +233,7 @@ async function loadStats() {
     ['Onay Bekleyen', s.pendingDrivers], ['Çevrimiçi', s.onlineDrivers],
     ['Tamamlanan Yolculuk', s.completedRides], ['Brüt Hacim', fmtTl(s.grossVolume)],
     ['Toplam Komisyon', fmtTl(s.totalCommission)],
-  ].map(([l, v]) => `<div class="stat"><div class="label">${l}</div><div class="value">${v}</div></div>`).join('');
+  ].map(([l, v]) => `<div class="stat"><div class="label">${esc(l)}</div><div class="value">${esc(v)}</div></div>`).join('');
 }
 
 function initMap() {
@@ -271,11 +271,14 @@ async function loadMap() {
 
 /* ---------- Sürücüler ---------- */
 function driverActions(d) {
+  // Sunucu verisi HTML'e satır içi onclick olarak değil, sayısal data-* öznitelikleri olarak yazılır
+  // (tıklamalar #tab-drivers üzerindeki tek dinleyicide ele alınır).
+  const id = Number(d.id), due = Number(d.commissionDue);
   const b = [];
-  if (d.status === 'pending' || d.status === 'suspended') b.push(`<button class="act-approve" onclick="driverAction(${d.id},'approve')">Onayla</button>`);
-  if (d.status === 'pending') b.push(`<button class="act-reject" onclick="driverAction(${d.id},'reject')">Reddet</button>`);
-  if (d.status === 'approved') b.push(`<button class="act-suspend" onclick="driverAction(${d.id},'suspend')">Askıya Al</button>`);
-  if (d.commissionDue > 0) b.push(`<button class="act-settle" onclick="settle(${d.id},${d.commissionDue})">Tahsilat</button>`);
+  if (d.status === 'pending' || d.status === 'suspended') b.push(`<button class="act-approve" data-action="approve" data-id="${id}">Onayla</button>`);
+  if (d.status === 'pending') b.push(`<button class="act-reject" data-action="reject" data-id="${id}">Reddet</button>`);
+  if (d.status === 'approved') b.push(`<button class="act-suspend" data-action="suspend" data-id="${id}">Askıya Al</button>`);
+  if (due > 0) b.push(`<button class="act-settle" data-action="settle" data-id="${id}" data-due="${due}">Tahsilat</button>`);
   return `<div class="actions">${b.join('')}</div>`;
 }
 
@@ -290,7 +293,7 @@ function driverTable(drivers, withActions) {
       <td>${esc(d.city)}</td>
       <td>${badge(d.status)}</td>
       <td><span class="badge ${d.isOnline ? 'online' : 'offline'}">${d.isOnline ? 'Çevrimiçi' : 'Çevrimdışı'}</span></td>
-      <td>${d.rating ? '⭐ ' + d.rating : '—'}</td>
+      <td>${d.rating ? '⭐ ' + esc(d.rating) : '—'}</td>
       <td><b>${fmtTl(d.commissionDue)}</b></td>
       ${withActions ? '<td>' + driverActions(d) + '</td>' : ''}
     </tr>`).join('')}
@@ -306,6 +309,7 @@ async function loadDrivers() {
 
 async function driverAction(id, action) {
   const labels = { approve: 'onaylandı ✅', reject: 'reddedildi', suspend: 'askıya alındı' };
+  if (!Number.isInteger(id) || !Object.hasOwn(labels, action)) return;
   try {
     await api('POST', `/admin/drivers/${id}/${action}`);
     toast('Sürücü ' + labels[action]);
@@ -332,7 +336,7 @@ async function loadRides() {
   $('#rides-table').innerHTML = `<div style="overflow-x:auto"><table>
     <tr><th>#</th><th>Durum</th><th>Güzergâh</th><th>Yolcu</th><th>Sürücü</th><th>Ücret</th><th>Komisyon</th><th>Tarih</th></tr>
     ${res.rides.map((r) => `<tr>
-      <td>${r.id}</td>
+      <td>${esc(r.id)}</td>
       <td>${badge(r.status)}</td>
       <td>${esc(r.pickupAddress)} → ${esc(r.dropAddress)}<br><span class="muted">~${Number(r.estDistanceKm).toFixed(1)} km</span></td>
       <td>${esc(r.passengerName)}</td>
@@ -381,6 +385,14 @@ $('#login-btn').addEventListener('click', login);
 $('#login-password').addEventListener('keydown', (e) => { if (e.key === 'Enter') login(); });
 $('#logout').addEventListener('click', logout);
 $('#save-settings').addEventListener('click', saveSettings);
+// Sürücü işlem düğmeleri (onayla / reddet / askıya al / tahsilat) — tek dinleyici
+$('#tab-drivers').addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-action]');
+  if (!btn) return;
+  const id = Number(btn.dataset.id);
+  if (btn.dataset.action === 'settle') settle(id, Number(btn.dataset.due));
+  else driverAction(id, btn.dataset.action);
+});
 
 if (token) {
   api('GET', '/auth/me').then((res) => {
