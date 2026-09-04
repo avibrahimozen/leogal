@@ -2,6 +2,7 @@
  * Demo verisi: yönetici + iki yolcu + iki taksici.
  *   Yolcu 1 / Sürücü 1: dolu geçmiş ve komisyon borcu
  *   Yolcu 2 / Sürücü 2: temiz hesaplar (ikinci telefon için)
+ *   + 12 sahte yolcu (+9055500001xx): son 2 haftaya yayılmış yolculuk geçmişiyle
  *
  * Kullanım:  npm run seed          (sunucu açık olsa da olur, kapalıyken de)
  * Tekrar çalıştırmak güvenlidir — mevcut kayıtlar çoğaltılmaz.
@@ -158,6 +159,54 @@ if (existingRides.c === 0) {
   rideInfo = `${ids.length} tamamlanan yolculuk eklendi`;
 }
 
+// ---- Sahte yolcular: platform dolu görünsün (yalnızca yeni hesaplara geçmiş eklenir) ----
+const FAKE_PASSENGERS: Array<[string, string]> = [
+  ['+905550000101', 'Ayşe Kaya'],
+  ['+905550000102', 'Mehmet Özkan'],
+  ['+905550000103', 'Fatma Demir'],
+  ['+905550000104', 'Hasan Yılmaz'],
+  ['+905550000105', 'Zeynep Arslan'],
+  ['+905550000106', 'Mustafa Çelik'],
+  ['+905550000107', 'Elif Şahin'],
+  ['+905550000108', 'Ali Koç'],
+  ['+905550000109', 'Selin Aydın'],
+  ['+905550000110', 'Emre Doğan'],
+  ['+905550000111', 'Derya Kurt'],
+  ['+905550000112', 'Cem Öztürk'],
+];
+const PLACES = [
+  { lat: 35.1897, lng: 33.3573, address: 'Dereboyu, Lefkoşa' },
+  { lat: 35.1547, lng: 33.4961, address: 'Ercan Havalimanı' },
+  { lat: 35.1786, lng: 33.3609, address: 'Girne Kapısı, Lefkoşa' },
+  { lat: 35.2263, lng: 33.3233, address: 'Yakın Doğu Üniversitesi' },
+  { lat: 35.3417, lng: 33.3223, address: 'Girne Limanı' },
+  { lat: 35.3253, lng: 33.2861, address: 'Girne Amerikan Üniversitesi' },
+  { lat: 35.3057, lng: 33.3553, address: 'Bellapais' },
+  { lat: 35.1651, lng: 33.3465, address: 'Lefkoşa Devlet Hastanesi' },
+  { lat: 35.1419, lng: 33.9072, address: 'Doğu Akdeniz Üniversitesi' },
+  { lat: 35.1246, lng: 33.9414, address: 'Gazimağusa Suriçi' },
+];
+const driverIds = [driver.id, driver2.id];
+let fakeCreated = 0;
+let fakeRides = 0;
+FAKE_PASSENGERS.forEach(([phone, name], i) => {
+  const p = upsertUser(phone, name, 'passenger');
+  if (!p.created) return;
+  fakeCreated++;
+  const rideCount = 1 + (i % 3);
+  for (let r = 0; r < rideCount; r++) {
+    const pickup = PLACES[(i + r) % PLACES.length]!;
+    const drop = PLACES[(i + r + 3) % PLACES.length]!;
+    seedCompletedRide(p.id, driverIds[(i + r) % driverIds.length]!, {
+      pickup,
+      drop,
+      daysAgo: 1 + ((i * 3 + r * 5) % 14),
+      rating: [5, 4, 5, 5, 3][(i + r) % 5]!,
+    });
+    fakeRides++;
+  }
+});
+
 const due = db
   .prepare(
     "SELECT COALESCE(SUM(CASE WHEN type = 'commission' THEN amount ELSE -amount END), 0) AS due FROM ledger WHERE driver_id = ?",
@@ -175,9 +224,11 @@ console.log(`
 │ Demo Sürücü  │ +905550000002  │ demo123    │ onaylı · komisyon borcu ${String(Math.round(due.due * 100) / 100).padEnd(7)} TL │
 │ Demo Yolcu 2 │ +905550000003  │ demo123    │ temiz hesap (2. telefon)         │
 │ Demo Sürücü 2│ +905550000004  │ demo123    │ onaylı · GN 200 · Girne · temiz  │
+│ Sahte yolcular│ +9055500001xx │ demo123    │ 01–12 arası 12 hesap, geçmişli   │
 └──────────────┴────────────────┴────────────┴──────────────────────────────────┘
 
 Yolculuklar: ${rideInfo}
+Sahte yolcular: ${fakeCreated > 0 ? `${fakeCreated} hesap, ${fakeRides} yolculuk eklendi` : 'atlandı (zaten var)'}
 Not: Çağrı testi için sürücü hesabıyla uygulamada "çevrimiçi" olman yeterli —
 yolcu hesabıyla çağrı açınca teklif sürücünün ekranına düşer.
 `);
