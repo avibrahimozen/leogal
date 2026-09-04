@@ -21,10 +21,13 @@ Bu adres, aşağıdaki GitHub Pages adımları tamamlanıp bu klasör `master` d
 
 ## Yayınlama (GitHub Pages)
 
-1. Depo ayarlarında **Settings → Pages → Build and deployment → Source: Deploy from a branch** seçin.
+Pages şu anda açık ve `claude/7-23-restaurant-ut49hl` dalından yayın yapıyor. Menü şu adreste: `https://avibrahimozen.github.io/leogal/7-23-restaurant/`
+
+Bu dal `master`'a birleştirildikten sonra:
+
+1. **Settings → Pages → Build and deployment** sayfasını açın.
 2. Branch olarak `master`, klasör olarak `/ (root)` seçin ve kaydedin.
-3. Menü şu adreste açılır: `https://avibrahimozen.github.io/leogal/7-23-restaurant/`
-4. Aynı adresin sonuna `qr.html` ekleyerek QR kodu üretin ve yazdırın.
+3. Adres değişmez; basılı QR kodlar çalışmaya devam eder.
 
 Herhangi bir statik barındırma (Netlify, Vercel, cPanel) da çalışır; klasörü olduğu gibi yüklemek yeterlidir.
 
