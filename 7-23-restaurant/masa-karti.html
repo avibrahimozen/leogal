@@ -71,8 +71,10 @@
     display: grid; grid-template-rows: auto 1fr auto; text-align: center;
     box-shadow: 0 12px 40px rgba(0,0,0,.35);
   }
-  .top { background: var(--komur); color: var(--pide); padding: 5mm 8mm 4mm; display: grid; justify-items: center; }
-  .top .logo { width: 36mm; height: auto; display: block; }
+  .top { background: var(--komur); color: var(--pide); padding: 5mm 8mm 4mm; display: grid; justify-items: center; gap: 2.5mm; }
+  .top .logo { width: 34mm; height: auto; display: block; }
+  .top .slogan { font-size: 4.2mm; line-height: 1.2; font-style: italic; color: var(--kul); margin: 0; }
+  .top .slogan b { color: var(--pide); font-style: normal; font-weight: 600; }
   .top .n { font-family: var(--display); font-size: 15mm; line-height: .9; letter-spacing: .04em; color: var(--pide); }
   .top .n em { font-style: normal; color: var(--koz); }
   .top .s { font-family: var(--display); font-size: 6.5mm; letter-spacing: .14em; line-height: 1; margin-top: 2mm; }
@@ -117,6 +119,7 @@
 <path fill="#f3ead9" transform="matrix(1,0,0,-1,1,582.8465)" d="M457.6238 362.0523V362.0523C456.4346 363.9044 453.9461 364.447 452.094 363.2576L430.043 349.0999C428.1908 347.9108 427.6483 345.4226 428.8377 343.5701 430.0268 341.718 432.5153 341.1754 434.3675 342.3645L456.4182 356.5222C458.2706 357.7116 458.8129 360.1998 457.6238 362.0523" fill-rule="evenodd"/>
 </g>
 </svg>
+    <p class="slogan">Geceyi değil, <b>açlığı bitir.</b></p>
   </div>
   <div class="mid">
     <div class="t">Menü için okutun</div>
