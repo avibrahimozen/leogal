@@ -13,6 +13,21 @@ export function brandMark(shortName) {
   return String(shortName).split('/').map((part) => `<em>${esc(part)}</em>`).join('/');
 }
 
+/** "Gluten, süt · eser: yumurta" biçiminde alerjen özeti; ikisi de boşsa ''. */
+export function allergenText(item, names) {
+  const a = (item.allergens || []).map((k) => names[k] || k);
+  const t = (item.traces || []).map((k) => names[k] || k);
+  const parts = [];
+  if (a.length) parts.push('İçerir: ' + a.join(', '));
+  if (t.length) parts.push('eser: ' + t.join(', ').toLocaleLowerCase('tr'));
+  return parts.join(' · ');
+}
+
+/** "≈ 600 kcal" */
+export function kcalText(n) {
+  return n == null ? '' : `≈ ${n} kcal`;
+}
+
 export function money(n) {
   return `${n} ₺`;
 }
@@ -121,9 +136,13 @@ export function menuJsonLd(data) {
     url: url(s, s.menuPath),
     inLanguage: 'tr',
     hasMenuSection: data.sections.map((sec) => {
+      const names = data.allergenNames || {};
+      const nutrition = (kcal) => (kcal == null ? {} : { nutrition: { '@type': 'NutritionInformation', calories: `${kcal} kcal` } });
       const items = sec.items.filter((it) => !it.separator).map((it) => ({
         '@type': 'MenuItem',
         name: it.sub ? `${it.name} (${it.sub})` : it.name,
+        ...(allergenText(it, names) ? { description: allergenText(it, names) } : {}),
+        ...nutrition(sec.type === 'grams' ? it.kcal?.[0] : it.kcal),
         offers: sec.type === 'grams'
           ? data.gramSizes.map((g, i) => (it.prices[i] == null ? null : offer(it.prices[i], `${g} gr`))).filter(Boolean)
           : [offer(it.price)],
@@ -132,7 +151,8 @@ export function menuJsonLd(data) {
         items.push({
           '@type': 'MenuItem',
           name: sec.feature.name,
-          description: sec.feature.detail,
+          description: [sec.feature.detail, allergenText(sec.feature, names)].filter(Boolean).join(' · '),
+          ...nutrition(sec.feature.kcal),
           offers: [offer(sec.feature.price)],
         });
       }

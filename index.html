@@ -159,7 +159,7 @@
   .brandlink .logo-mark { width: 54px; height: 29px; }
   .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .top nav { display: flex; gap: 22px; }
-  .top nav a { text-decoration: none; color: var(--kul); font-weight: 600; font-size: 16px; }
+  .top nav a { text-decoration: none; color: var(--kul); font-weight: 600; font-size: 16px; white-space: nowrap; }
   .top nav a:hover { color: var(--pide); }
   .top .call { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; color: var(--komur); background: var(--koz); font-family: var(--display); font-size: 20px; letter-spacing: .05em; padding: 9px 14px 7px; border-radius: 6px; white-space: nowrap; }
   .top .call svg { width: 18px; height: 18px; }
@@ -212,12 +212,15 @@
 
   /* Öne çıkanlar */
   .dishes { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
-  .dish { background: var(--is); border: 1px solid var(--is-2); border-radius: 8px; padding: 20px; display: grid; grid-template-rows: auto 1fr auto; gap: 10px; }
+  .dish { background: var(--is); border: 1px solid var(--is-2); border-radius: 8px; padding: 20px; display: grid; grid-template-rows: auto 1fr auto auto; gap: 10px; }
   .dish h3 { font-size: 30px; }
   .dish p { color: var(--kul); font-size: 16px; }
   .dish .pr { display: flex; align-items: baseline; justify-content: space-between; border-top: 1px dashed var(--is-2); padding-top: 10px; }
   .dish .pr b { font-family: var(--display); font-size: 30px; font-weight: 400; color: var(--koz); font-variant-numeric: tabular-nums; }
   .dish .pr small { color: var(--kul-koyu); font-size: 13px; letter-spacing: .08em; text-transform: uppercase; }
+  .dish .nut { display: grid; gap: 2px; font-size: 13px; color: var(--kul-koyu); line-height: 1.35; }
+  .dish .nut b { color: var(--kul); font-weight: 600; }
+  .all .fine { flex-basis: 100%; color: var(--kul-koyu); font-size: 14px; }
   .dish.child { border-color: var(--koz-koyu); border-style: dashed; }
   .all { margin-top: 26px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
   .all span { color: var(--kul); }
@@ -390,37 +393,44 @@
         <article class="dish">
           <h3>Et Döner Dürüm</h3>
           <p>Lavaşta, domates ve yeşillikle. En çok giden.</p>
+          <div class="nut"><b>≈ 600 kcal</b><span>İçerir: Gluten · eser: süt, susam, yumurta</span></div>
           <div class="pr"><small>100 gr</small><b>410 ₺</b></div>
         </article>
         <article class="dish">
           <h3>Pilav Üstü Et Döner</h3>
           <p>Tereyağlı pirinç pilavının üzerinde, bol döner.</p>
+          <div class="nut"><b>≈ 650 kcal</b><span>İçerir: Süt · eser: gluten</span></div>
           <div class="pr"><small>100 gr</small><b>500 ₺</b></div>
         </article>
         <article class="dish">
           <h3>İskender</h3>
           <p>Pide üstünde, domates soslu, kızgın tereyağı ve yoğurtla.</p>
+          <div class="nut"><b>≈ 780 kcal</b><span>İçerir: Gluten, Süt</span></div>
           <div class="pr"><small>100 gr</small><b>650 ₺</b></div>
         </article>
         <article class="dish">
           <h3>Et Döner Burger</h3>
           <p>Susamlı ekmekte döner, cheddar ve taze yeşillik.</p>
+          <div class="nut"><b>≈ 650 kcal</b><span>İçerir: Gluten, Süt, Susam · eser: yumurta</span></div>
           <div class="pr"><small>100 gr</small><b>450 ₺</b></div>
         </article>
         <article class="dish">
           <h3>Sıcak Çorbalar</h3>
           <p>Mercimek, ezogelin, domates, tavuk. Limon ve kıtır ekmekle.</p>
+          <div class="nut"><b>≈ 180 kcal</b><span>eser: gluten, süt</span></div>
           <div class="pr"><small>Kase</small><b>190 ₺</b></div>
         </article>
         <article class="dish child">
           <h3>Çocuk Menü</h3>
           <p>65 gr döner, patates ve içecek. Sürpriz hediyeli.</p>
+          <div class="nut"><b>≈ 620 kcal</b><span>İçerir: Gluten, Süt · eser: yumurta, susam</span></div>
           <div class="pr"><small>Menü</small><b>400 ₺</b></div>
         </article>
       </div>
       <div class="all">
         <a class="btn ghost" href="menu/">Tam menü ve fiyatlar</a>
-        <span>Tatlılar, içecekler ve tüm gramajlar menüde.</span>
+        <span>Tatlılar, içecekler, tüm gramajlar, kalori ve alerjen bilgisi menüde.</span>
+        <p class="fine">Kalori değerleri yaklaşıktır; ortalama porsiyon ve standart tarif üzerinden hesaplanmıştır. Gramaj, ekmek ve sos tercihine göre değişebilir. Döner çeşitlerinde değerler 100 / 150 / 200 gram et için ayrı ayrı verilmiştir. Tüm ürünler gluten (buğday), süt, yumurta, susam ve sert kabuklu yemiş içeren gıdalarla aynı mutfakta hazırlanır. &quot;İçerir&quot; listesinde olmayan ürünlerde de bu alerjenler eser miktarda bulunabilir.</p>
       </div>
     </div>
   </section>

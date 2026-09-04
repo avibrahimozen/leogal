@@ -118,6 +118,19 @@
             410,
             600,
             790
+          ],
+          "kcal": [
+            600,
+            740,
+            880
+          ],
+          "allergens": [
+            "gluten"
+          ],
+          "traces": [
+            "sut",
+            "susam",
+            "yumurta"
           ]
         },
         {
@@ -127,6 +140,19 @@
             410,
             600,
             790
+          ],
+          "kcal": [
+            540,
+            680,
+            820
+          ],
+          "allergens": [
+            "gluten",
+            "susam"
+          ],
+          "traces": [
+            "sut",
+            "yumurta"
           ]
         },
         {
@@ -136,6 +162,19 @@
             410,
             600,
             790
+          ],
+          "kcal": [
+            620,
+            760,
+            900
+          ],
+          "allergens": [
+            "gluten"
+          ],
+          "traces": [
+            "sut",
+            "susam",
+            "yumurta"
           ]
         },
         {
@@ -145,6 +184,19 @@
             450,
             650,
             790
+          ],
+          "kcal": [
+            650,
+            790,
+            930
+          ],
+          "allergens": [
+            "gluten",
+            "sut",
+            "susam"
+          ],
+          "traces": [
+            "yumurta"
           ]
         },
         {
@@ -157,6 +209,16 @@
             470,
             670,
             880
+          ],
+          "kcal": [
+            320,
+            460,
+            600
+          ],
+          "allergens": [],
+          "traces": [
+            "gluten",
+            "sut"
           ]
         },
         {
@@ -166,6 +228,17 @@
             500,
             700,
             900
+          ],
+          "kcal": [
+            650,
+            790,
+            930
+          ],
+          "allergens": [
+            "sut"
+          ],
+          "traces": [
+            "gluten"
           ]
         },
         {
@@ -175,7 +248,17 @@
             650,
             850,
             null
-          ]
+          ],
+          "kcal": [
+            780,
+            920,
+            null
+          ],
+          "allergens": [
+            "gluten",
+            "sut"
+          ],
+          "traces": []
         }
       ]
     },
@@ -189,19 +272,41 @@
         {
           "id": "icli-kofte",
           "name": "İçli Köfte",
-          "price": 140
+          "price": 140,
+          "kcal": 380,
+          "allergens": [
+            "gluten"
+          ],
+          "traces": [
+            "yumurta",
+            "yemis"
+          ]
         },
         {
           "id": "patates-kizartmasi",
           "name": "Patates Kızartması",
-          "price": 160
+          "price": 160,
+          "kcal": 450,
+          "allergens": [],
+          "traces": [
+            "gluten"
+          ]
         }
       ],
       "feature": {
         "id": "cocuk-menu",
         "name": "Çocuk Menü",
         "price": 400,
-        "detail": "65 gr döner · Sürpriz hediyeli!"
+        "detail": "65 gr döner · Sürpriz hediyeli!",
+        "kcal": 620,
+        "allergens": [
+          "gluten",
+          "sut"
+        ],
+        "traces": [
+          "yumurta",
+          "susam"
+        ]
       }
     },
     {
@@ -215,22 +320,48 @@
         {
           "id": "mercimek-corbasi",
           "name": "Mercimek Çorbası",
-          "price": 190
+          "price": 190,
+          "kcal": 180,
+          "allergens": [],
+          "traces": [
+            "gluten",
+            "sut"
+          ]
         },
         {
           "id": "ezogelin-corbasi",
           "name": "Ezogelin Çorbası",
-          "price": 190
+          "price": 190,
+          "kcal": 190,
+          "allergens": [
+            "gluten"
+          ],
+          "traces": [
+            "sut"
+          ]
         },
         {
           "id": "domates-corbasi",
           "name": "Domates Çorbası",
-          "price": 190
+          "price": 190,
+          "kcal": 160,
+          "allergens": [
+            "gluten",
+            "sut"
+          ],
+          "traces": []
         },
         {
           "id": "tavuk-corbasi",
           "name": "Tavuk Çorbası",
-          "price": 190
+          "price": 190,
+          "kcal": 170,
+          "allergens": [
+            "gluten"
+          ],
+          "traces": [
+            "sut"
+          ]
         }
       ]
     },
@@ -244,27 +375,59 @@
         {
           "id": "sutlac",
           "name": "Sütlaç",
-          "price": 170
+          "price": 170,
+          "kcal": 260,
+          "allergens": [
+            "sut"
+          ],
+          "traces": []
         },
         {
           "id": "kabak-tatlisi",
           "name": "Kabak Tatlısı",
-          "price": 200
+          "price": 200,
+          "kcal": 330,
+          "allergens": [
+            "susam",
+            "yemis"
+          ],
+          "traces": []
         },
         {
           "id": "havuc-dilimi",
           "name": "Havuç Dilimi",
-          "price": 260
+          "price": 260,
+          "kcal": 420,
+          "allergens": [
+            "gluten",
+            "sut",
+            "yemis"
+          ],
+          "traces": [
+            "yumurta"
+          ]
         },
         {
           "id": "dondurma",
           "name": "Dondurma",
-          "price": 90
+          "price": 90,
+          "kcal": 210,
+          "allergens": [
+            "sut"
+          ],
+          "traces": [
+            "yemis"
+          ]
         },
         {
           "id": "kaymak",
           "name": "Kaymak",
-          "price": 90
+          "price": 90,
+          "kcal": 300,
+          "allergens": [
+            "sut"
+          ],
+          "traces": []
         }
       ]
     },
@@ -278,68 +441,111 @@
         {
           "id": "ayran",
           "name": "Ayran",
-          "price": 75
+          "price": 75,
+          "kcal": 90,
+          "allergens": [
+            "sut"
+          ],
+          "traces": []
         },
         {
           "id": "yayik-ayran",
           "name": "Yayık Ayran",
-          "price": 75
+          "price": 75,
+          "kcal": 90,
+          "allergens": [
+            "sut"
+          ],
+          "traces": []
         },
         {
           "id": "limonata",
           "name": "Limonata",
-          "price": 70
+          "price": 70,
+          "kcal": 130,
+          "allergens": [],
+          "traces": []
         },
         {
           "id": "sira",
           "name": "Şıra",
-          "price": 95
+          "price": 95,
+          "kcal": 150,
+          "allergens": [],
+          "traces": []
         },
         {
           "id": "salgam",
           "name": "Şalgam",
-          "price": 95
+          "price": 95,
+          "kcal": 25,
+          "allergens": [],
+          "traces": []
         },
         {
           "id": "kola",
           "name": "Kola",
-          "price": 90
+          "price": 90,
+          "kcal": 140,
+          "allergens": [],
+          "traces": []
         },
         {
           "id": "fanta",
           "name": "Fanta",
-          "price": 90
+          "price": 90,
+          "kcal": 145,
+          "allergens": [],
+          "traces": []
         },
         {
           "id": "sprite",
           "name": "Sprite",
-          "price": 90
+          "price": 90,
+          "kcal": 135,
+          "allergens": [],
+          "traces": []
         },
         {
           "id": "fuse-tea",
           "name": "Fuse Tea",
-          "price": 90
+          "price": 90,
+          "kcal": 110,
+          "allergens": [],
+          "traces": []
         },
         {
           "id": "meyve-suyu",
           "name": "Meyve Suyu",
-          "price": 90
+          "price": 90,
+          "kcal": 100,
+          "allergens": [],
+          "traces": []
         },
         {
           "id": "soda",
           "name": "Soda",
-          "price": 50
+          "price": 50,
+          "kcal": 0,
+          "allergens": [],
+          "traces": []
         },
         {
           "id": "su",
           "name": "Su",
-          "price": 40
+          "price": 40,
+          "kcal": 0,
+          "allergens": [],
+          "traces": []
         },
         {
           "id": "kola-1lt",
           "name": "Kola",
           "sub": "1 litre",
-          "price": 145
+          "price": 145,
+          "kcal": 420,
+          "allergens": [],
+          "traces": []
         }
       ]
     }
@@ -373,5 +579,20 @@
       "blurb": "65 gr döner, patates ve içecek. Sürpriz hediyeli.",
       "child": true
     }
-  ]
+  ],
+  "allergenNames": {
+    "gluten": "Gluten",
+    "sut": "Süt",
+    "yumurta": "Yumurta",
+    "susam": "Susam",
+    "yemis": "Sert kabuklu yemiş"
+  },
+  "nutritionNotice": {
+    "title": "Kalori ve alerjen bilgisi",
+    "lines": [
+      "Kalori değerleri yaklaşıktır; ortalama porsiyon ve standart tarif üzerinden hesaplanmıştır. Gramaj, ekmek ve sos tercihine göre değişebilir. Döner çeşitlerinde değerler 100 / 150 / 200 gram et için ayrı ayrı verilmiştir.",
+      "Tüm ürünler gluten (buğday), süt, yumurta, susam ve sert kabuklu yemiş içeren gıdalarla aynı mutfakta hazırlanır. \"İçerir\" listesinde olmayan ürünlerde de bu alerjenler eser miktarda bulunabilir.",
+      "Alerjiniz veya gıda hassasiyetiniz varsa siparişten önce lütfen personelimize bildirin."
+    ]
+  }
 }

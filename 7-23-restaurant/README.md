@@ -89,6 +89,21 @@ npm test        # veri tutarlılığı, güncel çıktı, SEO ve bağlantı kont
 
 Web sitesindeki "öne çıkanlar" kartları `featured` listesinden gelir; ürün `id`'si ve kısa açıklama yeterlidir.
 
+### Kalori ve alerjen
+
+Her üründe üç alan vardır:
+
+```json
+{ "id": "iskender", "name": "İskender", "prices": [650, 850, null], "kcal": [780, 920, null],
+  "allergens": ["gluten", "sut"], "traces": [] }
+```
+
+- `kcal`: döner çeşitlerinde 100 / 150 / 200 gr için dizi, diğer ürünlerde tek sayı. Sayfalarda "≈" ile gösterilir.
+- `allergens`: ürünün içerdiği alerjenler. `traces`: eser miktarda bulunabilecekler. Kodlar `allergenNames` altındadır (`gluten`, `sut`, `yumurta`, `susam`, `yemis`).
+- Menünün sonundaki uyarı metni `nutritionNotice` altındadır.
+
+**Mevcut kalori değerleri standart tariflere göre yaklaşık tahmindir; işletmenin kendi tarif ve gramajlarına göre doğrulanmalıdır.** `npm test` her üründe kalori ve geçerli alerjen kodu olduğunu denetler.
+
 ## Dosyalar
 
 | Dosya | Ne işe yarar |

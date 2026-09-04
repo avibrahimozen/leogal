@@ -1,5 +1,5 @@
 // QR menü sayfası (index.html). Tek dosya, satır içi CSS, kütüphane yok.
-import { esc, money, head, url, restaurantJsonLd, breadcrumbJsonLd } from '../lib/seo.js';
+import { esc, money, head, url, restaurantJsonLd, breadcrumbJsonLd, allergenText, kcalText } from '../lib/seo.js';
 import { links } from '../lib/links.js';
 import * as icon from '../lib/icons.js';
 import { logo } from '../lib/assets.js';
@@ -77,8 +77,11 @@ const CSS = `
   .grid .hd { padding: 4px 0 8px; border-bottom: 2px solid var(--koz); font-family: var(--display); font-size: 17px; letter-spacing: .05em; color: var(--koz); text-align: right; line-height: 1; }
   .grid .hd:first-child { text-align: left; color: var(--kul); }
   .grid .hd small { display: block; font-family: var(--body); font-size: 11px; letter-spacing: .1em; color: var(--kul); }
+  .grid .hd small.k { letter-spacing: 0; text-transform: none; }
   .grid .nm { font-weight: 600; }
+  .grid .nm small, .list .nm .al { display: block; font-weight: 400; color: var(--kul-koyu); font-size: 12px; line-height: 1.3; }
   .grid .pr { text-align: right; font-weight: 600; font-size: 17px; }
+  .grid .pr small, .list .pr small { display: block; font-weight: 400; color: var(--kul-koyu); font-size: 11px; letter-spacing: .02em; }
   .grid .pr.na { color: var(--kul-koyu); font-weight: 400; }
   .grid .sep { grid-column: 1 / -1; padding: 0; height: 10px; border-bottom: 1px dashed var(--is-2); margin-bottom: 4px; }
 
@@ -94,6 +97,12 @@ const CSS = `
   .feature { margin-top: 14px; padding: 14px 16px; border: 1px dashed var(--koz-koyu); border-radius: 8px; display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; }
   .feature .t { grid-column: 1; grid-row: 1; font-family: var(--display); font-size: 24px; line-height: 1; color: var(--koz); }
   .feature .d { grid-column: 1; grid-row: 2; color: var(--kul); font-size: 14px; }
+  .feature .d small { display: block; color: var(--kul-koyu); font-size: 12px; margin-top: 2px; }
+  .notice { margin-top: 8px; padding: 14px 16px; border: 1px solid var(--is-2); border-radius: 8px; display: grid; gap: 8px; }
+  .notice h2 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 22px; letter-spacing: .03em; color: var(--koz); }
+  .notice p { margin: 0; font-size: 13px; line-height: 1.45; color: var(--kul); }
+  .notice .legend { display: flex; flex-wrap: wrap; gap: 6px; }
+  .notice .legend span { font-size: 12px; border: 1px solid var(--is-2); border-radius: 999px; padding: 2px 9px; color: var(--pide); }
   .feature .pr { grid-column: 2; grid-row: 1 / span 2; font-family: var(--display); font-size: 34px; line-height: 1; color: var(--pide); white-space: nowrap; }
 
   /* ---------- Alt bilgi ---------- */
@@ -137,31 +146,37 @@ const JS = `
 
 function gramsSection(sec, data) {
   const cols = data.gramSizes;
+  const names = data.allergenNames || {};
   const rows = sec.items.map((it) => {
     if (it.separator) return `      <div class="sep" aria-hidden="true"></div>`;
-    const cells = it.prices.map((p) => p == null
+    const cells = it.prices.map((p, i) => p == null
       ? `<div class="pr na" aria-label="Yok">—</div>`
-      : `<div class="pr">${money(p)}</div>`).join('');
-    return `      <div class="nm">${esc(it.name)}</div>${cells}`;
+      : `<div class="pr">${money(p)}${it.kcal?.[i] != null ? `<small>≈${it.kcal[i]} kcal</small>` : ''}</div>`).join('');
+    const al = allergenText(it, names);
+    return `      <div class="nm">${esc(it.name)}${al ? `<small>${esc(al)}</small>` : ''}</div>${cells}`;
   }).join('\n');
-  return `    <div class="grid" role="table" aria-label="${esc(sec.title)} fiyatları">
-      <div class="hd" role="columnheader">Ürün</div>
+  return `    <div class="grid" role="table" aria-label="${esc(sec.title)} fiyatları ve kalorileri">
+      <div class="hd" role="columnheader">Ürün<small class="k">fiyat · ≈ kalori</small></div>
 ${cols.map((g) => `      <div class="hd" role="columnheader">${g}<small>gram</small></div>`).join('\n')}
 
 ${rows}
     </div>`;
 }
 
-function listSection(sec) {
+function listSection(sec, data) {
+  const names = data.allergenNames || {};
   const rows = sec.items.map((it) => {
-    const name = it.sub ? `${esc(it.name)} <small>${esc(it.sub)}</small>` : esc(it.name);
-    return `      <li><span class="nm">${name}</span><span class="dots"></span><span class="pr">${money(it.price)}</span></li>`;
+    const al = allergenText(it, names);
+    const name = (it.sub ? `${esc(it.name)} <small>${esc(it.sub)}</small>` : esc(it.name)) + (al ? `<span class="al">${esc(al)}</span>` : '');
+    return `      <li><span class="nm">${name}</span><span class="dots"></span><span class="pr">${money(it.price)}${it.kcal != null ? `<small>${esc(kcalText(it.kcal))}</small>` : ''}</span></li>`;
   }).join('\n');
-  const feature = sec.feature ? `
+  const f = sec.feature;
+  const fal = f ? allergenText(f, names) : '';
+  const feature = f ? `
     <div class="feature">
-      <span class="t">${esc(sec.feature.name)}</span>
-      <span class="pr">${money(sec.feature.price)}</span>
-      <span class="d">${esc(sec.feature.detail)}</span>
+      <span class="t">${esc(f.name)}</span>
+      <span class="pr">${money(f.price)}</span>
+      <span class="d">${esc(f.detail)}${f.kcal != null ? ` · ${esc(kcalText(f.kcal))}` : ''}${fal ? `<small>${esc(fal)}</small>` : ''}</span>
     </div>` : '';
   return `    <ul class="list">
 ${rows}
@@ -171,7 +186,7 @@ ${rows}
 function section(sec, data) {
   const cls = sec.style && sec.style !== 'kor' ? ` class="${sec.style}"` : '';
   const note = sec.note ? `\n      <span class="sec-note">${esc(sec.note)}</span>` : '';
-  const body = sec.type === 'grams' ? gramsSection(sec, data) : listSection(sec);
+  const body = sec.type === 'grams' ? gramsSection(sec, data) : listSection(sec, data);
   return `  <section id="${sec.id}" aria-labelledby="h-${sec.id}">
     <div class="sec-head">
       <h2 id="h-${sec.id}"${cls}><span>${esc(sec.title)}</span></h2>${note}
@@ -193,7 +208,7 @@ export function renderMenu(data, { path = data.site.menuPath } = {}) {
   const canonical = url(s, s.menuPath);
   const siteHref = up(path) + s.sitePath || './';
   const title = `${b.name} · Menü ve Fiyatlar`;
-  const description = `${b.name} menü ve fiyatlar: odun ateşinde et döner (100/150/200 gr), çorbalar, tatlılar, içecekler. ${b.address.district} / ${b.address.city}. Alo Paket ${b.phoneDisplay}.`;
+  const description = `${b.name} menü, fiyatlar, kalori ve alerjen bilgisi: odun ateşinde et döner (100/150/200 gr), çorbalar, tatlılar, içecekler. ${b.address.district}, ${b.address.city}.`;
 
   return `<!DOCTYPE html>
 <html lang="tr">
@@ -227,6 +242,12 @@ ${data.sections.map((sec, i) => `    <li><a href="#${sec.id}"${i === 0 ? ' class
 <main class="wrap menu">
 
 ${data.sections.map((sec) => section(sec, data)).join('\n\n')}
+
+  <section class="notice" id="bilgi" aria-labelledby="h-bilgi">
+    <h2 id="h-bilgi">${esc(data.nutritionNotice.title)}</h2>
+${data.nutritionNotice.lines.map((l) => `    <p>${esc(l)}</p>`).join('\n')}
+    <div class="legend" aria-label="Alerjenler">${Object.values(data.allergenNames).map((n) => `<span>${esc(n)}</span>`).join('')}</div>
+  </section>
 
 </main>
 

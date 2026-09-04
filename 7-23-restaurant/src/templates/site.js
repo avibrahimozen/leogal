@@ -1,5 +1,5 @@
 // Web sitesi ana sayfası (site/index.html).
-import { esc, money, head, url, restaurantJsonLd, faqJsonLd } from '../lib/seo.js';
+import { esc, money, head, url, restaurantJsonLd, faqJsonLd, allergenText, kcalText } from '../lib/seo.js';
 import { logo } from '../lib/assets.js';
 import { links } from '../lib/links.js';
 import * as icon from '../lib/icons.js';
@@ -35,7 +35,7 @@ const CSS = `
   .brandlink .logo-mark { width: 54px; height: 29px; }
   .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .top nav { display: flex; gap: 22px; }
-  .top nav a { text-decoration: none; color: var(--kul); font-weight: 600; font-size: 16px; }
+  .top nav a { text-decoration: none; color: var(--kul); font-weight: 600; font-size: 16px; white-space: nowrap; }
   .top nav a:hover { color: var(--pide); }
   .top .call { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; color: var(--komur); background: var(--koz); font-family: var(--display); font-size: 20px; letter-spacing: .05em; padding: 9px 14px 7px; border-radius: 6px; white-space: nowrap; }
   .top .call svg { width: 18px; height: 18px; }
@@ -88,12 +88,15 @@ const CSS = `
 
   /* Öne çıkanlar */
   .dishes { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
-  .dish { background: var(--is); border: 1px solid var(--is-2); border-radius: 8px; padding: 20px; display: grid; grid-template-rows: auto 1fr auto; gap: 10px; }
+  .dish { background: var(--is); border: 1px solid var(--is-2); border-radius: 8px; padding: 20px; display: grid; grid-template-rows: auto 1fr auto auto; gap: 10px; }
   .dish h3 { font-size: 30px; }
   .dish p { color: var(--kul); font-size: 16px; }
   .dish .pr { display: flex; align-items: baseline; justify-content: space-between; border-top: 1px dashed var(--is-2); padding-top: 10px; }
   .dish .pr b { font-family: var(--display); font-size: 30px; font-weight: 400; color: var(--koz); font-variant-numeric: tabular-nums; }
   .dish .pr small { color: var(--kul-koyu); font-size: 13px; letter-spacing: .08em; text-transform: uppercase; }
+  .dish .nut { display: grid; gap: 2px; font-size: 13px; color: var(--kul-koyu); line-height: 1.35; }
+  .dish .nut b { color: var(--kul); font-weight: 600; }
+  .all .fine { flex-basis: 100%; color: var(--kul-koyu); font-size: 14px; }
   .dish.child { border-color: var(--koz-koyu); border-style: dashed; }
   .all { margin-top: 26px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
   .all span { color: var(--kul); }
@@ -183,11 +186,14 @@ function dishes(data) {
     if (!it) throw new Error(`featured: bilinmeyen ürün id "${f.id}"`);
     const grams = it.sec.type === 'grams';
     const price = grams ? it.prices[0] : it.price;
+    const kcal = grams ? it.kcal?.[0] : it.kcal;
     const unit = f.unit || (grams ? `${data.gramSizes[0]} gr` : 'Adet');
     const name = f.label || it.name;
+    const al = allergenText(it, data.allergenNames || {});
     return `        <article class="dish${f.child ? ' child' : ''}">
           <h3>${esc(name)}</h3>
           <p>${esc(f.blurb)}</p>
+          <div class="nut">${kcal != null ? `<b>${esc(kcalText(kcal))}</b>` : ''}${al ? `<span>${esc(al)}</span>` : ''}</div>
           <div class="pr"><small>${esc(unit)}</small><b>${money(price)}</b></div>
         </article>`;
   }).join('\n');
@@ -288,7 +294,8 @@ ${dishes(data)}
       </div>
       <div class="all">
         <a class="btn ghost" href="${esc(menuHref)}">Tam menü ve fiyatlar</a>
-        <span>Tatlılar, içecekler ve tüm gramajlar menüde.</span>
+        <span>Tatlılar, içecekler, tüm gramajlar, kalori ve alerjen bilgisi menüde.</span>
+        <p class="fine">${esc(data.nutritionNotice.lines[0])} ${esc(data.nutritionNotice.lines[1])}</p>
       </div>
     </div>
   </section>

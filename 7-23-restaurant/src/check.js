@@ -27,6 +27,19 @@ for (const sec of data.sections) {
   }
 }
 for (const f of data.featured) if (!ids.has(f.id)) fail(`featured: bilinmeyen ürün "${f.id}"`);
+const allergenKeys = new Set(Object.keys(data.allergenNames || {}));
+for (const sec of data.sections) {
+  const all = [...sec.items.filter((i) => !i.separator), ...(sec.feature ? [sec.feature] : [])];
+  for (const it of all) {
+    const isGrams = sec.type === 'grams' && it !== sec.feature;
+    if (isGrams) {
+      if (!Array.isArray(it.kcal) || it.kcal.length !== data.gramSizes.length) fail(`${it.id}: gramaj başına kalori dizisi eksik`);
+      else it.kcal.forEach((k, i) => { if ((k == null) !== (it.prices[i] == null)) fail(`${it.id}: ${data.gramSizes[i]} gr için fiyat ve kalori birlikte olmalı`); });
+    } else if (!Number.isInteger(it.kcal) || it.kcal < 0) fail(`${it.id}: kalori eksik`);
+    for (const k of [...(it.allergens || []), ...(it.traces || [])]) if (!allergenKeys.has(k)) fail(`${it.id}: bilinmeyen alerjen "${k}"`);
+    for (const k of it.allergens || []) if ((it.traces || []).includes(k)) fail(`${it.id}: "${k}" hem içerir hem eser listesinde`);
+  }
+}
 
 // 2. Çıktı güncel mi
 await build({ check: true });
