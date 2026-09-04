@@ -58,17 +58,18 @@ public_html/
 
 ## Diller
 
-Site ve menü üç dilde üretilir; her dil ayrı adreste, sayfalarda bayraklı dil değiştirici vardır.
+Site ve menü dört dilde üretilir; her dil ayrı adreste, sayfalarda bayraklı dil değiştirici vardır.
 
 | Dil | Site | Menü |
 | --- | --- | --- |
 | Türkçe (varsayılan) | `/` | `/menu/` |
 | İngilizce | `/en/` | `/en/menu/` |
 | Rusça | `/ru/` | `/ru/menu/` |
+| Almanca | `/de/` | `/de/menu/` |
 
-Çeviriler `src/data/i18n.json` içindedir: arayüz metinleri (`ui`), işletme metinleri (`business`: slogan, vaatler, odun ateşi, SSS, uyarılar, alerjen adları), bölüm başlıkları (`sections`), ürün adları (`items`, ürün `id`'sine göre) ve öne çıkan kart metinleri (`featured`). Fiyat, kalori ve alerjen kodları dilden bağımsızdır, yalnızca `menu.json` içinde tutulur. Yeni bir ürün eklerken `i18n.json` içine İngilizce ve Rusça adını da ekleyin; `npm test` çevrilmemiş ürün adını hata olarak bildirir.
+Çeviriler `src/data/i18n.json` içindedir: arayüz metinleri (`ui`), işletme metinleri (`business`: slogan, vaatler, odun ateşi, SSS, uyarılar, alerjen adları), bölüm başlıkları (`sections`), ürün adları (`items`, ürün `id`'sine göre) ve öne çıkan kart metinleri (`featured`). Fiyat, kalori ve alerjen kodları dilden bağımsızdır, yalnızca `menu.json` içinde tutulur. Yeni bir ürün eklerken `i18n.json` içine İngilizce, Rusça ve Almanca adını da ekleyin; `npm test` çevrilmemiş ürün adını hata olarak bildirir.
 
-Arama motorları için her sayfada üç dilin `hreflang` bağlantısı ve dil bazlı site haritası vardır.
+Arama motorları için her sayfada dört dilin `hreflang` bağlantısı ve dil bazlı site haritası vardır.
 
 ## Kurulum ve komutlar
 
