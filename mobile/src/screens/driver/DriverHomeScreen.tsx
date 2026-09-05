@@ -9,6 +9,7 @@ import { getSocket } from '../../api/socket';
 import { CarMarker } from '../../components/CarMarker';
 import { LocationPermissionCard } from '../../components/LocationPermissionCard';
 import { MyLocationButton } from '../../components/MyLocationButton';
+import { RatingSheet } from '../../components/RatingSheet';
 import { Badge, Button, Card, rideStatusLabel } from '../../components/ui';
 import { KKTC_CENTER } from '../../data/places';
 import { fetchEndedRide, useActiveRideSync } from '../../hooks/useActiveRideSync';
@@ -280,12 +281,12 @@ export default function DriverHomeScreen() {
   }, [ride, applyRide]);
 
   const submitRating = useCallback(
-    async (rating: number) => {
+    async (rating: number, comment: string) => {
       if (!ratingRide) return;
       try {
-        await api.post(`/rides/${ratingRide.id}/rate`, { rating });
+        await api.post(`/rides/${ratingRide.id}/rate`, { rating, comment: comment || undefined });
       } catch {
-        // Puanlama başarısız olsa da akışı bloklama
+        // Puanlama başarısız olsa da akışı bloklama; Yolculuklarım'dan tekrar denenebilir
       }
       setRatingRide(null);
     },
@@ -457,7 +458,10 @@ export default function DriverHomeScreen() {
             </View>
             <View style={styles.passengerRow}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.passengerName}>{ride.passenger.name}</Text>
+                <Text style={styles.passengerName}>
+                  {ride.passenger.name}
+                  {ride.passenger.rating ? <Text style={styles.passengerRating}> · ⭐ {ride.passenger.rating}</Text> : null}
+                </Text>
                 {etaText && <Text style={styles.etaText}>{etaText}</Text>}
                 <Text style={styles.routeText}>
                   📍 {ride.pickup.address}
@@ -521,6 +525,7 @@ export default function DriverHomeScreen() {
               <Text style={styles.offerMeta}>
                 Yolcuya uzaklığın ~{offer?.pickupDistanceKm} km · Yolculuk ~
                 {offer?.estDistanceKm.toFixed(1)} km
+                {offer?.passengerRating ? ` · Yolcu ⭐ ${offer.passengerRating}` : ' · Yeni yolcu'}
               </Text>
             </View>
             <Button title="Çağrıyı Kabul Et" onPress={acceptOffer} loading={busy} />
@@ -530,26 +535,15 @@ export default function DriverHomeScreen() {
         </View>
       </Modal>
 
-      {/* Yolcu puanlama */}
-      <Modal visible={ratingRide !== null} transparent animationType="fade">
-        <View style={styles.offerBackdrop}>
-          <Card style={styles.ratingCard}>
-            <Text style={styles.offerTitle}>Yolculuk tamamlandı ✅</Text>
-            <Text style={styles.offerFare}>{ratingRide?.finalFare ?? ratingRide?.estFare} TL</Text>
-            <Text style={styles.ratingSubtitle}>Yolcuyu puanla</Text>
-            <View style={styles.starsRow}>
-              {[1, 2, 3, 4, 5].map((star) => (
-                <Pressable key={star} onPress={() => submitRating(star)}>
-                  <Text style={styles.star}>⭐</Text>
-                </Pressable>
-              ))}
-            </View>
-            <Pressable onPress={() => setRatingRide(null)}>
-              <Text style={styles.skipText}>Şimdilik geç</Text>
-            </Pressable>
-          </Card>
-        </View>
-      </Modal>
+      {/* Yolcu puanlama: yıldız + isteğe bağlı yorum */}
+      <RatingSheet
+        visible={ratingRide !== null}
+        title="Yolculuk tamamlandı ✅"
+        headline={ratingRide ? `${ratingRide.finalFare ?? ratingRide.estFare} TL` : null}
+        subtitle="Yolcuyu puanla"
+        onSubmit={submitRating}
+        onSkip={() => setRatingRide(null)}
+      />
     </View>
   );
 }
@@ -581,6 +575,7 @@ const styles = StyleSheet.create({
   rideFare: { fontSize: 20, fontWeight: '800', color: colors.ink },
   passengerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing(3) },
   passengerName: { fontSize: 16, fontWeight: '700', color: colors.ink },
+  passengerRating: { fontSize: 14, fontWeight: '600', color: colors.inkSoft },
   etaText: { fontSize: 13, color: colors.info, fontWeight: '700', marginTop: 2 },
   routeText: { fontSize: 13, color: colors.inkSoft, marginTop: spacing(1), lineHeight: 20 },
   callButton: {
@@ -623,9 +618,4 @@ const styles = StyleSheet.create({
   offerDetails: { marginBottom: spacing(4) },
   offerRow: { fontSize: 15, color: colors.ink, fontWeight: '600', marginBottom: spacing(1.5) },
   offerMeta: { fontSize: 13, color: colors.muted, marginTop: spacing(1) },
-  ratingCard: { alignItems: 'center', paddingVertical: spacing(6) },
-  ratingSubtitle: { fontSize: 14, color: colors.muted, marginBottom: spacing(3) },
-  starsRow: { flexDirection: 'row', gap: spacing(2), marginBottom: spacing(4) },
-  star: { fontSize: 36 },
-  skipText: { color: colors.muted, fontSize: 14, fontWeight: '600' },
 });

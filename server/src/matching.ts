@@ -2,7 +2,8 @@ import { config } from './config.js';
 import type { Db } from './db.js';
 import { nowIso } from './db.js';
 import { haversineKm } from './lib/geo.js';
-import { getRide, parseStops, rideToJson, type RideRow } from './lib/rides.js';
+import { candidateScore } from './lib/ranking.js';
+import { getRide, parseStops, passengerRatingOf, rideToJson, type RideRow } from './lib/rides.js';
 import type { Hub } from './realtime.js';
 
 // Geriye dönük uyumluluk: RideRow artık lib/rides.ts içinde tanımlı
@@ -13,11 +14,15 @@ interface CandidateRow {
   lat: number;
   lng: number;
   location_at: string;
+  rating_sum: number;
+  rating_count: number;
 }
 
 export interface Candidate {
   driverId: number;
   distanceKm: number;
+  /** Mesafe + puan cezası (km); küçük olan önce teklif alır — bkz. lib/ranking.ts */
+  score: number;
 }
 
 /**
@@ -38,14 +43,15 @@ export class Matcher {
   ) {}
 
   /**
-   * Alıcıya en yakın uygun sürücüleri bul (yakından uzağa sıralı).
+   * Alıcıya en uygun sürücüleri bul: yarıçap içindeki adaylar mesafe + puan cezasına göre
+   * sıralanır (yüksek puanlı sürücü aynı mesafede öne geçer, düşük puanlı geriye düşer).
    * `exclude` listesindeki sürücüler (örn. çağrıyı az önce iptal eden) atlanır.
    */
   findCandidates(pickupLat: number, pickupLng: number, exclude: readonly number[] = []): Candidate[] {
     const freshAfter = new Date(Date.now() - config.driverLocationTtlMs).toISOString();
     const rows = this.db
       .prepare(
-        `SELECT d.user_id, d.lat, d.lng, d.location_at
+        `SELECT d.user_id, d.lat, d.lng, d.location_at, d.rating_sum, d.rating_count
          FROM drivers d
          WHERE d.status = 'approved' AND d.is_online = 1
            AND d.lat IS NOT NULL AND d.location_at >= ?
@@ -59,12 +65,16 @@ export class Matcher {
 
     return rows
       .filter((r) => !exclude.includes(r.user_id))
-      .map((r) => ({
-        driverId: r.user_id,
-        distanceKm: haversineKm(pickupLat, pickupLng, r.lat, r.lng),
-      }))
+      .map((r) => {
+        const distanceKm = haversineKm(pickupLat, pickupLng, r.lat, r.lng);
+        return {
+          driverId: r.user_id,
+          distanceKm,
+          score: candidateScore(distanceKm, { ratingSum: r.rating_sum, ratingCount: r.rating_count }),
+        };
+      })
       .filter((c) => c.distanceKm <= config.matchRadiusKm)
-      .sort((a, b) => a.distanceKm - b.distanceKm)
+      .sort((a, b) => a.score - b.score || a.distanceKm - b.distanceKm)
       .slice(0, config.offerBatchSize);
   }
 
@@ -77,9 +87,11 @@ export class Matcher {
       ride.id,
       candidates.map((c) => c.driverId),
     );
+    const passengerRating = passengerRatingOf(this.db, ride.passenger_id);
     for (const c of candidates) {
       this.hub.emitToUser(c.driverId, 'ride:offer', {
         rideId: ride.id,
+        passengerRating: passengerRating.rating,
         pickup: { lat: ride.pickup_lat, lng: ride.pickup_lng, address: ride.pickup_address },
         drop: { lat: ride.drop_lat, lng: ride.drop_lng, address: ride.drop_address },
         stops: parseStops(ride.stops),

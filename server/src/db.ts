@@ -69,6 +69,9 @@ CREATE TABLE IF NOT EXISTS rides (
   cancel_reason TEXT,
   passenger_rating INTEGER,
   driver_rating INTEGER,
+  -- Puanla birlikte bırakılan kısa yorumlar (isteğe bağlı, en fazla 200 karakter)
+  passenger_comment TEXT,
+  driver_comment TEXT,
   requested_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
   accepted_at TEXT,
   arrived_at TEXT,
@@ -138,6 +141,8 @@ function migrate(db: Db): void {
   addColumnIfMissing(db, 'drivers', 'cancellations', 'INTEGER NOT NULL DEFAULT 0');
   addColumnIfMissing(db, 'rides', 'stops', 'TEXT');
   addColumnIfMissing(db, 'drivers', 'heading', 'REAL');
+  addColumnIfMissing(db, 'rides', 'passenger_comment', 'TEXT');
+  addColumnIfMissing(db, 'rides', 'driver_comment', 'TEXT');
 }
 
 function addColumnIfMissing(db: Db, table: string, column: string, definition: string): void {

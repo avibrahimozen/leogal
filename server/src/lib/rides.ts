@@ -20,6 +20,8 @@ export interface RideRow {
   cancel_reason: string | null;
   passenger_rating: number | null;
   driver_rating: number | null;
+  passenger_comment: string | null;
+  driver_comment: string | null;
   requested_at: string;
   accepted_at: string | null;
   arrived_at: string | null;
@@ -34,6 +36,17 @@ export interface RideRow {
 
 export function getRide(db: Db, id: number): RideRow | undefined {
   return db.prepare('SELECT * FROM rides WHERE id = ?').get(id) as unknown as RideRow | undefined;
+}
+
+/**
+ * Yolcunun ortalama puanı: sürücülerin tamamlanan yolculuklarda verdiği puanların ortalaması.
+ * Kullanıcı tablosunda sütun yoktur; istek anında hesaplanır (yolcu başına az sayıda kayıt).
+ */
+export function passengerRatingOf(db: Db, passengerId: number): { rating: number | null; count: number } {
+  const row = db
+    .prepare('SELECT AVG(driver_rating) AS avg, COUNT(driver_rating) AS n FROM rides WHERE passenger_id = ? AND driver_rating IS NOT NULL')
+    .get(passengerId) as unknown as { avg: number | null; n: number };
+  return { rating: row.n > 0 && row.avg !== null ? Math.round(row.avg * 10) / 10 : null, count: row.n };
 }
 
 /** Çağrıyı istemciye dönen JSON biçimine çevirir (sürücü ve yolcu özetleriyle). */
@@ -70,6 +83,7 @@ export function rideToJson(db: Db, ride: RideRow) {
     name: string;
     phone: string;
   };
+  const passengerRating = passengerRatingOf(db, ride.passenger_id);
   return {
     id: ride.id,
     status: ride.status,
@@ -83,6 +97,8 @@ export function rideToJson(db: Db, ride: RideRow) {
     cancelReason: ride.cancel_reason,
     passengerRating: ride.passenger_rating,
     driverRating: ride.driver_rating,
+    passengerComment: ride.passenger_comment ?? null,
+    driverComment: ride.driver_comment ?? null,
     requestedAt: ride.requested_at,
     acceptedAt: ride.accepted_at,
     arrivedAt: ride.arrived_at,
@@ -90,7 +106,13 @@ export function rideToJson(db: Db, ride: RideRow) {
     completedAt: ride.completed_at,
     cancelledAt: ride.cancelled_at,
     driver,
-    passenger: { id: ride.passenger_id, name: passenger.name, phone: passenger.phone },
+    passenger: {
+      id: ride.passenger_id,
+      name: passenger.name,
+      phone: passenger.phone,
+      rating: passengerRating.rating,
+      ratingCount: passengerRating.count,
+    },
   };
 }
 

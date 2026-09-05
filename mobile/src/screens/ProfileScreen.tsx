@@ -43,6 +43,23 @@ export default function ProfileScreen() {
           </Card>
         )}
 
+        {user.role !== 'driver' && (
+          <Card style={{ marginTop: spacing(5) }}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>Yolcu Puanın</Text>
+            </View>
+            <InfoRow
+              label="Puan"
+              value={
+                user.passenger?.rating
+                  ? `⭐ ${user.passenger.rating} · ${user.passenger.ratingCount} değerlendirme`
+                  : 'Henüz puanlanmadın'
+              }
+            />
+            <Text style={styles.hint}>Sürücüler yolculuk sonunda seni puanlar; puanın sürücülere gelen teklifte görünür.</Text>
+          </Card>
+        )}
+
         <View style={{ height: spacing(6) }} />
         <Button
           title="Çıkış Yap"
@@ -68,6 +85,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
+  hint: { fontSize: 12, color: colors.muted, marginTop: spacing(2) },
   avatar: {
     width: 88,
     height: 88,

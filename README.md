@@ -200,6 +200,22 @@ Aynı uygulama iki modda çalışır: **yolcu** hesabıyla girince harita + ça�
 Gerçek zamanlı olaylar (Socket.IO): `ride:offer`, `ride:offer_closed`, `ride:update`,
 `driver:location`, `driver:status`.
 
+## Puanlama
+
+- Yolculuk bitince yolcu sürücüyü, sürücü yolcuyu **1–5 yıldızla** puanlar; isteğe bağlı **200
+  karakterlik yorum** bırakılır (`POST /api/rides/:id/rate` `{rating, comment?}`). Atlanan
+  puanlama **Yolculuklarım** ekranından sonradan yapılabilir; verdiğin/aldığın puan ve yorumun
+  orada görünür.
+- **Eşleştirme önceliği:** adaylar mesafe + puan cezasıyla sıralanır — 5 yıldızdan her eksik
+  yıldız 0,5 km uzaklık gibi sayılır; en az 3 puanı olmayan sürücü nötr (4,5) kabul edilir, yani
+  yeni sürücü cezalandırılmaz. Ortalaması **3,5'in altına** düşen sürücü 3 km ek ceza alır: yakın
+  olsa da sıranın gerisine düşer, ama yarıçapta başka aday yoksa yine teklif alır. Değerler
+  `server/src/config.ts › ratingPriority`, mantık `server/src/lib/ranking.ts`.
+- **Yönetici uyarısı:** panelde düşük puanlı sürücüler **"Düşük puan"** rozetiyle işaretlenir,
+  genel bakışta sayısı görünür; yolculuk tablosunda iki yönlü puanlar ve yorumlar listelenir.
+- **Yolcu puanı:** sürücülerin verdiği puanların ortalaması. Sürücü gelen teklifte ve çağrı
+  kartında görür (`passengerRating`), yolcu kendi puanını profilinde görür.
+
 ## Harita: gerçek yol rotası, kırmızı araç, takip kamerası
 
 - **Yol rotası:** yolculuk çizgisi ve sürücü→yolcu yolu OSRM'den (OpenStreetMap) gerçek yol

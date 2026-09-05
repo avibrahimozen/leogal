@@ -2,7 +2,8 @@ import { Router, type Request, type Response } from 'express';
 import { z } from 'zod';
 import { deleteSetting, getSetting, hasSetting, scopedKey, setSetting, type Db } from '../db.js';
 import { requireAuth } from '../lib/auth.js';
-import { defaultSettings, type SettingKey } from '../config.js';
+import { config, defaultSettings, type SettingKey } from '../config.js';
+import { averageRating, isLowRated } from '../lib/ranking.js';
 import { isCountryCode, type CountryCode } from '../lib/regions.js';
 import type { Hub } from '../realtime.js';
 import { getDemandHint } from './public.js';
@@ -53,10 +54,10 @@ export function adminRoutes(db: Db, hub: Hub): Router {
         lat: r.lat,
         lng: r.lng,
         locationAt: r.location_at,
-        rating:
-          (r.rating_count as number) > 0
-            ? Math.round(((r.rating_sum as number) / (r.rating_count as number)) * 10) / 10
-            : null,
+        rating: averageRating({ ratingSum: r.rating_sum as number, ratingCount: r.rating_count as number }),
+        ratingCount: r.rating_count,
+        // Yeterli puanı var ve ortalaması eşiğin altında: panelde uyarı, eşleştirmede geriye düşer
+        lowRating: isLowRated({ ratingSum: r.rating_sum as number, ratingCount: r.rating_count as number }),
         commissionDue: r.commission_due,
         cancellations: r.cancellations,
         createdAt: r.created_at,
@@ -70,6 +71,7 @@ export function adminRoutes(db: Db, hub: Hub): Router {
     const rows = db
       .prepare(
         `SELECT r.id, r.status, r.pickup_address, r.drop_address, r.est_distance_km, r.est_fare, r.final_fare, r.commission, r.cancel_reason, r.requested_at, r.completed_at,
+           r.passenger_rating, r.driver_rating, r.passenger_comment, r.driver_comment,
            pu.name AS passenger_name, du.name AS driver_name, d.vehicle_plate
          FROM rides r
          JOIN users pu ON pu.id = r.passenger_id
@@ -94,6 +96,10 @@ export function adminRoutes(db: Db, hub: Hub): Router {
         passengerName: r.passenger_name,
         driverName: r.driver_name,
         vehiclePlate: r.vehicle_plate,
+        passengerRating: r.passenger_rating,
+        driverRating: r.driver_rating,
+        passengerComment: r.passenger_comment,
+        driverComment: r.driver_comment,
       })),
     });
   });
@@ -170,9 +176,10 @@ export function adminRoutes(db: Db, hub: Hub): Router {
            (SELECT COUNT(*) FROM drivers WHERE is_online = 1) AS online_drivers,
            (SELECT COUNT(*) FROM rides WHERE status = 'completed') AS completed_rides,
            (SELECT COALESCE(SUM(final_fare), 0) FROM rides WHERE status = 'completed') AS gross_volume,
-           (SELECT COALESCE(SUM(commission), 0) FROM rides WHERE status = 'completed') AS total_commission`,
+           (SELECT COALESCE(SUM(commission), 0) FROM rides WHERE status = 'completed') AS total_commission,
+           (SELECT COUNT(*) FROM drivers WHERE rating_count >= ? AND rating_sum * 1.0 / rating_count < ?) AS low_rated_drivers`,
       )
-      .get() as unknown as Record<string, number>;
+      .get(config.ratingPriority.minRatings, config.ratingPriority.lowRatingThreshold) as unknown as Record<string, number>;
     res.json({
       passengers: stats.passengers,
       approvedDrivers: stats.approved_drivers,
@@ -181,6 +188,7 @@ export function adminRoutes(db: Db, hub: Hub): Router {
       completedRides: stats.completed_rides,
       grossVolume: stats.gross_volume,
       totalCommission: stats.total_commission,
+      lowRatedDrivers: stats.low_rated_drivers,
     });
   });
 

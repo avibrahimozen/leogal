@@ -28,6 +28,8 @@ export interface User {
   name: string;
   role: Role;
   driver?: DriverProfile;
+  /** Yolcu hesabı: sürücülerin verdiği puanların ortalaması */
+  passenger?: { rating: number | null; ratingCount: number };
 }
 
 export interface GeoPoint {
@@ -62,10 +64,13 @@ export interface Ride {
   cancelReason: string | null;
   passengerRating: number | null;
   driverRating: number | null;
+  /** Puanla bırakılan kısa yorumlar (isteğe bağlı) */
+  passengerComment?: string | null;
+  driverComment?: string | null;
   requestedAt: string;
   completedAt: string | null;
   driver: RideDriver | null;
-  passenger: { id: number; name: string; phone: string };
+  passenger: { id: number; name: string; phone: string; rating?: number | null; ratingCount?: number };
 }
 
 export interface RideOffer {
@@ -76,6 +81,8 @@ export interface RideOffer {
   estDistanceKm: number;
   estFare: number;
   pickupDistanceKm: number;
+  /** Yolcunun ortalama puanı (sürücülerin verdiği); henüz yoksa null */
+  passengerRating?: number | null;
 }
 
 /** Ham koordinat (adres bilgisi olmadan) */

@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { config, rateLimits } from '../config.js';
 import type { Db } from '../db.js';
+import { passengerRatingOf } from '../lib/rides.js';
 import { requireAuth, signToken, type Role } from '../lib/auth.js';
 import { COUNTRIES, isValidCity } from '../lib/regions.js';
 import { ipKey, rateLimit } from '../lib/rateLimit.js';
@@ -74,7 +75,12 @@ export interface DriverRow {
   rating_count: number;
 }
 
-export function publicUser(user: UserRow, driver?: DriverRow | null) {
+/** İstemciye dönen kullanıcı: sürücüyse araç bilgileri, yolcuysa yolcu puanı. */
+export function publicUser(
+  user: UserRow,
+  driver?: DriverRow | null,
+  passenger?: { rating: number | null; count: number } | null,
+) {
   return {
     id: user.id,
     phone: user.phone,
@@ -92,6 +98,7 @@ export function publicUser(user: UserRow, driver?: DriverRow | null) {
           rating: driver.rating_count > 0 ? Math.round((driver.rating_sum / driver.rating_count) * 10) / 10 : null,
         }
       : undefined,
+    passenger: passenger ? { rating: passenger.rating, ratingCount: passenger.count } : undefined,
   };
 }
 
@@ -253,7 +260,11 @@ export function authRoutes(db: Db, otp: OtpService): Router {
     }
     res.json({
       token: signToken({ id: user.id, role: user.role }),
-      user: publicUser(user, user.role === 'driver' ? getDriverRow(db, user.id) : undefined),
+      user: publicUser(
+        user,
+        user.role === 'driver' ? getDriverRow(db, user.id) : undefined,
+        user.role === 'passenger' ? passengerRatingOf(db, user.id) : undefined,
+      ),
     });
   });
 
@@ -263,7 +274,11 @@ export function authRoutes(db: Db, otp: OtpService): Router {
       res.status(404).json({ error: 'Kullanıcı bulunamadı' });
       return;
     }
-    res.json({ user: publicUser(user, user.role === 'driver' ? getDriverRow(db, user.id) : undefined) });
+    res.json({ user: publicUser(
+        user,
+        user.role === 'driver' ? getDriverRow(db, user.id) : undefined,
+        user.role === 'passenger' ? passengerRatingOf(db, user.id) : undefined,
+      ) });
   });
 
   return router;

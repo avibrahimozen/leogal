@@ -52,6 +52,8 @@ function requestErrorMessage(error: z.ZodError): string {
 
 const rateSchema = z.object({
   rating: z.number().int().min(1).max(5),
+  // İsteğe bağlı kısa yorum; boşluklar kırpılır, boş kalırsa kaydedilmez
+  comment: z.string().trim().max(200).optional(),
 });
 
 /** Geçmiş listesi sayfa boyutu: varsayılan ve üst sınır. */
@@ -505,6 +507,7 @@ export function rideRoutes(db: Db, hub: Hub, matcher: Matcher): Router {
       return;
     }
     const rating = parsed.data.rating;
+    const comment = parsed.data.comment ? parsed.data.comment : null;
     if (req.user!.role !== 'driver') {
       if (ride.passenger_id !== req.user!.id) {
         res.status(403).json({ error: 'Bu çağrı size ait değil' });
@@ -514,7 +517,7 @@ export function rideRoutes(db: Db, hub: Hub, matcher: Matcher): Router {
         res.status(409).json({ error: 'Bu yolculuğu zaten puanladınız' });
         return;
       }
-      db.prepare('UPDATE rides SET passenger_rating = ? WHERE id = ?').run(rating, rideId);
+      db.prepare('UPDATE rides SET passenger_rating = ?, passenger_comment = ? WHERE id = ?').run(rating, comment, rideId);
       db.prepare('UPDATE drivers SET rating_sum = rating_sum + ?, rating_count = rating_count + 1 WHERE user_id = ?').run(
         rating,
         ride.driver_id,
@@ -528,7 +531,7 @@ export function rideRoutes(db: Db, hub: Hub, matcher: Matcher): Router {
         res.status(409).json({ error: 'Bu yolculuğu zaten puanladınız' });
         return;
       }
-      db.prepare('UPDATE rides SET driver_rating = ? WHERE id = ?').run(rating, rideId);
+      db.prepare('UPDATE rides SET driver_rating = ?, driver_comment = ? WHERE id = ?').run(rating, comment, rideId);
     }
     res.json({ ride: rideToJson(db, getRide(db, rideId)!) });
   });

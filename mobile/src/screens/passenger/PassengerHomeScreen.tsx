@@ -1,17 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  Linking,
-  Modal,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Alert, Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '../../api/client';
@@ -21,6 +11,7 @@ import { CAR_IMAGE, CarMarker } from '../../components/CarMarker';
 import DestinationPicker from '../../components/DestinationPicker';
 import { LocationPermissionCard } from '../../components/LocationPermissionCard';
 import { MyLocationButton } from '../../components/MyLocationButton';
+import { RatingSheet } from '../../components/RatingSheet';
 import { Badge, Button, Card, rideStatusLabel } from '../../components/ui';
 import { DEFAULT_REGION, KKTC_CENTER, type Place } from '../../data/places';
 import { regionForPoint } from '../../data/regions';
@@ -338,12 +329,12 @@ export default function PassengerHomeScreen() {
   );
 
   const submitRating = useCallback(
-    async (rating: number) => {
+    async (rating: number, comment: string) => {
       if (!ratingRide) return;
       try {
-        await api.post(`/rides/${ratingRide.id}/rate`, { rating });
+        await api.post(`/rides/${ratingRide.id}/rate`, { rating, comment: comment || undefined });
       } catch {
-        // Puanlama başarısız olsa da akışı bloklama
+        // Puanlama başarısız olsa da akışı bloklama; Yolculuklarım'dan tekrar denenebilir
       }
       setRatingRide(null);
     },
@@ -769,26 +760,15 @@ export default function PassengerHomeScreen() {
         }
       />
 
-      {/* Puanlama */}
-      <Modal visible={ratingRide !== null} transparent animationType="fade">
-        <View style={styles.ratingBackdrop}>
-          <Card style={styles.ratingCard}>
-            <Text style={styles.ratingTitle}>Yolculuk tamamlandı 🎉</Text>
-            <Text style={styles.ratingFare}>{ratingRide?.finalFare ?? ratingRide?.estFare} TL</Text>
-            <Text style={styles.ratingSubtitle}>Sürücünü puanla</Text>
-            <View style={styles.starsRow}>
-              {[1, 2, 3, 4, 5].map((star) => (
-                <Pressable key={star} onPress={() => submitRating(star)}>
-                  <Text style={styles.star}>⭐</Text>
-                </Pressable>
-              ))}
-            </View>
-            <Pressable onPress={() => setRatingRide(null)}>
-              <Text style={styles.skipText}>Şimdilik geç</Text>
-            </Pressable>
-          </Card>
-        </View>
-      </Modal>
+      {/* Puanlama: yıldız + isteğe bağlı yorum */}
+      <RatingSheet
+        visible={ratingRide !== null}
+        title="Yolculuk tamamlandı 🎉"
+        headline={ratingRide ? `${ratingRide.finalFare ?? ratingRide.estFare} TL` : null}
+        subtitle="Sürücünü puanla"
+        onSubmit={submitRating}
+        onSkip={() => setRatingRide(null)}
+      />
     </View>
   );
 }
@@ -898,17 +878,4 @@ const styles = StyleSheet.create({
     ...shadow.card,
   },
   followChipText: { fontSize: 13, fontWeight: '700', color: colors.ink },
-  ratingBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(15,23,42,0.6)',
-    justifyContent: 'center',
-    padding: spacing(6),
-  },
-  ratingCard: { alignItems: 'center', paddingVertical: spacing(6) },
-  ratingTitle: { fontSize: 20, fontWeight: '800', color: colors.ink },
-  ratingFare: { fontSize: 32, fontWeight: '800', color: colors.success, marginVertical: spacing(2) },
-  ratingSubtitle: { fontSize: 14, color: colors.muted, marginBottom: spacing(3) },
-  starsRow: { flexDirection: 'row', gap: spacing(2), marginBottom: spacing(4) },
-  star: { fontSize: 36 },
-  skipText: { color: colors.muted, fontSize: 14, fontWeight: '600' },
 });

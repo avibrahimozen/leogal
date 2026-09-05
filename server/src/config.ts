@@ -39,6 +39,19 @@ export const config = {
     osrmBaseUrl: (process.env.ULAK_OSRM_URL ?? 'https://router.project-osrm.org').replace(/\/+$/, ''),
     timeoutMs: 4000,
   },
+  /**
+   * Puana göre eşleştirme önceliği (bkz. lib/ranking.ts). Adaylar mesafe + puan cezasıyla
+   * sıralanır: 5 yıldızdan her eksik yıldız kmPerStar km uzaklık gibi sayılır. minRatings'ten az
+   * puanı olan sürücü nötr (neutralRating) kabul edilir. Ortalaması lowRatingThreshold altına
+   * düşen sürücü lowRatingPenaltyKm ek ceza alır ve yönetici panelinde işaretlenir.
+   */
+  ratingPriority: {
+    kmPerStar: 0.5,
+    minRatings: 3,
+    neutralRating: 4.5,
+    lowRatingThreshold: 3.5,
+    lowRatingPenaltyKm: 3,
+  },
   adminPhone: process.env.ULAK_ADMIN_PHONE ?? '+903920000000',
   adminPassword: process.env.ULAK_ADMIN_PASSWORD ?? DEFAULT_ADMIN_PASSWORD,
   // SMS / OTP telefon doğrulama
