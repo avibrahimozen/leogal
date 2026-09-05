@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "Ulak",
+    "slug": "ulak",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "ulak",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash.png",
+      "backgroundColor": "#0F172A",
+      "resizeMode": "contain"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.ulak.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Ulak, size en yakın taksiyi bulmak ve yolculuğunuzu takip etmek için konumunuzu kullanır."
+      }
+    },
+    "android": {
+      "package": "com.ulak.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0F172A"
+      },
+      "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"]
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Ulak, size en yakın taksiyi bulmak ve yolculuğunuzu takip etmek için konumunuzu kullanır."
+        }
+      ]
+    ]
+  }
+}
