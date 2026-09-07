@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Image, Platform, StyleSheet } from 'react-native';
-import { Marker, type MapMarker } from 'react-native-maps';
+import { Marker, type MarkerHandle } from './map';
 import { bearing, haversineKm } from '../logic/geo';
 import type { LatLng } from '../types';
 
@@ -57,7 +57,7 @@ function simplifyPath(points: LatLng[], max: number): LatLng[] {
  * iOS Apple Maps'te `rotation` desteklenmediği için görsel stille döndürülür.
  */
 export function CarMarker({ lat, lng, heading, path, durationMs, title, description, animated = true, zIndex }: Props) {
-  const markerRef = useRef<MapMarker>(null);
+  const markerRef = useRef<MarkerHandle>(null);
   const [shown, setShown] = useState({ latitude: lat, longitude: lng });
   // Rota parçası animasyonu sırasında yolun yönü; bitince `heading` prop'una dönülür
   const [segHeading, setSegHeading] = useState<number | null>(null);

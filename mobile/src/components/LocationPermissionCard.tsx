@@ -1,21 +1,30 @@
 import React from 'react';
-import { Linking, Pressable, StyleSheet, Text, type StyleProp, type ViewStyle } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, type StyleProp, type ViewStyle } from 'react-native';
+import { openAppSettings } from '../lib/alert';
 import { colors, radius, spacing } from '../theme';
 import { Card } from './ui';
 
-/** Konum izni reddedildiğinde gösterilen küçük uyarı kartı; buton sistem ayarlarını açar. */
+/**
+ * Konum izni reddedildiğinde gösterilen küçük uyarı kartı; buton sistem ayarlarını açar.
+ * Web'de sistem ayarı yoktur: izin tarayıcının adres çubuğundan verilir, düğme gösterilmez.
+ */
 export function LocationPermissionCard({ style }: { style?: StyleProp<ViewStyle> }) {
+  const web = Platform.OS === 'web';
   return (
     <Card style={[styles.card, style]}>
-      <Text style={styles.text}>📍 Konum izni gerekli — Ayarlar'dan izin ver</Text>
+      <Text style={styles.text}>
+        {web ? '📍 Konum izni gerekli — tarayıcının adres çubuğundan izin ver' : "📍 Konum izni gerekli — Ayarlar'dan izin ver"}
+      </Text>
+      {!web && (
       <Pressable
         style={({ pressed }) => [styles.button, pressed && { opacity: 0.85 }]}
         onPress={() => {
-          Linking.openSettings().catch(() => {});
+          openAppSettings();
         }}
       >
         <Text style={styles.buttonText}>Ayarlar</Text>
       </Pressable>
+      )}
     </Card>
   );
 }

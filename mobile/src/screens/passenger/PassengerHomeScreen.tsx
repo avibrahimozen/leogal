@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
-import MapView, { Marker, Polyline } from 'react-native-maps';
+import { ActivityIndicator, Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { showAlert } from '../../lib/alert';
+import { MapView, Marker, Polyline, type MapHandle } from '../../components/map';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '../../api/client';
 import { reverseGeocode } from '../../api/geocode';
@@ -68,7 +69,7 @@ const toCoordinate = (p: LatLng) => ({ latitude: p.lat, longitude: p.lng });
 const ACTIVE_STATUSES = new Set(['requested', 'accepted', 'arrived', 'in_progress']);
 
 export default function PassengerHomeScreen() {
-  const mapRef = useRef<MapView>(null);
+  const mapRef = useRef<MapHandle>(null);
   const [myLocation, setMyLocation] = useState<Coords>(KKTC_CENTER);
   const [ride, setRide] = useState<Ride | null>(null);
   // Socket işleyicileri güncel çağrıyı closure yerine buradan okur (bayat state'e düşmemek için)
@@ -122,9 +123,9 @@ export default function PassengerHomeScreen() {
         if (ended?.status === 'completed') {
           setRatingRide(ended);
         } else if (ended?.cancelReason === 'no_driver') {
-          Alert.alert('Sürücü bulunamadı', 'Yakında müsait sürücü yok. Biraz sonra tekrar dene.');
+          showAlert('Sürücü bulunamadı', 'Yakında müsait sürücü yok. Biraz sonra tekrar dene.');
         } else if (ended?.cancelReason === 'driver_ended') {
-          Alert.alert('Sürücü yolculuğu bitirdi', 'Yolculuk sona erdi; ücret alınmadı.');
+          showAlert('Sürücü yolculuğu bitirdi', 'Yolculuk sona erdi; ücret alınmadı.');
         }
       });
     },
@@ -205,13 +206,13 @@ export default function PassengerHomeScreen() {
           setRatingRide(event.ride);
           break;
         case 'no_driver':
-          Alert.alert('Sürücü bulunamadı', 'Yakında müsait sürücü yok. Biraz sonra tekrar dene.');
+          showAlert('Sürücü bulunamadı', 'Yakında müsait sürücü yok. Biraz sonra tekrar dene.');
           break;
         case 'reassigned':
-          Alert.alert('Yeni sürücü aranıyor', 'Sürücü iptal etti, yeni sürücü aranıyor.');
+          showAlert('Yeni sürücü aranıyor', 'Sürücü iptal etti, yeni sürücü aranıyor.');
           break;
         case 'driver_ended':
-          Alert.alert('Sürücü yolculuğu bitirdi', 'Yolculuk sona erdi; ücret alınmadı.');
+          showAlert('Sürücü yolculuğu bitirdi', 'Yolculuk sona erdi; ücret alınmadı.');
           break;
       }
     };
@@ -270,14 +271,14 @@ export default function PassengerHomeScreen() {
         stops,
       });
       if (res.noDriver) {
-        Alert.alert('Sürücü bulunamadı', 'Şu an çevrimiçi sürücü yok. Biraz sonra tekrar dene.');
+        showAlert('Sürücü bulunamadı', 'Şu an çevrimiçi sürücü yok. Biraz sonra tekrar dene.');
       } else {
         applyRide(res.ride);
         setDestination(null);
         setStops([]);
       }
     } catch (e) {
-      Alert.alert('Çağrı oluşturulamadı', e instanceof Error ? e.message : 'Bir hata oluştu');
+      showAlert('Çağrı oluşturulamadı', e instanceof Error ? e.message : 'Bir hata oluştu');
     } finally {
       setBusy(false);
     }
@@ -290,7 +291,7 @@ export default function PassengerHomeScreen() {
       await api.post(`/rides/${ride.id}/cancel`);
       applyRide(null);
     } catch (e) {
-      Alert.alert('İptal edilemedi', e instanceof Error ? e.message : 'Bir hata oluştu');
+      showAlert('İptal edilemedi', e instanceof Error ? e.message : 'Bir hata oluştu');
     } finally {
       setBusy(false);
     }
@@ -298,7 +299,7 @@ export default function PassengerHomeScreen() {
 
   /** Yolculuk sırasında bitirme: istediğin an, ücretsiz. Onay ister, sonra iptal ucunu çağırır. */
   const endRide = useCallback(() => {
-    Alert.alert('Yolculuğu bitir', 'Yolculuk şimdi sona erecek; ücret alınmaz. Emin misin?', [
+    showAlert('Yolculuğu bitir', 'Yolculuk şimdi sona erecek; ücret alınmaz. Emin misin?', [
       { text: 'Vazgeç', style: 'cancel' },
       {
         text: 'Bitir',
@@ -320,7 +321,7 @@ export default function PassengerHomeScreen() {
         const res = await api.put<{ ride: Ride }>(`/rides/${current.id}/stops`, { stops: next });
         applyRide(res.ride);
       } catch (e) {
-        Alert.alert('Durak güncellenemedi', e instanceof Error ? e.message : 'Bir hata oluştu');
+        showAlert('Durak güncellenemedi', e instanceof Error ? e.message : 'Bir hata oluştu');
       } finally {
         setBusy(false);
       }
@@ -360,7 +361,7 @@ export default function PassengerHomeScreen() {
       if (current) {
         const existing = current.stops ?? [];
         if (existing.length >= MAX_STOPS) {
-          Alert.alert('Durak sınırı', `En fazla ${MAX_STOPS} durak ekleyebilirsin.`);
+          showAlert('Durak sınırı', `En fazla ${MAX_STOPS} durak ekleyebilirsin.`);
           return;
         }
         void updateRideStops([...existing, point]);

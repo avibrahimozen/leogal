@@ -22,7 +22,7 @@ taksiyi çağırır, sürücüsünü haritada canlı takip eder.
 
 ```
 server/   Node.js API + Socket.IO gerçek zamanlı katman (TypeScript, node:sqlite)
-mobile/   Expo / React Native uygulaması — yolcu ve sürücü modları (TypeScript)
+mobile/   Expo / React Native uygulaması — yolcu ve sürücü modları; iOS, Android ve web (TypeScript)
 ```
 
 ## Sunucuyu çalıştırma
@@ -54,6 +54,7 @@ Ortam değişkenleri (hepsi opsiyonel):
 | `TWILIO_FROM` | — | SMS gönderen numara (Twilio'dan alınan) |
 | `NODE_ENV` | — | `production` iken varsayılan JWT anahtarı/admin şifresiyle sunucu **başlamaz**; OTP kodu yanıtta dönmez |
 | `TRUST_PROXY` | — | `1`: ters proxy (nginx vb.) arkasında gerçek istemci IP'sini kullan (hız sınırları için) |
+| `ULAK_WEB_DIR` | `../mobile/dist` | Web sürümü paketi (`npm run build:web` çıktısı); dizin varsa sunucu kökte (`/`) sunar |
 
 ## Türkiye desteği
 
@@ -120,8 +121,8 @@ yönetici hesabıyla giriş yapın. Panelden yapabilecekleriniz:
 
 ## Mobil uygulama (iOS + Android)
 
-Uygulama **tek kod tabanından hem iOS hem Android** için derlenir (Expo / React
-Native). Her iki platformun paketlemesi de doğrulanmıştır.
+Uygulama **tek kod tabanından iOS, Android ve web** için derlenir (Expo / React
+Native). Üç platformun paketlemesi de doğrulanmıştır; web sürümü için aşağıdaki bölüme bakın.
 
 ### Geliştirme (Expo Go ile)
 
@@ -174,6 +175,47 @@ eas build --platform all --profile production     # ikisi birden
 
 Aynı uygulama iki modda çalışır: **yolcu** hesabıyla girince harita + çağrı ekranı,
 **sürücü** hesabıyla girince çağrı kabul + kazanç ekranları açılır.
+
+## Web sürümü (tarayıcı / PC)
+
+Aynı uygulama tarayıcıda da çalışır: yolcu, sürücü ve üyeliksiz harita ekranlarının
+tamamı tek kod tabanındandır. Harita web'de **Leaflet + OpenStreetMap** ile çizilir
+(API anahtarı gerekmez); iOS/Android'de react-native-maps kullanılmaya devam eder.
+Ekranlar yalnızca `mobile/src/components/map` altındaki ortak sözleşmeyi kullanır;
+Metro, web için `index.web.tsx`'i, telefonda `index.tsx`'i seçer.
+
+**Geliştirme** (canlı yenileme, sunucu ayrı portta):
+
+```bash
+cd server && npm run dev          # API: http://localhost:4000
+cd mobile && npm run web          # http://localhost:8081 — API adresini otomatik bulur (aynı makine:4000)
+```
+
+**Üretim / PC'de tek adres** — paket sunucuya kopyalanmaz, sunucu `mobile/dist`'i doğrudan sunar:
+
+```bash
+cd mobile && npm run build:web    # expo export --platform web → mobile/dist
+cd server && npm run dev          # http://localhost:4000 → web uygulaması, /admin → panel
+```
+
+Sunucu `mobile/dist/index.html`'i bulursa kökte (`/`) sunar, uzantısız yollar
+`index.html`'e düşer (yenileme / derin bağlantı), `/api` ve `/admin` etkilenmez.
+Özetli paket dosyaları (`_expo/…-<hash>.js`) bir yıl önbelleklenir, `index.html`
+her açılışta doğrulanır. Başka bir dizin için `ULAK_WEB_DIR`. Web sayfası kendi
+CSP'siyle gelir (yalnızca kendi betikleri, OSM karoları, Nominatim ve aynı köken
+API/Socket.IO) ve `Permissions-Policy` konum erişimine yalnızca web uygulamasında izin verir.
+
+Web'e özgü davranışlar:
+
+- **Konum:** tarayıcı izni kullanılır; Chrome/Safari konumu yalnızca `localhost` veya
+  **HTTPS** üzerinde verir. LAN IP'sinden `http://` ile açılınca konum alınamaz,
+  harita Lefkoşa merkezli kalır (sürücü modunda çevrimiçi olmak için HTTPS gerekir).
+- **Uyarılar:** `Alert.alert` web'de yoktur; onay kutuları tarayıcının `confirm`/`alert`
+  diyaloglarıyla gösterilir (`mobile/src/lib/alert.ts`).
+- **Araç ikonu ve takip kamerası** web'de de çalışır: ikon rota köşelerinden geçerek
+  kayar, yöne döner; kaydırma/tekerlek takibi durdurur, "Sürücüyü takip et" sürdürür.
+- API adresi: sayfa Metro'dan (8081) geliyorsa `http://<aynı makine>:4000`, sunucudan
+  geliyorsa aynı köken; `EXPO_PUBLIC_API_URL` her ikisini de geçersiz kılar.
 
 ## API özeti
 
@@ -316,6 +358,7 @@ curl -s -X POST localhost:4000/api/admin/drivers/2/approve -H "Authorization: Be
 - [ ] Kart ile ödeme + otomatik komisyon kesintisi
 - [x] Gerçek yol rotası ve süre tahmini (OSRM), yöne göre dönen araç ikonu, takip kamerası
 - [x] Yolculuğu istediğin an ücretsiz bitirme (yolcu ve sürücü)
+- [x] Web sürümü (tarayıcı/PC): Leaflet haritası, sunucudan tek adresle sunum
 - [ ] Anlık bildirimler (Expo Push)
 - [ ] Sürücü belge yükleme (ruhsat/ehliyet fotoğrafı)
 

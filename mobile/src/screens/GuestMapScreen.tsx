@@ -1,7 +1,7 @@
 import * as Location from 'expo-location';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import MapView from 'react-native-maps';
+import { MapView, type MapHandle } from '../components/map';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { api } from '../api/client';
@@ -22,7 +22,7 @@ const REFRESH_MS = 10_000;
 
 /** Üyelik gerektirmeyen harita: çevredeki çevrimiçi taksileri gösterir. */
 export default function GuestMapScreen({ navigation }: Props) {
-  const mapRef = useRef<MapView>(null);
+  const mapRef = useRef<MapHandle>(null);
   const [center, setCenter] = useState(KKTC_CENTER);
   const [drivers, setDrivers] = useState<NearbyDriver[]>([]);
   const [error, setError] = useState('');

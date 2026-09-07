@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text } from 'react-native';
+import { showAlert } from '../lib/alert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '../api/client';
 import OtpStep from '../components/OtpStep';
@@ -20,7 +21,7 @@ export default function RegisterScreen() {
 
   function goToVerification() {
     if (name.trim().length < 2 || cleanPhone.length < 10 || password.length < 6) {
-      Alert.alert(
+      showAlert(
         'Eksik bilgi',
         'Ad soyad, geçerli bir telefon numarası ve en az 6 karakterli bir şifre girin.',
       );
@@ -40,7 +41,7 @@ export default function RegisterScreen() {
       });
       await signIn(res.token, res.user);
     } catch (e) {
-      Alert.alert('Kayıt başarısız', e instanceof Error ? e.message : 'Bir hata oluştu');
+      showAlert('Kayıt başarısız', e instanceof Error ? e.message : 'Bir hata oluştu');
       setStep('form');
     } finally {
       setBusy(false);

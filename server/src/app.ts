@@ -1,5 +1,6 @@
+import { existsSync } from 'node:fs';
 import path from 'node:path';
-import express, { type Express, type NextFunction, type Request, type Response } from 'express';
+import express, { type Express, type NextFunction, type Request, type RequestHandler, type Response } from 'express';
 import cors from 'cors';
 import bcrypt from 'bcryptjs';
 import { config } from './config.js';
@@ -28,6 +29,8 @@ export interface AppOptions {
   smsSender?: SmsSender;
   /** Yalnızca testler için: 404 ve hata yakalayıcıdan önce ek rotalar bağlar. */
   testRoutes?: (app: Express) => void;
+  /** Web uygulaması dizini (varsayılan config.webDir); null → web sunulmaz. Testler geçici dizin verir. */
+  webDir?: string | null;
 }
 
 /** Express uygulamasını kurar. Test ve prod aynı yolu kullanır. */
@@ -63,6 +66,13 @@ export function createApp(db: Db, options: AppOptions = {}): AppContext {
   // Yönetim paneli: /admin altında statik olarak sunulur (giriş panel içinde yapılır)
   app.use('/admin', express.static(path.join(import.meta.dirname, '..', 'public', 'admin')));
 
+  // Web uygulaması: mobile/dist (npm run build:web) varsa kökte sunulur; yoksa kök 404 döner
+  const webDir = options.webDir === undefined ? config.webDir : options.webDir;
+  if (webDir && existsSync(path.join(webDir, 'index.html'))) {
+    app.use(express.static(webDir, { index: 'index.html', setHeaders: webCacheHeaders }));
+    app.use(spaFallback(path.join(webDir, 'index.html')));
+  }
+
   options.testRoutes?.(app);
 
   app.use((_req, res) => {
@@ -72,6 +82,40 @@ export function createApp(db: Db, options: AppOptions = {}): AppContext {
   app.use(errorHandler);
 
   return { app, hub, matcher };
+}
+
+/**
+ * Web paketi önbelleği: Expo çıktısındaki dosya adları içerik özetlidir (`_expo/…-<hash>.js`),
+ * uzun süre önbellekte kalabilir; index.html her açılışta yeniden doğrulanır ki yeni derleme görülsün.
+ */
+function webCacheHeaders(res: Response, filePath: string): void {
+  if (filePath.endsWith('index.html')) res.setHeader('Cache-Control', 'no-cache');
+  else if (filePath.includes(`${path.sep}_expo${path.sep}`)) {
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+  }
+}
+
+/**
+ * Tek sayfa uygulaması geri dönüşü: uzantısız GET yolları (yenileme, derin bağlantı) index.html'e
+ * düşer. API ve yönetim paneli yolları ile dosya istekleri (uzantılı) etkilenmez → JSON 404.
+ */
+function spaFallback(indexFile: string): RequestHandler {
+  return (req, res, next) => {
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      next();
+      return;
+    }
+    if (req.path.startsWith('/api') || req.path.startsWith('/admin') || path.extname(req.path) !== '') {
+      next();
+      return;
+    }
+    if (!req.accepts('html')) {
+      next();
+      return;
+    }
+    res.setHeader('Cache-Control', 'no-cache');
+    res.sendFile(indexFile);
+  };
 }
 
 /**

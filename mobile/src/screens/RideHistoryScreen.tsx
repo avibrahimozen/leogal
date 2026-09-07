@@ -1,6 +1,7 @@
 import { useFocusEffect } from '@react-navigation/native';
 import React, { useCallback, useState } from 'react';
-import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { showAlert } from '../lib/alert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '../api/client';
 import { RatingSheet } from '../components/RatingSheet';
@@ -47,7 +48,7 @@ export default function RideHistoryScreen() {
         const res = await api.post<{ ride: Ride }>(`/rides/${ratingRide.id}/rate`, { rating, comment: comment || undefined });
         setRides((prev) => prev.map((r) => (r.id === res.ride.id ? res.ride : r)));
       } catch (e) {
-        Alert.alert('Puan kaydedilemedi', e instanceof Error ? e.message : 'Bir hata oluştu');
+        showAlert('Puan kaydedilemedi', e instanceof Error ? e.message : 'Bir hata oluştu');
       }
       setRatingRide(null);
     },

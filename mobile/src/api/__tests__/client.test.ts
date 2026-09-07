@@ -39,6 +39,33 @@ describe('resolveApiUrl', () => {
     expect(resolveApiUrl({ hostUri: '127.0.0.1:8081' })).toBe(DEFAULT_API_URL);
   });
 
+  it('web: Metro geliştirme sunucusundan açıldıysa aynı makinenin 4000 portu', () => {
+    expect(resolveApiUrl({ webLocation: { protocol: 'http:', hostname: 'localhost', port: '8081' } })).toBe(
+      'http://localhost:4000',
+    );
+    expect(resolveApiUrl({ webLocation: { protocol: 'http:', hostname: '192.168.1.5', port: '8081' } })).toBe(
+      'http://192.168.1.5:4000',
+    );
+  });
+
+  it('web: API sunucusunun kendisinden sunuluyorsa aynı köken (port ve protokol korunur)', () => {
+    expect(resolveApiUrl({ webLocation: { protocol: 'http:', hostname: '192.168.1.5', port: '4000' } })).toBe(
+      'http://192.168.1.5:4000',
+    );
+    expect(resolveApiUrl({ webLocation: { protocol: 'https:', hostname: 'ulak.example.com', port: '' } })).toBe(
+      'https://ulak.example.com',
+    );
+  });
+
+  it('web: EXPO_PUBLIC_API_URL sayfa adresinden önce gelir', () => {
+    expect(
+      resolveApiUrl({
+        explicitUrl: 'https://api.ulak.app',
+        webLocation: { protocol: 'http:', hostname: 'localhost', port: '8081' },
+      }),
+    ).toBe('https://api.ulak.app');
+  });
+
   it('hiçbir girdi yoksa varsayılan adres', () => {
     expect(resolveApiUrl({})).toBe(DEFAULT_API_URL);
     expect(DEFAULT_API_URL).toBe('http://localhost:4000');

@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Linking, Modal, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
-import MapView, { Marker, Polyline } from 'react-native-maps';
+import { Linking, Modal, Platform, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { openAppSettings, showAlert } from '../../lib/alert';
+import { MapView, Marker, Polyline, type MapHandle } from '../../components/map';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '../../api/client';
 import { getSocket } from '../../api/socket';
@@ -52,7 +53,7 @@ export default function DriverHomeScreen() {
   const [legOrigin, setLegOrigin] = useState<LatLng | null>(null);
   const locationGranted = useLocationPermission();
   const insets = useSafeAreaInsets();
-  const mapRef = useRef<MapView>(null);
+  const mapRef = useRef<MapHandle>(null);
   const { centerOnMe, locating } = useCenterOnMe(mapRef);
 
   const approved = user?.driver?.status === 'approved';
@@ -76,9 +77,9 @@ export default function DriverHomeScreen() {
       fetchEndedRide(previous.id).then((ended) => {
         if (ended?.status !== 'cancelled') return;
         if (ended.cancelReason === 'passenger_cancelled') {
-          Alert.alert('Çağrı iptal edildi', 'Yolcu çağrıyı iptal etti.');
+          showAlert('Çağrı iptal edildi', 'Yolcu çağrıyı iptal etti.');
         } else if (ended.cancelReason === 'passenger_ended') {
-          Alert.alert('Yolcu yolculuğu bitirdi', 'Yolculuk sona erdi; ücret ve komisyon işlenmedi.');
+          showAlert('Yolcu yolculuğu bitirdi', 'Yolculuk sona erdi; ücret ve komisyon işlenmedi.');
         }
       });
     },
@@ -103,9 +104,9 @@ export default function DriverHomeScreen() {
       const { ride: next, event } = applyDriverRideUpdate(rideRef.current, payload);
       applyRide(next);
       if (event === 'passenger_cancelled') {
-        Alert.alert('Çağrı iptal edildi', 'Yolcu çağrıyı iptal etti.');
+        showAlert('Çağrı iptal edildi', 'Yolcu çağrıyı iptal etti.');
       } else if (event === 'passenger_ended') {
-        Alert.alert('Yolcu yolculuğu bitirdi', 'Yolculuk sona erdi; ücret ve komisyon işlenmedi.');
+        showAlert('Yolcu yolculuğu bitirdi', 'Yolculuk sona erdi; ücret ve komisyon işlenmedi.');
       }
     };
     const onDriverStatus = () => {
@@ -178,7 +179,14 @@ export default function DriverHomeScreen() {
       // Konum izni olmadan çevrimiçi olmak anlamsız: çağrı eşleştirme konuma dayanır
       const permission = await Location.requestForegroundPermissionsAsync().catch(() => null);
       if (!permission?.granted) {
-        Alert.alert(
+        if (Platform.OS === 'web') {
+          showAlert(
+            'Konum izni gerekli',
+            'Çevrimiçi olup çağrı alabilmek için konum iznine ihtiyaç var. Tarayıcının adres çubuğundan izin ver ve sayfayı yenile.',
+          );
+          return;
+        }
+        showAlert(
           'Konum izni gerekli',
           "Çevrimiçi olup çağrı alabilmek için konum iznine ihtiyaç var. Ayarlar'dan izin ver.",
           [
@@ -186,7 +194,7 @@ export default function DriverHomeScreen() {
             {
               text: "Ayarlar'ı Aç",
               onPress: () => {
-                Linking.openSettings().catch(() => {});
+                openAppSettings();
               },
             },
           ],
@@ -198,7 +206,7 @@ export default function DriverHomeScreen() {
       await api.post('/driver/status', { online: value });
       setOnline(value);
     } catch (e) {
-      Alert.alert('Olmadı', e instanceof Error ? e.message : 'Bir hata oluştu');
+      showAlert('Olmadı', e instanceof Error ? e.message : 'Bir hata oluştu');
     }
   }, []);
 
@@ -211,7 +219,7 @@ export default function DriverHomeScreen() {
       setOffer(null);
     } catch (e) {
       setOffer(null);
-      Alert.alert('Çağrı kaçtı', e instanceof Error ? e.message : 'Çağrı başka sürücüye gitti');
+      showAlert('Çağrı kaçtı', e instanceof Error ? e.message : 'Çağrı başka sürücüye gitti');
     } finally {
       setBusy(false);
     }
@@ -231,7 +239,7 @@ export default function DriverHomeScreen() {
         applyRide(res.ride);
       }
     } catch (e) {
-      Alert.alert('Olmadı', e instanceof Error ? e.message : 'Bir hata oluştu');
+      showAlert('Olmadı', e instanceof Error ? e.message : 'Bir hata oluştu');
     } finally {
       setBusy(false);
     }
@@ -239,7 +247,7 @@ export default function DriverHomeScreen() {
 
   const cancelRide = useCallback(async () => {
     if (!ride) return;
-    Alert.alert('Çağrıyı iptal et', 'Bu çağrıyı iptal etmek istediğine emin misin?', [
+    showAlert('Çağrıyı iptal et', 'Bu çağrıyı iptal etmek istediğine emin misin?', [
       { text: 'Vazgeç', style: 'cancel' },
       {
         text: 'İptal Et',
@@ -249,7 +257,7 @@ export default function DriverHomeScreen() {
             await api.post(`/rides/${ride.id}/cancel`);
             applyRide(null);
           } catch (e) {
-            Alert.alert('Olmadı', e instanceof Error ? e.message : 'Bir hata oluştu');
+            showAlert('Olmadı', e instanceof Error ? e.message : 'Bir hata oluştu');
           }
         },
       },
@@ -259,7 +267,7 @@ export default function DriverHomeScreen() {
   /** Yolculuk sırasında bitirme: ücret ve komisyon işlenmez (ücret için "Yolculuğu Tamamla"). */
   const endRide = useCallback(async () => {
     if (!ride) return;
-    Alert.alert(
+    showAlert(
       'Yolculuğu bitir',
       "Yolculuk ücretsiz sona erecek: ücret ve komisyon işlenmez. Ücret almak için 'Yolculuğu Tamamla' kullan.",
       [
@@ -272,7 +280,7 @@ export default function DriverHomeScreen() {
               await api.post(`/rides/${ride.id}/cancel`);
               applyRide(null);
             } catch (e) {
-              Alert.alert('Olmadı', e instanceof Error ? e.message : 'Bir hata oluştu');
+              showAlert('Olmadı', e instanceof Error ? e.message : 'Bir hata oluştu');
             }
           },
         },

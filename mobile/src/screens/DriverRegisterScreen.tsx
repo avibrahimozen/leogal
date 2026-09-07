@@ -1,17 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-  Alert,
-  FlatList,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { showAlert } from '../lib/alert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '../api/client';
 import OtpStep from '../components/OtpStep';
@@ -88,11 +77,11 @@ export default function DriverRegisterScreen() {
       vehiclePlate.trim().length < 3 ||
       vehicleModel.trim().length < 2
     ) {
-      Alert.alert('Eksik bilgi', 'Tüm alanları eksiksiz doldurun (şifre en az 6 karakter).');
+      showAlert('Eksik bilgi', 'Tüm alanları eksiksiz doldurun (şifre en az 6 karakter).');
       return;
     }
     if (!city) {
-      Alert.alert('Şehir seçilmedi', `${COUNTRY_NAMES[country]} içinde çalıştığın şehri seç.`);
+      showAlert('Şehir seçilmedi', `${COUNTRY_NAMES[country]} içinde çalıştığın şehri seç.`);
       return;
     }
     setStep('otp');
@@ -113,12 +102,12 @@ export default function DriverRegisterScreen() {
         verificationToken,
       });
       await signIn(res.token, res.user);
-      Alert.alert(
+      showAlert(
         'Başvurun alındı 🚕',
         'Sürücü hesabın onay bekliyor. Belgelerin incelendikten sonra çevrimiçi olabileceksin.',
       );
     } catch (e) {
-      Alert.alert('Kayıt başarısız', e instanceof Error ? e.message : 'Bir hata oluştu');
+      showAlert('Kayıt başarısız', e instanceof Error ? e.message : 'Bir hata oluştu');
       setStep('form');
     } finally {
       setBusy(false);

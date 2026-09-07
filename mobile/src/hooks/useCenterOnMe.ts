@@ -1,7 +1,8 @@
 import * as Location from 'expo-location';
 import { useCallback, useState, type RefObject } from 'react';
-import { Alert, Linking } from 'react-native';
-import type MapView from 'react-native-maps';
+import { Platform } from 'react-native';
+import { openAppSettings, showAlert } from '../lib/alert';
+import type { MapHandle } from '../components/map';
 
 export type LatLng = { lat: number; lng: number };
 
@@ -10,7 +11,7 @@ export type LatLng = { lat: number; lng: number };
  * yakınlaştırır ve isteğe bağlı olarak ekrana konumu bildirir. İzin yoksa Ayarlar'a
  * yönlendiren bir uyarı gösterir. `locating` düğmede bekleme göstergesi için.
  */
-export function useCenterOnMe(mapRef: RefObject<MapView | null>, onLocated?: (coords: LatLng) => void) {
+export function useCenterOnMe(mapRef: RefObject<MapHandle | null>, onLocated?: (coords: LatLng) => void) {
   const [locating, setLocating] = useState(false);
 
   const centerOnMe = useCallback(async () => {
@@ -19,12 +20,16 @@ export function useCenterOnMe(mapRef: RefObject<MapView | null>, onLocated?: (co
     try {
       const permission = await Location.requestForegroundPermissionsAsync();
       if (!permission.granted) {
-        Alert.alert('Konum izni gerekli', "Konumuna gidebilmek için Ayarlar'dan konum izni ver.", [
+        if (Platform.OS === 'web') {
+          showAlert('Konum izni gerekli', 'Tarayıcının adres çubuğundan bu site için konum iznini aç ve sayfayı yenile.');
+          return;
+        }
+        showAlert('Konum izni gerekli', "Konumuna gidebilmek için Ayarlar'dan konum izni ver.", [
           { text: 'Vazgeç', style: 'cancel' },
           {
             text: "Ayarlar'ı Aç",
             onPress: () => {
-              Linking.openSettings().catch(() => {});
+              openAppSettings();
             },
           },
         ]);
@@ -38,7 +43,7 @@ export function useCenterOnMe(mapRef: RefObject<MapView | null>, onLocated?: (co
       );
       onLocated?.(coords);
     } catch {
-      Alert.alert('Konum alınamadı', 'GPS sinyali yok ya da konum servisleri kapalı görünüyor.');
+      showAlert('Konum alınamadı', 'GPS sinyali yok ya da konum servisleri kapalı görünüyor.');
     } finally {
       setLocating(false);
     }

@@ -1,3 +1,4 @@
+import path from 'node:path';
 import type { CountryCode } from './lib/regions.js';
 /**
  * Varsayılan gizli değerler — yalnızca yerel geliştirme içindir.
@@ -52,6 +53,11 @@ export const config = {
     lowRatingThreshold: 3.5,
     lowRatingPenaltyKm: 3,
   },
+  /**
+   * Web uygulaması: mobile klasöründe `npm run build:web` çıktısı (mobile/dist). Dizin varsa
+   * sunucu onu kökte (/) sunar; ULAK_WEB_DIR ile başka bir dizin verilebilir. Yoksa kök 404 döner.
+   */
+  webDir: process.env.ULAK_WEB_DIR ?? path.resolve(import.meta.dirname, '..', '..', 'mobile', 'dist'),
   adminPhone: process.env.ULAK_ADMIN_PHONE ?? '+903920000000',
   adminPassword: process.env.ULAK_ADMIN_PASSWORD ?? DEFAULT_ADMIN_PASSWORD,
   // SMS / OTP telefon doğrulama

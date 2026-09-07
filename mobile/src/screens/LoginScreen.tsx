@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text } from 'react-native';
+import { showAlert } from '../lib/alert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '../api/client';
 import { Button, Field } from '../components/ui';
@@ -15,7 +16,7 @@ export default function LoginScreen() {
 
   async function handleLogin() {
     if (!phone || !password) {
-      Alert.alert('Eksik bilgi', 'Telefon numaranızı ve şifrenizi girin.');
+      showAlert('Eksik bilgi', 'Telefon numaranızı ve şifrenizi girin.');
       return;
     }
     setBusy(true);
@@ -26,7 +27,7 @@ export default function LoginScreen() {
       });
       await signIn(res.token, res.user);
     } catch (e) {
-      Alert.alert('Giriş başarısız', e instanceof Error ? e.message : 'Bir hata oluştu');
+      showAlert('Giriş başarısız', e instanceof Error ? e.message : 'Bir hata oluştu');
     } finally {
       setBusy(false);
     }
