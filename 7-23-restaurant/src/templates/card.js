@@ -1,6 +1,5 @@
 // Basılabilir masa kartları: A6 (105 × 148 mm), logo, slogan, QR menü, telefon, saatler, adres.
-// Tek şablon üç dosya üretir: numarasız kart, 1..N masa numaralı kartlar ve A4 kâğıda 2'li yerleşim.
-// Baskı sayfaları 3 mm taşma payı ve 3 mm kesim işareti alanı taşır (117 × 160 mm sayfa, net 105 × 148 mm).
+// Tek şablon üç dosya üretir: numarasız kart, 1..N masa numaralı kartlar ve A4 kâğıda 4'lü yerleşim.
 // Yazı tipleri ve QR kod dosyaya gömülüdür; kart internet olmadan da aynı basılır.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -10,15 +9,9 @@ import { esc } from '../lib/seo.js';
 const FONTS_DIR = join(ASSETS_DIR, 'fonts');
 const QR_FILE = join(ASSETS_DIR, '..', '..', 'qr', 'menu-qr.svg');
 
-/** Baskı ölçüleri (mm). */
-export const PRINT = { w: 105, h: 148, bleed: 3, slug: 3 };
-const PAGE_W = PRINT.w + 2 * (PRINT.bleed + PRINT.slug); // 117
-const PAGE_H = PRINT.h + 2 * (PRINT.bleed + PRINT.slug); // 160
-
 // Kart yalnızca Türkçe basılır; metinler burada.
 const T = {
   title: 'Masa Kartı',
-  plural: 'Masa Kartları',
   scan: 'Menü için okutun',
   table: 'Masa',
   delivery: 'Alo Paket',
@@ -28,24 +21,19 @@ const T = {
 
 const LATIN = 'U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD';
 const LATIN_EXT = 'U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF';
-// Google Fonts kaynaklı woff2 dosyaları (SIL Open Font License). Source Sans 3 statik örnekler olarak gömülür;
-// değişken yazı tipi PDF'e gerçek font olarak gömülemiyor (Chromium Type3 dış çizgiye düşürüyor).
+// Google Fonts'tan alınan woff2 dosyaları (SIL Open Font License). Source Sans 3 değişken yazı tipidir (200–900).
 const FONTS = [
-  ['Bebas Neue', '400', 'normal', 'bebas-neue-400-latin-ext.woff2', LATIN_EXT],
-  ['Bebas Neue', '400', 'normal', 'bebas-neue-400-latin.woff2', LATIN],
-  ['Source Sans 3', '400', 'normal', 'source-sans-3-400-latin-ext.woff2', LATIN_EXT],
-  ['Source Sans 3', '400', 'normal', 'source-sans-3-400-latin.woff2', LATIN],
-  ['Source Sans 3', '400', 'italic', 'source-sans-3-400i-latin-ext.woff2', LATIN_EXT],
-  ['Source Sans 3', '400', 'italic', 'source-sans-3-400i-latin.woff2', LATIN],
-  ['Source Sans 3', '600', 'normal', 'source-sans-3-600-latin-ext.woff2', LATIN_EXT],
-  ['Source Sans 3', '600', 'normal', 'source-sans-3-600-latin.woff2', LATIN],
+  ['Bebas Neue', '400', 'bebas-neue-400-latin-ext.woff2', LATIN_EXT],
+  ['Bebas Neue', '400', 'bebas-neue-400-latin.woff2', LATIN],
+  ['Source Sans 3', '200 900', 'source-sans-3-latin-ext.woff2', LATIN_EXT],
+  ['Source Sans 3', '200 900', 'source-sans-3-latin.woff2', LATIN],
 ];
 
 let fontCss = null;
 function fonts() {
-  fontCss ??= FONTS.map(([family, weight, style, file, range]) => {
+  fontCss ??= FONTS.map(([family, weight, file, range]) => {
     const b64 = readFileSync(join(FONTS_DIR, file)).toString('base64');
-    return `@font-face { font-family: '${family}'; font-style: ${style}; font-weight: ${weight}; font-display: block; src: url(data:font/woff2;base64,${b64}) format('woff2'); unicode-range: ${range}; }`;
+    return `@font-face { font-family: '${family}'; font-style: normal; font-weight: ${weight}; font-display: block; src: url(data:font/woff2;base64,${b64}) format('woff2'); unicode-range: ${range}; }`;
   }).join('\n');
   return fontCss;
 }
@@ -73,9 +61,9 @@ const CARD_CSS = `
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; }
-  body { font-family: var(--body); color: var(--komur); font-synthesis: none; }
+  body { font-family: var(--body); color: var(--komur); }
   .card {
-    width: ${PRINT.w}mm; height: ${PRINT.h}mm; background: #fff; overflow: hidden; position: relative;
+    width: 105mm; height: 148mm; background: #fff; overflow: hidden; position: relative;
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
     display: grid; grid-template-rows: auto 1fr auto; text-align: center;
   }
@@ -83,7 +71,7 @@ const CARD_CSS = `
   .top .logo { width: 29mm; height: auto; display: block; }
   .top .slogan { font-size: 4mm; line-height: 1.2; font-style: italic; color: #a89f94; margin: 0; }
   .top .slogan b { color: var(--pide); font-style: normal; font-weight: 600; }
-  /* Masa numarası: başlığın alt kenarına oturan sarı rozet; üst kısmı koyu, alt kısmı beyaz zeminde. */
+  /* Masa numarası: başlığın alt kenarına oturan sarı rozet; yarısı koyu, yarısı beyaz zeminde. */
   .top .masa {
     position: relative; z-index: 1; margin: 0.8mm 0 -8.6mm;
     display: inline-grid; grid-auto-flow: column; align-items: baseline; gap: 2mm;
@@ -91,12 +79,12 @@ const CARD_CSS = `
     border: 0.6mm solid #fff; border-radius: 2.4mm; font-family: var(--display); line-height: 1;
   }
   .top .masa .k { font-size: 5mm; letter-spacing: .14em; }
-  .top .masa .n { font-size: 10.5mm; letter-spacing: .02em; }
+  .top .masa .n { font-size: 10.5mm; letter-spacing: .02em; font-variant-numeric: tabular-nums; }
   .mid { display: grid; align-content: center; justify-items: center; gap: 3mm; padding: 3mm 8mm; min-height: 0; }
   .card[data-table] .mid { padding-top: 10mm; }
-  /* "rakam" biçemi: rozette yalnızca büyük numara, "Masa" yazısı yok; rozet her numarada aynı genişlikte. */
+  /* "rakam" biçemi: rozette yalnızca büyük numara, "Masa" yazısı yok. */
   .card[data-style="rakam"] .top .logo { width: 27mm; }
-  .card[data-style="rakam"] .masa { margin-bottom: -12mm; padding: 1.2mm 6mm 0.6mm; min-width: 26mm; justify-content: center; }
+  .card[data-style="rakam"] .masa { margin-bottom: -12mm; padding: 1.2mm 6mm 0.6mm; min-width: 24mm; justify-content: center; }
   .card[data-style="rakam"] .masa .n { font-size: 15mm; }
   .card[data-style="rakam"] .mid { padding-top: 13.5mm; gap: 2.5mm; }
   .card[data-style="rakam"] .mid .qr { width: 40mm; height: 40mm; }
@@ -106,15 +94,6 @@ const CARD_CSS = `
   .bot .k { font-size: 3.1mm; letter-spacing: .16em; text-transform: uppercase; color: var(--kul); }
   .bot .v { font-family: var(--display); font-size: 8.2mm; line-height: 1; letter-spacing: .05em; white-space: nowrap; }
   .bot .h { font-size: 3.1mm; color: var(--kul); line-height: 1.3; }
-
-  /* Baskı sayfası: kesim işareti alanı (${PRINT.slug} mm) + taşma payı (${PRINT.bleed} mm) + kart. Koyu başlık taşma payına kadar uzar. */
-  .print { position: relative; width: ${PAGE_W}mm; height: ${PAGE_H}mm; background: #fff; overflow: hidden; }
-  .print .bleed { position: absolute; left: ${PRINT.slug}mm; top: ${PRINT.slug}mm; width: ${PAGE_W - 2 * PRINT.slug}mm; height: ${PAGE_H - 2 * PRINT.slug}mm; overflow: hidden; background: #fff; }
-  .print .card { position: absolute; left: ${PRINT.bleed}mm; top: ${PRINT.bleed}mm; overflow: visible; }
-  .print .top { margin: -${PRINT.bleed}mm -${PRINT.bleed}mm 0; padding: ${4.5 + PRINT.bleed}mm ${8 + PRINT.bleed}mm 3.5mm; }
-  .print .m { position: absolute; background: #141210; }
-  .print .m.h { width: ${PRINT.slug - 0.5}mm; height: 0.15mm; }
-  .print .m.v { height: ${PRINT.slug - 0.5}mm; width: 0.15mm; }
 `;
 
 function slogan(text) {
@@ -149,21 +128,6 @@ export function card(data, { table = null, style = 'masa' } = {}) {
 </div>`;
 }
 
-/** Kesim işaretleri: net kart köşelerinin hizasında, kesim işareti alanında sekiz kısa çizgi. */
-function marks() {
-  const o = PRINT.slug + PRINT.bleed;
-  const xs = [o, o + PRINT.w], ys = [o, o + PRINT.h];
-  const out = [];
-  for (const y of ys) for (const left of [0, PAGE_W - (PRINT.slug - 0.5)]) out.push(`<i class="m h" style="top:${y - 0.075}mm;left:${left}mm"></i>`);
-  for (const x of xs) for (const top of [0, PAGE_H - (PRINT.slug - 0.5)]) out.push(`<i class="m v" style="left:${x - 0.075}mm;top:${top}mm"></i>`);
-  return out.join('');
-}
-
-/** Baskı sayfası: taşma payı ve kesim işaretleriyle tek kart. */
-function printPage(data, opts) {
-  return `<section class="print">\n<div class="bleed">\n${card(data, opts)}\n</div>\n${marks()}\n</section>`;
-}
-
 function doc({ title, css, body }) {
   return `<!DOCTYPE html>
 <html lang="tr">
@@ -185,29 +149,26 @@ ${body}
 }
 
 const A6_CSS = `
-  /* Her sayfada bir kart: ${PAGE_W} × ${PAGE_H} mm sayfa, kesim işaretlerinden kesilince ${PRINT.w} × ${PRINT.h} mm. Ekranda yan yana önizlenir. */
-  @page { size: ${PAGE_W}mm ${PAGE_H}mm; margin: 0; }
+  /* Her sayfada bir kart (A6 dikey). Ekranda kartlar yan yana önizlenir. */
+  @page { size: 105mm 148mm; margin: 0; }
   body { background: #4a4440; padding: 24px; display: flex; flex-wrap: wrap; justify-content: center; gap: 24px; }
-  .print { box-shadow: 0 12px 40px rgba(0,0,0,.35); }
+  .page { width: 105mm; height: 148mm; box-shadow: 0 12px 40px rgba(0,0,0,.35); }
   @media print {
     body { background: #fff; padding: 0; display: block; }
-    .print { box-shadow: none; page-break-after: always; break-after: page; }
-    .print:last-child { page-break-after: auto; break-after: auto; }
+    .page { box-shadow: none; page-break-after: always; break-after: page; }
+    .page:last-child { page-break-after: auto; break-after: auto; }
   }
 `;
 
-const SHEET_GAP_X = (210 - PAGE_H) / 2;      // yatay çevrilmiş kartın yanlarındaki boşluk
-const SHEET_GAP_Y = (297 - 2 * PAGE_W) / 2;  // üst ve alt boşluk
 const A4_CSS = `
-  /* A4 kâğıda iki kart: kartlar yatay çevrilir, çevrelerinde ${SHEET_GAP_X.toFixed(1)} mm yan ve ${SHEET_GAP_Y.toFixed(1)} mm üst-alt boşluk kalır,
-     böylece ofis yazıcılarının basamadığı kenar bandı karta denk gelmez. */
+  /* A4 kâğıda 4 kart (2 × 2); kesim çizgileri kartların arasındadır. */
   @page { size: 210mm 297mm; margin: 0; }
   body { background: #4a4440; padding: 24px; display: grid; justify-content: center; gap: 24px; }
-  .sheet { position: relative; width: 210mm; height: 297mm; background: #fff; box-shadow: 0 12px 40px rgba(0,0,0,.35); overflow: hidden; }
-  .slot { position: absolute; left: ${SHEET_GAP_X}mm; width: ${PAGE_H}mm; height: ${PAGE_W}mm; }
-  .slot:nth-child(1) { top: ${SHEET_GAP_Y}mm; }
-  .slot:nth-child(2) { top: ${SHEET_GAP_Y + PAGE_W}mm; }
-  .slot .print { transform-origin: 0 0; transform: translateX(${PAGE_H}mm) rotate(90deg); }
+  .sheet { position: relative; width: 210mm; height: 297mm; background: #fff; box-shadow: 0 12px 40px rgba(0,0,0,.35); display: grid; grid-template-columns: 105mm 105mm; grid-auto-rows: 148.5mm; align-content: start; }
+  .sheet .card { margin: 0.25mm 0 0; }
+  .sheet .cut { position: absolute; border: 0 dashed #9b9389; pointer-events: none; }
+  .sheet .cut.v { left: 105mm; top: 0; bottom: 0; border-left-width: 0.2mm; }
+  .sheet .cut.h { top: 148.5mm; left: 0; right: 0; border-top-width: 0.2mm; }
   @media print {
     body { background: #fff; padding: 0; display: block; }
     .sheet { box-shadow: none; page-break-after: always; break-after: page; }
@@ -215,19 +176,19 @@ const A4_CSS = `
   }
 `;
 
-/** Baskı belgesi: verilen masa numaralarının her biri için bir sayfa ([null] = numarasız tek kart). */
+/** A6 belge: verilen masa numaralarının her biri için bir sayfa ([null] = numarasız tek kart). */
 export function renderCards(data, { tables, style = 'masa' }) {
-  const title = tables.length === 1 && tables[0] == null ? `${T.title} · ${data.business.name}` : `${T.plural} 1–${tables.length} · ${data.business.name}`;
-  const body = tables.map((t) => printPage(data, { table: t, style })).join('\n');
+  const title = tables.length === 1 && tables[0] == null ? `${T.title} · ${data.business.name}` : `${T.title}ları 1–${tables.length} · ${data.business.name}`;
+  const body = tables.map((t) => `<section class="page">\n${card(data, { table: t, style })}\n</section>`).join('\n');
   return doc({ title, css: A6_CSS, body });
 }
 
-/** A4 belge: aynı kartlar sayfa başına iki tane, kenar boşluklu. */
+/** A4 belge: aynı kartlar sayfa başına dört tane. */
 export function renderSheets(data, { tables, style = 'masa' }) {
   const sheets = [];
-  for (let i = 0; i < tables.length; i += 2) {
-    const slots = tables.slice(i, i + 2).map((t) => `<div class="slot">\n${printPage(data, { table: t, style })}\n</div>`).join('\n');
-    sheets.push(`<section class="sheet">\n${slots}\n</section>`);
+  for (let i = 0; i < tables.length; i += 4) {
+    const cards = tables.slice(i, i + 4).map((t) => card(data, { table: t, style })).join('\n');
+    sheets.push(`<section class="sheet">\n${cards}\n<div class="cut v"></div><div class="cut h"></div>\n</section>`);
   }
-  return doc({ title: `${T.plural} A4 · ${data.business.name}`, css: A4_CSS, body: sheets.join('\n') });
+  return doc({ title: `${T.title}ları A4 · ${data.business.name}`, css: A4_CSS, body: sheets.join('\n') });
 }

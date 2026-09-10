@@ -129,21 +129,19 @@ Her üründe üç alan vardır:
 | `src/assets/` | Logo (açık ve koyu zemin sürümleri, SVG), sosyal paylaşım görseli `og.png` ve masa kartına gömülen yazı tipleri (`fonts/`). Logo ve görsel üretimde `assets/` altına kopyalanır. |
 | `src/build.js`, `src/dev.js`, `src/check.js`, `src/pdf.js` | Üretim, geliştirme sunucusu, kontrol, masa kartı PDF çıktısı. |
 | Depo kökünde `index.html`, `menu/`, `7-23-restaurant/index.html`, `404.html`, `sitemap.xml`, `robots.txt`, `CNAME` | **Üretilen** dosyalar; elle düzenlemeyin, `npm run build` ile yenileyin. |
-| `masa-karti.html`, `masa-kartlari.html`, `masa-kartlari-a4.html` | **Üretilen** masa kartları: numarasız tek kart, 1'den 30'a numaralı kartlar (her sayfada bir kart) ve aynı kartların A4 kâğıda 2'li yerleşimi. Taşma payı, kesim işaretleri, QR ve yazı tipleri gömülüdür. |
+| `masa-karti.html`, `masa-kartlari.html`, `masa-kartlari-a4.html` | **Üretilen** masa kartları: numarasız tek kart, 1'den 30'a numaralı kartlar (A6, her sayfada bir kart) ve aynı kartların A4 kâğıda 4'lü yerleşimi. QR ve yazı tipleri gömülüdür. |
 | `qr.html` | İstediğiniz adres için QR üretici. |
 | `qr/menu-qr.png`, `qr/menu-qr.svg` | `antalyagecedonercisi.com/menu/` adresinin QR kodu. Broşüre, tabelaya, sosyal medyaya. |
-| `qr/masa-karti.pdf`, `qr/masa-kartlari.pdf`, `qr/masa-kartlari-a4.pdf` | Baskıya hazır PDF'ler: numarasız kart (1 sayfa), numaralı kartlar (30 sayfa), A4 2'li yerleşim (15 sayfa). `qr/masa-karti.png` ve `qr/masa-karti-numarali.png` önizleme. |
+| `qr/masa-karti.pdf`, `qr/masa-kartlari.pdf`, `qr/masa-kartlari-a4.pdf` | Baskıya hazır PDF'ler: numarasız kart (1 sayfa), numaralı kartlar (A6, 30 sayfa), A4 4'lü yerleşim (8 sayfa). `qr/masa-karti.png` ve `qr/masa-karti-numarali.png` önizleme. |
 
 ## Masa kartları
 
 Kartlar `npm run build` ile `menu.json` verisinden üretilir; masa sayısı `tables` alanındadır (şu an 30). Sayıyı değiştirip `npm run build` çalıştırınca numaralı kartlar ve A4 yerleşimi yeniden üretilir; `npm test` kart sayısını ve 1'den N'e numaralandırmayı denetler. Rozet biçemi `tableCardStyle` alanındadır: `"masa"` rozette "MASA 12" yazar, `"rakam"` yalnızca büyük "12" gösterir.
 
-Kartın net ölçüsü 105 × 148 mm'dir (A6). Baskı sayfaları çevresinde 3 mm taşma payı (koyu başlık bu alana kadar uzar) ve onun dışında 3 mm'lik kesim işareti alanı vardır; sayfa 117 × 160 mm'dir, köşelerdeki kısa çizgiler kesim yerini gösterir.
-
 Baskı:
 
-- **Matbaa:** `qr/masa-kartlari.pdf`; her sayfada bir kart, 3 mm taşma payı ve kesim işaretleriyle. Matbaaya "net 105 × 148 mm, taşma payı ve kesim işaretleri dosyada" demek yeterli. 300 g mat kuşe ya da bristol önerilir.
-- **Ofis yazıcısı:** `qr/masa-kartlari-a4.pdf`; her A4 sayfada yatay çevrilmiş iki kart, kâğıt kenarlarında en az 25 mm boşluk. Yazdırırken ölçeği **%100** seçin ("sayfaya sığdır" kapalı olsun), kesim işaretlerinden kesin.
+- **Matbaa:** `qr/masa-kartlari.pdf` (105 × 148 mm, her sayfada bir kart, kenar boşluğu yok). 300 g mat kuşe ya da bristol önerilir.
+- **Ofis yazıcısı:** `qr/masa-kartlari-a4.pdf`; her A4 sayfada dört kart, aralarında kesim çizgisi. Yazdırırken ölçeği **%100** seçin ("sayfaya sığdır" kapalı olsun), yoksa kartlar 105 × 148 mm olmaz.
 - Numarasız kart (`qr/masa-karti.pdf`) tezgâh, kapı ve paket poşetleri için.
 
 PDF'leri yeniden üretmek için Playwright gerekir: `npm i -D playwright && npx playwright install chromium`, sonra `npm run pdf`.
