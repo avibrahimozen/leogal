@@ -1,0 +1,994 @@
+{
+  "langs": [
+    {
+      "code": "tr",
+      "label": "Türkçe",
+      "sitePath": "",
+      "menuPath": "menu/",
+      "locale": "tr_TR",
+      "default": true
+    },
+    {
+      "code": "en",
+      "label": "English",
+      "sitePath": "en/",
+      "menuPath": "en/menu/",
+      "locale": "en_US"
+    },
+    {
+      "code": "ru",
+      "label": "Русский",
+      "sitePath": "ru/",
+      "menuPath": "ru/menu/",
+      "locale": "ru_RU"
+    },
+    {
+      "code": "de",
+      "label": "Deutsch",
+      "sitePath": "de/",
+      "menuPath": "de/menu/",
+      "locale": "de_DE"
+    }
+  ],
+  "ui": {
+    "tr": {
+      "menuTitleSuffix": "Menü ve Fiyatlar",
+      "siteTitle": "Odun Ateşinde Et Döner, {district} {city}",
+      "menuDescription": "{name} menü, fiyatlar, kalori ve alerjen bilgisi: odun ateşinde et döner (100/150/200 gr), çorbalar, tatlılar, içecekler. {district}, {city}.",
+      "navFire": "Odun Ateşi",
+      "navDishes": "Lezzetler",
+      "navOrder": "Sipariş",
+      "navWhere": "Konum & Saatler",
+      "navMenu": "Tam Menü",
+      "backToTop": "başa dön",
+      "heroLine": "Öğlen on birden gece üçe.",
+      "heroText": "{district}'nda odun ateşinde pişen et döner. Dürüm, pilav üstü, İskender; yanında sıcak çorba ve ev tatlısı. Gel otur, ya da ara, kapına gelsin.",
+      "openDaily": "Her gün açık",
+      "night": "(gece)",
+      "seeMenu": "Menüyü Gör",
+      "orderWhatsapp": "WhatsApp ile Sipariş",
+      "whyUs": "Neden biz",
+      "dishesEyebrow": "Közden tabağa",
+      "dishesTitle": "Ne yiyeceğinizi bilmiyorsanız buradan başlayın",
+      "dishesLead": "Döner fiyatları {g0} gram et içindir; {g1} ve {g2} gramlık porsiyonlar menüde.",
+      "fullMenu": "Tam menü ve fiyatlar",
+      "fullMenuNote": "Tatlılar, içecekler, tüm gramajlar, kalori ve alerjen bilgisi menüde.",
+      "orderEyebrow": "Alo Paket",
+      "orderTitle": "Aramanız yeter, gerisi bizde",
+      "orderLead": "{district} içi paket servis. Sipariş için arayın ya da WhatsApp'tan yazın.",
+      "byPhone": "Telefonla",
+      "openLine": "Her gün {open} ile gece {close} arası açık hat.",
+      "byWhatsapp": "WhatsApp ile",
+      "whatsappLead": "Menüden seçin, adresinizi yazın, onaylayalım.",
+      "writeWhatsapp": "WhatsApp'tan Yaz",
+      "howTitle": "Nasıl işler?",
+      "how": [
+        "Menüden seçiminizi yapın.",
+        "Arayın ya da yazın; adresinizi alalım.",
+        "Sıcak sıcak kapınıza gelsin."
+      ],
+      "whereTitle": "Arapsuyu'nda, Belediye Caddesi üzerinde",
+      "directions": "Yol tarifi al",
+      "openMap": "Haritada aç",
+      "weekdays": "Pazartesi – Cuma",
+      "saturday": "Cumartesi",
+      "sunday": "Pazar",
+      "hoursLabel": "Çalışma saatleri",
+      "mapTitle": "Harita",
+      "faqEyebrow": "Sık sorulanlar",
+      "faqTitle": "Merak edilenler",
+      "qrMenu": "QR Menü",
+      "website": "Web sitemiz",
+      "call": "Ara",
+      "menu": "Menü",
+      "quickOrder": "Hızlı sipariş",
+      "product": "Ürün",
+      "priceKcal": "fiyat · ≈ kalori",
+      "gram": "gram",
+      "none": "Yok",
+      "aloPaket": "Alo Paket",
+      "fastDelivery": "Hızlı Teslimat",
+      "location": "Konum",
+      "callAria": "Alo Paket için ara",
+      "whatsappAria": "WhatsApp ile sipariş",
+      "menuSections": "Menü bölümleri",
+      "pricesOf": "fiyatları ve kalorileri",
+      "highlights": "Öne çıkanlar",
+      "allergensLabel": "Alerjenler",
+      "priceNote": "Fiyatlar TL cinsindendir. Fiyat değişikliği hakkı saklıdır.",
+      "contains": "İçerir:",
+      "traces": "eser:",
+      "unitEach": "Adet",
+      "unitGram": "{g} gr",
+      "language": "Dil",
+      "notFound": "Aradığınız sayfa burada değil. Ama döner hâlâ közde.",
+      "home": "Ana sayfa",
+      "notFoundTitle": "Sayfa bulunamadı",
+      "ogAlt": "{name} logosu ve iletişim bilgileri"
+    },
+    "en": {
+      "menuTitleSuffix": "Menu & Prices",
+      "siteTitle": "Wood-Fire Döner in {district}, {city}",
+      "menuDescription": "{name} menu, prices, calories and allergens: wood-fire beef döner (100/150/200 g), soups, desserts, drinks. {district}, {city}.",
+      "navFire": "Wood Fire",
+      "navDishes": "Dishes",
+      "navOrder": "Order",
+      "navWhere": "Location & Hours",
+      "navMenu": "Full Menu",
+      "backToTop": "back to top",
+      "heroLine": "From eleven in the morning till three at night.",
+      "heroText": "Beef döner cooked over a wood fire in {district}. Wraps, döner over rice, İskender; hot soup and homemade desserts on the side. Come in, or call and we deliver.",
+      "openDaily": "Open daily",
+      "night": "(night)",
+      "seeMenu": "See the Menu",
+      "orderWhatsapp": "Order on WhatsApp",
+      "whyUs": "Why us",
+      "dishesEyebrow": "From the embers to the plate",
+      "dishesTitle": "Not sure what to order? Start here",
+      "dishesLead": "Döner prices are for {g0} g of meat; {g1} g and {g2} g portions are on the menu.",
+      "fullMenu": "Full menu and prices",
+      "fullMenuNote": "Desserts, drinks, all portion sizes, calories and allergens are on the menu.",
+      "orderEyebrow": "Delivery",
+      "orderTitle": "Just call, we handle the rest",
+      "orderLead": "Delivery within {district}. Call or message us on WhatsApp to order.",
+      "byPhone": "By phone",
+      "openLine": "Line open daily from {open} until {close} at night.",
+      "byWhatsapp": "On WhatsApp",
+      "whatsappLead": "Pick from the menu, send your address, we confirm.",
+      "writeWhatsapp": "Message on WhatsApp",
+      "howTitle": "How it works",
+      "how": [
+        "Choose from the menu.",
+        "Call or message us; we take your address.",
+        "It arrives at your door, hot."
+      ],
+      "whereTitle": "In Arapsuyu, on Belediye Street",
+      "directions": "Get directions",
+      "openMap": "Open in Maps",
+      "weekdays": "Monday – Friday",
+      "saturday": "Saturday",
+      "sunday": "Sunday",
+      "hoursLabel": "Opening hours",
+      "mapTitle": "Map",
+      "faqEyebrow": "FAQ",
+      "faqTitle": "Good to know",
+      "qrMenu": "QR Menu",
+      "website": "Our website",
+      "call": "Call",
+      "menu": "Menu",
+      "quickOrder": "Quick order",
+      "product": "Item",
+      "priceKcal": "price · ≈ calories",
+      "gram": "grams",
+      "none": "N/A",
+      "aloPaket": "Delivery",
+      "fastDelivery": "Fast Delivery",
+      "location": "Location",
+      "callAria": "Call for delivery",
+      "whatsappAria": "Order on WhatsApp",
+      "menuSections": "Menu sections",
+      "pricesOf": "prices and calories",
+      "highlights": "Highlights",
+      "allergensLabel": "Allergens",
+      "priceNote": "Prices are in Turkish lira and may change without notice.",
+      "contains": "Contains:",
+      "traces": "may contain traces of:",
+      "unitEach": "Each",
+      "unitGram": "{g} g",
+      "language": "Language",
+      "notFound": "That page isn't here. The döner is still on the fire, though.",
+      "home": "Home",
+      "notFoundTitle": "Page not found",
+      "ogAlt": "{name} logo and contact details"
+    },
+    "ru": {
+      "menuTitleSuffix": "Меню и цены",
+      "siteTitle": "Дёнер на дровах, {district}, {city}",
+      "menuDescription": "{name}: меню, цены, калории и аллергены. Говяжий дёнер на дровах (100/150/200 г), супы, десерты, напитки. {district}, {city}.",
+      "navFire": "Дровяной огонь",
+      "navDishes": "Блюда",
+      "navOrder": "Заказ",
+      "navWhere": "Адрес и часы",
+      "navMenu": "Полное меню",
+      "backToTop": "наверх",
+      "heroLine": "С одиннадцати утра до трёх ночи.",
+      "heroText": "Говяжий дёнер, приготовленный на дровяном огне в районе {district}. Дёнер в лаваше, с рисом, Искендер; горячий суп и домашние десерты. Заходите или звоните, привезём.",
+      "openDaily": "Ежедневно",
+      "night": "(ночи)",
+      "seeMenu": "Смотреть меню",
+      "orderWhatsapp": "Заказать в WhatsApp",
+      "whyUs": "Почему мы",
+      "dishesEyebrow": "С углей на тарелку",
+      "dishesTitle": "Не знаете, что выбрать? Начните отсюда",
+      "dishesLead": "Цены на дёнер указаны за {g0} г мяса; порции {g1} г и {g2} г есть в меню.",
+      "fullMenu": "Полное меню и цены",
+      "fullMenuNote": "Десерты, напитки, все порции, калории и аллергены в меню.",
+      "orderEyebrow": "Доставка",
+      "orderTitle": "Просто позвоните, остальное сделаем мы",
+      "orderLead": "Доставка по району {district}. Позвоните или напишите в WhatsApp.",
+      "byPhone": "По телефону",
+      "openLine": "Линия работает ежедневно с {open} до {close} ночи.",
+      "byWhatsapp": "В WhatsApp",
+      "whatsappLead": "Выберите из меню, пришлите адрес, мы подтвердим.",
+      "writeWhatsapp": "Написать в WhatsApp",
+      "howTitle": "Как это работает",
+      "how": [
+        "Выберите блюда из меню.",
+        "Позвоните или напишите; мы запишем адрес.",
+        "Горячий заказ приедет к вашей двери."
+      ],
+      "whereTitle": "Арапсую, улица Беледие",
+      "directions": "Проложить маршрут",
+      "openMap": "Открыть на карте",
+      "weekdays": "Понедельник – пятница",
+      "saturday": "Суббота",
+      "sunday": "Воскресенье",
+      "hoursLabel": "Часы работы",
+      "mapTitle": "Карта",
+      "faqEyebrow": "Частые вопросы",
+      "faqTitle": "Полезно знать",
+      "qrMenu": "QR-меню",
+      "website": "Наш сайт",
+      "call": "Позвонить",
+      "menu": "Меню",
+      "quickOrder": "Быстрый заказ",
+      "product": "Блюдо",
+      "priceKcal": "цена · ≈ ккал",
+      "gram": "грамм",
+      "none": "Нет",
+      "aloPaket": "Доставка",
+      "fastDelivery": "Быстро",
+      "location": "Адрес",
+      "callAria": "Позвонить для доставки",
+      "whatsappAria": "Заказать в WhatsApp",
+      "menuSections": "Разделы меню",
+      "pricesOf": "цены и калории",
+      "highlights": "Особенности",
+      "allergensLabel": "Аллергены",
+      "priceNote": "Цены указаны в турецких лирах и могут меняться.",
+      "contains": "Содержит:",
+      "traces": "возможны следы:",
+      "unitEach": "Шт.",
+      "unitGram": "{g} г",
+      "language": "Язык",
+      "notFound": "Такой страницы нет. Но дёнер всё ещё на огне.",
+      "home": "Главная",
+      "notFoundTitle": "Страница не найдена",
+      "ogAlt": "Логотип {name} и контакты"
+    },
+    "de": {
+      "menuTitleSuffix": "Speisekarte & Preise",
+      "siteTitle": "Holzfeuer-Döner in {district}, {city}",
+      "menuDescription": "{name} Speisekarte, Preise, Kalorien und Allergene: Rinderdöner vom Holzfeuer (100/150/200 g), Suppen, Desserts, Getränke. {district}, {city}.",
+      "navFire": "Holzfeuer",
+      "navDishes": "Gerichte",
+      "navOrder": "Bestellen",
+      "navWhere": "Adresse & Zeiten",
+      "navMenu": "Speisekarte",
+      "backToTop": "nach oben",
+      "heroLine": "Von elf Uhr morgens bis drei Uhr nachts.",
+      "heroText": "Rinderdöner vom Holzfeuer in {district}. Dürüm, Döner auf Reis, İskender; dazu heiße Suppe und hausgemachte Desserts. Kommen Sie vorbei oder rufen Sie an, wir liefern.",
+      "openDaily": "Täglich geöffnet",
+      "night": "(nachts)",
+      "seeMenu": "Speisekarte ansehen",
+      "orderWhatsapp": "Per WhatsApp bestellen",
+      "whyUs": "Warum wir",
+      "dishesEyebrow": "Von der Glut auf den Teller",
+      "dishesTitle": "Unsicher, was Sie bestellen sollen? Fangen Sie hier an",
+      "dishesLead": "Dönerpreise gelten für {g0} g Fleisch; Portionen mit {g1} g und {g2} g stehen in der Speisekarte.",
+      "fullMenu": "Komplette Speisekarte mit Preisen",
+      "fullMenuNote": "Desserts, Getränke, alle Portionsgrößen, Kalorien und Allergene in der Speisekarte.",
+      "orderEyebrow": "Lieferung",
+      "orderTitle": "Einfach anrufen, den Rest erledigen wir",
+      "orderLead": "Lieferung innerhalb von {district}. Rufen Sie an oder schreiben Sie uns per WhatsApp.",
+      "byPhone": "Telefonisch",
+      "openLine": "Täglich von {open} bis {close} Uhr nachts erreichbar.",
+      "byWhatsapp": "Per WhatsApp",
+      "whatsappLead": "Aus der Speisekarte wählen, Adresse schicken, wir bestätigen.",
+      "writeWhatsapp": "Per WhatsApp schreiben",
+      "howTitle": "So funktioniert es",
+      "how": [
+        "Aus der Speisekarte wählen.",
+        "Anrufen oder schreiben; wir notieren die Adresse.",
+        "Heiß bis an die Haustür."
+      ],
+      "whereTitle": "In Arapsuyu, an der Belediye-Straße",
+      "directions": "Route anzeigen",
+      "openMap": "In Karten öffnen",
+      "weekdays": "Montag – Freitag",
+      "saturday": "Samstag",
+      "sunday": "Sonntag",
+      "hoursLabel": "Öffnungszeiten",
+      "mapTitle": "Karte",
+      "faqEyebrow": "Häufige Fragen",
+      "faqTitle": "Gut zu wissen",
+      "qrMenu": "QR-Speisekarte",
+      "website": "Unsere Website",
+      "call": "Anrufen",
+      "menu": "Speisekarte",
+      "quickOrder": "Schnellbestellung",
+      "product": "Gericht",
+      "priceKcal": "Preis · ≈ Kalorien",
+      "gram": "Gramm",
+      "none": "Nicht verfügbar",
+      "aloPaket": "Lieferung",
+      "fastDelivery": "Schnell",
+      "location": "Adresse",
+      "callAria": "Für Lieferung anrufen",
+      "whatsappAria": "Per WhatsApp bestellen",
+      "menuSections": "Abschnitte",
+      "pricesOf": "Preise und Kalorien",
+      "highlights": "Highlights",
+      "allergensLabel": "Allergene",
+      "priceNote": "Preise in türkischen Lira; Änderungen vorbehalten.",
+      "contains": "Enthält:",
+      "traces": "kann Spuren enthalten von:",
+      "unitEach": "Stück",
+      "unitGram": "{g} g",
+      "language": "Sprache",
+      "notFound": "Diese Seite gibt es hier nicht. Der Döner dreht sich aber weiter.",
+      "home": "Startseite",
+      "notFoundTitle": "Seite nicht gefunden",
+      "ogAlt": "Logo und Kontaktdaten von {name}"
+    }
+  },
+  "kcal": {
+    "tr": "kcal",
+    "en": "kcal",
+    "ru": "ккал",
+    "de": "kcal"
+  },
+  "business": {
+    "en": {
+      "slogan": "End the hunger, not the night.",
+      "description": "Wood-fire beef döner in Konyaaltı, Antalya. Open daily from 11:00 until 03:00. Wraps, döner over rice, İskender, soups and desserts. Delivery 0552 990 07 23.",
+      "whatsappText": "Hello, I would like to place an order.",
+      "perks": [
+        "Cooked over a wood fire",
+        "Open day and night",
+        "Fresh ingredients",
+        "Fast delivery",
+        "Cleanliness first"
+      ],
+      "wood": {
+        "eyebrow": "Wood fire",
+        "title": "Cooked over a wood fire",
+        "lead": "Our döner cooks slowly in front of a wood fire. Charred outside, juicy inside; you can smell it from the street.",
+        "points": [
+          {
+            "title": "Wood embers",
+            "text": "The döner turns over wood embers. The heat builds gradually, so the meat cooks evenly from the outside in."
+          },
+          {
+            "title": "Cut to order",
+            "text": "Every slice is carved when you order, straight off the fire."
+          },
+          {
+            "title": "Fresh ingredients",
+            "text": "Bread, lavash and greens come in daily; the rice is made fresh with butter every day."
+          }
+        ]
+      },
+      "faq": [
+        {
+          "q": "What are your opening hours?",
+          "a": "We open at 11:00 every day and serve until 03:00 at night. You will find hot döner late at night too."
+        },
+        {
+          "q": "Do you deliver?",
+          "a": "Yes. We deliver within Konyaaltı. Call 0552 990 07 23 or message us on WhatsApp."
+        },
+        {
+          "q": "How is the döner cooked?",
+          "a": "Over a wood fire. The döner cooks slowly in front of the embers."
+        },
+        {
+          "q": "Where are you?",
+          "a": "Arapsuyu Mahallesi, Belediye Caddesi No: 12/B, Konyaaltı / Antalya. Use the map link for directions."
+        },
+        {
+          "q": "How are prices set?",
+          "a": "Döner prices are listed separately for 100, 150 and 200 grams of meat. Current prices are on the QR menu."
+        }
+      ],
+      "nutritionNotice": {
+        "title": "Calories and allergens",
+        "lines": [
+          "Calorie values are approximate, calculated from an average portion and a standard recipe. They vary with portion size, bread and sauce choices. For döner, values are given separately for 100 / 150 / 200 g of meat.",
+          "All items are prepared in the same kitchen as foods containing gluten (wheat), milk, egg, sesame and tree nuts. Items not listed as containing them may still contain traces.",
+          "If you have an allergy or food sensitivity, please tell our staff before ordering."
+        ]
+      },
+      "allergenNames": {
+        "gluten": "Gluten",
+        "sut": "Milk",
+        "yumurta": "Egg",
+        "susam": "Sesame",
+        "yemis": "Tree nuts"
+      }
+    },
+    "ru": {
+      "slogan": "Заканчивай не ночь, а голод.",
+      "description": "Говяжий дёнер на дровах в Коньяалты, Анталья. Ежедневно с 11:00 до 03:00. Дёнер в лаваше, с рисом, Искендер, супы и десерты. Доставка 0552 990 07 23.",
+      "whatsappText": "Здравствуйте, я хочу сделать заказ.",
+      "perks": [
+        "Готовим на дровах",
+        "Работаем днём и ночью",
+        "Свежие продукты",
+        "Быстрая доставка",
+        "Чистота прежде всего"
+      ],
+      "wood": {
+        "eyebrow": "Дровяной огонь",
+        "title": "На дровяном огне",
+        "lead": "Наш дёнер медленно готовится перед дровяным огнём. Снаружи румяный, внутри сочный; запах слышно с улицы.",
+        "points": [
+          {
+            "title": "Дровяные угли",
+            "text": "Дёнер вращается над дровяными углями. Жар подаётся постепенно, мясо прожаривается равномерно."
+          },
+          {
+            "title": "Нарезка по заказу",
+            "text": "Каждый ломтик срезается при заказе, прямо с огня."
+          },
+          {
+            "title": "Свежие продукты",
+            "text": "Хлеб, лаваш и зелень привозят каждый день; рис готовится ежедневно на сливочном масле."
+          }
+        ]
+      },
+      "faq": [
+        {
+          "q": "Какие у вас часы работы?",
+          "a": "Открываемся в 11:00 каждый день и работаем до 03:00 ночи. Горячий дёнер есть и поздно ночью."
+        },
+        {
+          "q": "Есть ли доставка?",
+          "a": "Да. Доставляем по району Коньяалты. Позвоните 0552 990 07 23 или напишите в WhatsApp."
+        },
+        {
+          "q": "Как готовится дёнер?",
+          "a": "На дровяном огне. Дёнер медленно готовится перед углями."
+        },
+        {
+          "q": "Где вы находитесь?",
+          "a": "Arapsuyu Mahallesi, Belediye Caddesi No: 12/B, Коньяалты / Анталья. Маршрут по ссылке на карту."
+        },
+        {
+          "q": "Как формируются цены?",
+          "a": "Цены на дёнер указаны отдельно за 100, 150 и 200 г мяса. Актуальные цены в QR-меню."
+        }
+      ],
+      "nutritionNotice": {
+        "title": "Калории и аллергены",
+        "lines": [
+          "Калорийность указана приблизительно, из расчёта средней порции и стандартного рецепта. Зависит от веса, хлеба и соуса. Для дёнера значения даны отдельно для 100 / 150 / 200 г мяса.",
+          "Все блюда готовятся на одной кухне с продуктами, содержащими глютен (пшеницу), молоко, яйца, кунжут и орехи. Даже в блюдах, где они не указаны, возможны следы.",
+          "Если у вас аллергия или непереносимость, сообщите персоналу перед заказом."
+        ]
+      },
+      "allergenNames": {
+        "gluten": "Глютен",
+        "sut": "Молоко",
+        "yumurta": "Яйцо",
+        "susam": "Кунжут",
+        "yemis": "Орехи"
+      }
+    },
+    "de": {
+      "slogan": "Beende den Hunger, nicht die Nacht.",
+      "description": "Rinderdöner vom Holzfeuer in Konyaaltı, Antalya. Täglich 11:00–03:00 Uhr. Dürüm, Döner auf Reis, İskender, Suppen und Desserts. Lieferung 0552 990 07 23.",
+      "whatsappText": "Hallo, ich möchte eine Bestellung aufgeben.",
+      "perks": [
+        "Vom Holzfeuer",
+        "Tag und Nacht geöffnet",
+        "Frische Zutaten",
+        "Schnelle Lieferung",
+        "Sauberkeit zuerst"
+      ],
+      "wood": {
+        "eyebrow": "Holzfeuer",
+        "title": "Über dem Holzfeuer gegart",
+        "lead": "Unser Döner gart langsam vor dem Holzfeuer. Außen knusprig, innen saftig; man riecht es schon von der Straße.",
+        "points": [
+          {
+            "title": "Holzglut",
+            "text": "Der Döner dreht sich über Holzglut. Die Hitze baut sich langsam auf, das Fleisch gart gleichmäßig von außen nach innen."
+          },
+          {
+            "title": "Frisch geschnitten",
+            "text": "Jede Scheibe wird bei der Bestellung geschnitten, direkt vom Feuer."
+          },
+          {
+            "title": "Frische Zutaten",
+            "text": "Brot, Fladen und Grünzeug kommen täglich frisch; der Reis wird jeden Tag mit Butter neu gekocht."
+          }
+        ]
+      },
+      "faq": [
+        {
+          "q": "Wann haben Sie geöffnet?",
+          "a": "Wir öffnen täglich um 11:00 Uhr und servieren bis 03:00 Uhr nachts. Auch spät in der Nacht gibt es heißen Döner."
+        },
+        {
+          "q": "Liefern Sie?",
+          "a": "Ja. Wir liefern innerhalb von Konyaaltı. Rufen Sie 0552 990 07 23 an oder schreiben Sie uns per WhatsApp."
+        },
+        {
+          "q": "Wie wird der Döner zubereitet?",
+          "a": "Über Holzfeuer. Der Döner gart langsam vor der Glut."
+        },
+        {
+          "q": "Wo sind Sie?",
+          "a": "Arapsuyu Mahallesi, Belediye Caddesi Nr. 12/B, Konyaaltı / Antalya. Die Route finden Sie über den Kartenlink."
+        },
+        {
+          "q": "Wie entstehen die Preise?",
+          "a": "Dönerpreise sind getrennt für 100, 150 und 200 Gramm Fleisch angegeben. Aktuelle Preise stehen in der QR-Speisekarte."
+        }
+      ],
+      "nutritionNotice": {
+        "title": "Kalorien und Allergene",
+        "lines": [
+          "Kalorienangaben sind Näherungswerte, berechnet aus einer durchschnittlichen Portion und einem Standardrezept. Sie variieren je nach Portionsgröße, Brot und Soße. Beim Döner gelten die Werte getrennt für 100 / 150 / 200 g Fleisch.",
+          "Alle Gerichte werden in derselben Küche zubereitet wie Speisen mit Gluten (Weizen), Milch, Ei, Sesam und Schalenfrüchten. Auch nicht gekennzeichnete Gerichte können Spuren enthalten.",
+          "Bei Allergien oder Unverträglichkeiten informieren Sie bitte vor der Bestellung unser Personal."
+        ]
+      },
+      "allergenNames": {
+        "gluten": "Gluten",
+        "sut": "Milch",
+        "yumurta": "Ei",
+        "susam": "Sesam",
+        "yemis": "Schalenfrüchte"
+      }
+    }
+  },
+  "sections": {
+    "en": {
+      "doner": {
+        "title": "Döner Varieties",
+        "navLabel": "Döner",
+        "note": "Prices by meat weight"
+      },
+      "menuler": {
+        "title": "Combos & Sides",
+        "navLabel": "Sides"
+      },
+      "corbalar": {
+        "title": "Soups",
+        "navLabel": "Soups",
+        "note": "Hot, with lemon"
+      },
+      "tatlilar": {
+        "title": "Desserts",
+        "navLabel": "Desserts"
+      },
+      "icecekler": {
+        "title": "Drinks",
+        "navLabel": "Drinks"
+      }
+    },
+    "ru": {
+      "doner": {
+        "title": "Виды дёнера",
+        "navLabel": "Дёнер",
+        "note": "Цены по весу мяса"
+      },
+      "menuler": {
+        "title": "Наборы и закуски",
+        "navLabel": "Закуски"
+      },
+      "corbalar": {
+        "title": "Супы",
+        "navLabel": "Супы",
+        "note": "Горячие, с лимоном"
+      },
+      "tatlilar": {
+        "title": "Десерты",
+        "navLabel": "Десерты"
+      },
+      "icecekler": {
+        "title": "Напитки",
+        "navLabel": "Напитки"
+      }
+    },
+    "de": {
+      "doner": {
+        "title": "Dönersorten",
+        "navLabel": "Döner",
+        "note": "Preise nach Fleischgewicht"
+      },
+      "menuler": {
+        "title": "Menüs & Beilagen",
+        "navLabel": "Beilagen"
+      },
+      "corbalar": {
+        "title": "Suppen",
+        "navLabel": "Suppen",
+        "note": "Heiß, mit Zitrone"
+      },
+      "tatlilar": {
+        "title": "Desserts",
+        "navLabel": "Desserts"
+      },
+      "icecekler": {
+        "title": "Getränke",
+        "navLabel": "Getränke"
+      }
+    }
+  },
+  "items": {
+    "en": {
+      "et-doner-durum": {
+        "name": "Beef Döner Wrap"
+      },
+      "gobit-doner": {
+        "name": "Döner in Gobit Bread"
+      },
+      "somun-doner": {
+        "name": "Döner in Loaf Bread"
+      },
+      "et-doner-burger": {
+        "name": "Döner Burger"
+      },
+      "sade-et-doner": {
+        "name": "Plain Döner Plate"
+      },
+      "pilav-ustu-et-doner": {
+        "name": "Döner over Rice"
+      },
+      "iskender": {
+        "name": "İskender Kebab"
+      },
+      "icli-kofte": {
+        "name": "İçli Köfte (stuffed bulgur balls)"
+      },
+      "patates-kizartmasi": {
+        "name": "French Fries"
+      },
+      "cocuk-menu": {
+        "name": "Kids' Menu",
+        "detail": "65 g döner · Surprise gift!"
+      },
+      "mercimek-corbasi": {
+        "name": "Lentil Soup"
+      },
+      "ezogelin-corbasi": {
+        "name": "Ezogelin Soup"
+      },
+      "domates-corbasi": {
+        "name": "Tomato Soup"
+      },
+      "tavuk-corbasi": {
+        "name": "Chicken Soup"
+      },
+      "sutlac": {
+        "name": "Rice Pudding"
+      },
+      "kabak-tatlisi": {
+        "name": "Candied Pumpkin"
+      },
+      "havuc-dilimi": {
+        "name": "Carrot-Slice Baklava"
+      },
+      "dondurma": {
+        "name": "Ice Cream"
+      },
+      "kaymak": {
+        "name": "Kaymak (clotted cream)"
+      },
+      "ayran": {
+        "name": "Ayran"
+      },
+      "yayik-ayran": {
+        "name": "Churned Ayran"
+      },
+      "limonata": {
+        "name": "Lemonade"
+      },
+      "sira": {
+        "name": "Şıra (grape must)"
+      },
+      "salgam": {
+        "name": "Şalgam (turnip juice)"
+      },
+      "kola": {
+        "name": "Cola"
+      },
+      "fanta": {
+        "name": "Fanta"
+      },
+      "sprite": {
+        "name": "Sprite"
+      },
+      "fuse-tea": {
+        "name": "Fuse Tea"
+      },
+      "meyve-suyu": {
+        "name": "Fruit Juice"
+      },
+      "soda": {
+        "name": "Sparkling Water"
+      },
+      "su": {
+        "name": "Water"
+      },
+      "kola-1lt": {
+        "name": "Cola",
+        "sub": "1 litre"
+      }
+    },
+    "ru": {
+      "et-doner-durum": {
+        "name": "Дёнер в лаваше"
+      },
+      "gobit-doner": {
+        "name": "Дёнер в булочке гобит"
+      },
+      "somun-doner": {
+        "name": "Дёнер в хлебе сомун"
+      },
+      "et-doner-burger": {
+        "name": "Дёнер-бургер"
+      },
+      "sade-et-doner": {
+        "name": "Дёнер без хлеба (порция)"
+      },
+      "pilav-ustu-et-doner": {
+        "name": "Дёнер с рисом"
+      },
+      "iskender": {
+        "name": "Искендер-кебаб"
+      },
+      "icli-kofte": {
+        "name": "Ичли кёфте (котлеты из булгура)"
+      },
+      "patates-kizartmasi": {
+        "name": "Картофель фри"
+      },
+      "cocuk-menu": {
+        "name": "Детское меню",
+        "detail": "65 г дёнера · Сюрприз в подарок!"
+      },
+      "mercimek-corbasi": {
+        "name": "Чечевичный суп"
+      },
+      "ezogelin-corbasi": {
+        "name": "Суп эзогелин"
+      },
+      "domates-corbasi": {
+        "name": "Томатный суп"
+      },
+      "tavuk-corbasi": {
+        "name": "Куриный суп"
+      },
+      "sutlac": {
+        "name": "Рисовый пудинг (сютлач)"
+      },
+      "kabak-tatlisi": {
+        "name": "Тыквенный десерт"
+      },
+      "havuc-dilimi": {
+        "name": "Пахлава «хавуч дилими»"
+      },
+      "dondurma": {
+        "name": "Мороженое"
+      },
+      "kaymak": {
+        "name": "Каймак"
+      },
+      "ayran": {
+        "name": "Айран"
+      },
+      "yayik-ayran": {
+        "name": "Айран домашний"
+      },
+      "limonata": {
+        "name": "Лимонад"
+      },
+      "sira": {
+        "name": "Шира (виноградный напиток)"
+      },
+      "salgam": {
+        "name": "Шалгам (напиток из репы)"
+      },
+      "kola": {
+        "name": "Кола"
+      },
+      "fanta": {
+        "name": "Фанта"
+      },
+      "sprite": {
+        "name": "Спрайт"
+      },
+      "fuse-tea": {
+        "name": "Fuse Tea"
+      },
+      "meyve-suyu": {
+        "name": "Сок"
+      },
+      "soda": {
+        "name": "Газированная вода"
+      },
+      "su": {
+        "name": "Вода"
+      },
+      "kola-1lt": {
+        "name": "Кола",
+        "sub": "1 литр"
+      }
+    },
+    "de": {
+      "et-doner-durum": {
+        "name": "Rinderdöner-Dürüm"
+      },
+      "gobit-doner": {
+        "name": "Döner im Gobit-Brot"
+      },
+      "somun-doner": {
+        "name": "Döner im Brotlaib"
+      },
+      "et-doner-burger": {
+        "name": "Döner-Burger"
+      },
+      "sade-et-doner": {
+        "name": "Döner pur (Teller)"
+      },
+      "pilav-ustu-et-doner": {
+        "name": "Döner auf Reis"
+      },
+      "iskender": {
+        "name": "İskender-Kebab"
+      },
+      "icli-kofte": {
+        "name": "İçli Köfte (gefüllte Bulgurbällchen)"
+      },
+      "patates-kizartmasi": {
+        "name": "Pommes frites"
+      },
+      "cocuk-menu": {
+        "name": "Kindermenü",
+        "detail": "65 g Döner · Mit Überraschung!"
+      },
+      "mercimek-corbasi": {
+        "name": "Linsensuppe"
+      },
+      "ezogelin-corbasi": {
+        "name": "Ezogelin-Suppe"
+      },
+      "domates-corbasi": {
+        "name": "Tomatensuppe"
+      },
+      "tavuk-corbasi": {
+        "name": "Hühnersuppe"
+      },
+      "sutlac": {
+        "name": "Milchreis (Sütlaç)"
+      },
+      "kabak-tatlisi": {
+        "name": "Kandierter Kürbis"
+      },
+      "havuc-dilimi": {
+        "name": "Baklava „Havuç Dilimi“"
+      },
+      "dondurma": {
+        "name": "Eis"
+      },
+      "kaymak": {
+        "name": "Kaymak (Rahm)"
+      },
+      "ayran": {
+        "name": "Ayran"
+      },
+      "yayik-ayran": {
+        "name": "Gebutterter Ayran"
+      },
+      "limonata": {
+        "name": "Limonade"
+      },
+      "sira": {
+        "name": "Şıra (Traubenmost)"
+      },
+      "salgam": {
+        "name": "Şalgam (Rübensaft)"
+      },
+      "kola": {
+        "name": "Cola"
+      },
+      "fanta": {
+        "name": "Fanta"
+      },
+      "sprite": {
+        "name": "Sprite"
+      },
+      "fuse-tea": {
+        "name": "Fuse Tea"
+      },
+      "meyve-suyu": {
+        "name": "Fruchtsaft"
+      },
+      "soda": {
+        "name": "Mineralwasser"
+      },
+      "su": {
+        "name": "Wasser"
+      },
+      "kola-1lt": {
+        "name": "Cola",
+        "sub": "1 Liter"
+      }
+    }
+  },
+  "featured": {
+    "en": {
+      "et-doner-durum": {
+        "blurb": "In lavash with tomato and greens. Our best seller."
+      },
+      "pilav-ustu-et-doner": {
+        "blurb": "Over buttery rice pilaf, generous döner."
+      },
+      "iskender": {
+        "blurb": "On pide bread with tomato sauce, sizzling butter and yogurt."
+      },
+      "et-doner-burger": {
+        "blurb": "Döner in a sesame bun with cheddar and fresh greens."
+      },
+      "mercimek-corbasi": {
+        "label": "Hot Soups",
+        "unit": "Bowl",
+        "blurb": "Lentil, ezogelin, tomato, chicken. With lemon and crispy bread."
+      },
+      "cocuk-menu": {
+        "unit": "Set",
+        "blurb": "65 g döner, fries and a drink. With a surprise gift."
+      }
+    },
+    "ru": {
+      "et-doner-durum": {
+        "blurb": "В лаваше с помидорами и зеленью. Самое популярное."
+      },
+      "pilav-ustu-et-doner": {
+        "blurb": "На рисе с маслом, щедрая порция дёнера."
+      },
+      "iskender": {
+        "blurb": "На хлебе пиде с томатным соусом, горячим маслом и йогуртом."
+      },
+      "et-doner-burger": {
+        "blurb": "Дёнер в булочке с кунжутом, чеддером и свежей зеленью."
+      },
+      "mercimek-corbasi": {
+        "label": "Горячие супы",
+        "unit": "Порция",
+        "blurb": "Чечевичный, эзогелин, томатный, куриный. С лимоном и хрустящим хлебом."
+      },
+      "cocuk-menu": {
+        "unit": "Набор",
+        "blurb": "65 г дёнера, картофель фри и напиток. С сюрпризом."
+      }
+    },
+    "de": {
+      "et-doner-durum": {
+        "blurb": "Im Fladenbrot mit Tomate und Grünzeug. Unser Bestseller."
+      },
+      "pilav-ustu-et-doner": {
+        "blurb": "Auf Butterreis, mit reichlich Döner."
+      },
+      "iskender": {
+        "blurb": "Auf Pide-Brot mit Tomatensoße, brutzelnder Butter und Joghurt."
+      },
+      "et-doner-burger": {
+        "blurb": "Döner im Sesambrötchen mit Cheddar und frischem Grün."
+      },
+      "mercimek-corbasi": {
+        "label": "Heiße Suppen",
+        "unit": "Schale",
+        "blurb": "Linsen, Ezogelin, Tomate, Huhn. Mit Zitrone und knusprigem Brot."
+      },
+      "cocuk-menu": {
+        "unit": "Menü",
+        "blurb": "65 g Döner, Pommes und ein Getränk. Mit Überraschung."
+      }
+    }
+  }
+}
