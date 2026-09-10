@@ -5,7 +5,7 @@
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { ROOT } from './build.js';
+import { ROOT, loadData } from './build.js';
 
 const require = createRequire(import.meta.url);
 function loadPlaywright() {
@@ -16,9 +16,11 @@ function loadPlaywright() {
   process.exit(1);
 }
 
+const data = await loadData();
+const sample = Math.min(12, data.tables); // önizleme PNG'si için örnek masa
 const JOBS = [
   { html: 'masa-karti.html', pdf: 'qr/masa-karti.pdf', png: 'qr/masa-karti.png', pngSelector: '.card' },
-  { html: 'masa-kartlari.html', pdf: 'qr/masa-kartlari.pdf', png: 'qr/masa-karti-numarali.png', pngSelector: '.card[data-table="12"]' },
+  { html: 'masa-kartlari.html', pdf: 'qr/masa-kartlari.pdf', png: 'qr/masa-karti-numarali.png', pngSelector: `.card[data-table="${sample}"]` },
   { html: 'masa-kartlari-a4.html', pdf: 'qr/masa-kartlari-a4.pdf' },
 ];
 

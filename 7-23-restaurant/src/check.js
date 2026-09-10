@@ -143,8 +143,10 @@ for (const [file, count] of Object.entries(cardFiles)) {
   if (!html) { fail(`${file}: dosya yok`); continue; }
   const cards = (html.match(/class="card"/g) || []).length;
   if (cards !== count) fail(`${file}: ${count} kart bekleniyor, ${cards} var`);
-  const must = [['class="qr"', 'QR kodu'], [data.business.phoneDisplay, 'telefon'], [data.business.hours.opens, 'açılış saati'], ['data:font/woff2;base64,', 'gömülü yazı tipi'], ['print-color-adjust: exact', 'baskı renk ayarı']];
+  const must = [['class="qr"', 'QR kodu'], [data.business.phoneDisplay, 'telefon'], [data.business.hours.opens, 'açılış saati'], ['data:font/woff2;base64,', 'gömülü yazı tipi'], ["font-style: italic; font-weight: 400", 'italik yazı tipi'], ['print-color-adjust: exact', 'baskı renk ayarı'], ['class="print"', 'taşma paylı baskı sayfası'], ['class="m h"', 'kesim işaretleri']];
   for (const [needle, label] of must) if (!html.includes(needle)) fail(`${file}: ${label} eksik`);
+  if ((html.match(/class="print"/g) || []).length !== count) fail(`${file}: her kart için bir baskı sayfası olmalı`);
+  if (html.includes('Kartıları')) fail(`${file}: "Kartıları" yazım hatası`);
   if (file !== 'masa-karti.html') {
     const nums = [...html.matchAll(/data-table="(\d+)"/g)].map((m) => Number(m[1]));
     nums.forEach((n, i) => { if (n !== i + 1) fail(`${file}: ${i + 1}. kart "${n}" numaralı`); });
@@ -152,7 +154,7 @@ for (const [file, count] of Object.entries(cardFiles)) {
   }
 }
 const sheets = ((await readFile(join(ROOT, 'masa-kartlari-a4.html'), 'utf8').catch(() => '')).match(/class="sheet"/g) || []).length;
-if (sheets !== Math.ceil(data.tables / 4)) fail(`masa-kartlari-a4.html: ${Math.ceil(data.tables / 4)} sayfa bekleniyor, ${sheets} var`);
+if (sheets !== Math.ceil(data.tables / 2)) fail(`masa-kartlari-a4.html: ${Math.ceil(data.tables / 2)} sayfa bekleniyor, ${sheets} var`);
 
 if (errors.length) {
   console.error(`${errors.length} sorun:\n- ` + errors.join('\n- '));
