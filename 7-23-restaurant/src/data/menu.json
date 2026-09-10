@@ -10,6 +10,7 @@
     "whatsappText": "Merhaba, sipariş vermek istiyorum.",
     "address": {
       "street": "Arapsuyu Mahallesi, Belediye Cad. No: 12/B",
+      "short": "Arapsuyu Mah. Belediye Cad. No: 12/B",
       "district": "Konyaaltı",
       "city": "Antalya",
       "country": "TR"
@@ -95,8 +96,9 @@
       "gece açık dönerci"
     ]
   },
-  "updated": "2026-09-04",
+  "updated": "2026-09-10",
   "currency": "TRY",
+  "tables": 30,
   "gramSizes": [
     100,
     150,

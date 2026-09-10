@@ -2,7 +2,7 @@
 //   npm test
 import { readFile, access } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
-import { build, loadData, OUT } from './build.js';
+import { build, loadData, OUT, ROOT } from './build.js';
 import { LANGS, localize } from './lib/i18n.js';
 
 const errors = [];
@@ -134,8 +134,27 @@ if (!data.site.domainActive && cname) fail('Alan adı kapalıyken CNAME dosyası
 const robots = await readFile(join(OUT, 'robots.txt'), 'utf8').catch(() => '');
 if (!robots.includes('Sitemap: ' + data.site.baseUrl + 'sitemap.xml')) fail('robots.txt sitemap satırı eksik');
 
+// 6. Masa kartları: numarasız kart, 1..N numaralı kartlar, A4 yerleşimi
+if (!(Number.isInteger(data.tables) && data.tables > 0)) fail('menu.json: "tables" pozitif tam sayı olmalı');
+const cardFiles = { 'masa-karti.html': 1, 'masa-kartlari.html': data.tables, 'masa-kartlari-a4.html': data.tables };
+for (const [file, count] of Object.entries(cardFiles)) {
+  const html = await readFile(join(ROOT, file), 'utf8').catch(() => '');
+  if (!html) { fail(`${file}: dosya yok`); continue; }
+  const cards = (html.match(/class="card"/g) || []).length;
+  if (cards !== count) fail(`${file}: ${count} kart bekleniyor, ${cards} var`);
+  const must = [['class="qr"', 'QR kodu'], [data.business.phoneDisplay, 'telefon'], [data.business.hours.opens, 'açılış saati'], ['data:font/woff2;base64,', 'gömülü yazı tipi'], ['print-color-adjust: exact', 'baskı renk ayarı']];
+  for (const [needle, label] of must) if (!html.includes(needle)) fail(`${file}: ${label} eksik`);
+  if (file !== 'masa-karti.html') {
+    const nums = [...html.matchAll(/data-table="(\d+)"/g)].map((m) => Number(m[1]));
+    nums.forEach((n, i) => { if (n !== i + 1) fail(`${file}: ${i + 1}. kart "${n}" numaralı`); });
+    if (nums.length !== data.tables) fail(`${file}: ${data.tables} masa numarası bekleniyor, ${nums.length} var`);
+  }
+}
+const sheets = ((await readFile(join(ROOT, 'masa-kartlari-a4.html'), 'utf8').catch(() => '')).match(/class="sheet"/g) || []).length;
+if (sheets !== Math.ceil(data.tables / 4)) fail(`masa-kartlari-a4.html: ${Math.ceil(data.tables / 4)} sayfa bekleniyor, ${sheets} var`);
+
 if (errors.length) {
   console.error(`${errors.length} sorun:\n- ` + errors.join('\n- '));
   process.exit(1);
 }
-console.log(`Tamam: ${ids.size} ürün, ${LANGS.length} dil, ${pages.length} sayfa, sitemap.xml. Alan adı: ${data.site.domainActive ? data.site.domain + ' (açık)' : 'kapalı, ' + data.site.baseUrl}`);
+console.log(`Tamam: ${ids.size} ürün, ${LANGS.length} dil, ${pages.length} sayfa, ${data.tables} masa kartı, sitemap.xml. Alan adı: ${data.site.domainActive ? data.site.domain + ' (açık)' : 'kapalı, ' + data.site.baseUrl}`);

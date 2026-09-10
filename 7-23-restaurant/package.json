@@ -11,6 +11,7 @@
     "build": "node src/build.js",
     "dev": "node src/dev.js",
     "dist": "node src/dist.js",
+    "pdf": "node src/pdf.js",
     "test": "node src/check.js"
   },
   "license": "UNLICENSED"

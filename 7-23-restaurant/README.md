@@ -124,15 +124,27 @@ Her üründe üç alan vardır:
 | Dosya | Ne işe yarar |
 | --- | --- |
 | `src/data/menu.json` | İşletme bilgileri, alan adı, menü, fiyatlar, öne çıkanlar. Tek doğruluk kaynağı. |
-| `src/templates/site.js`, `menu.js`, `notfound.js` | Web sitesi, QR menü ve 404 şablonları. |
+| `src/templates/site.js`, `menu.js`, `notfound.js`, `card.js` | Web sitesi, QR menü, 404 ve masa kartı şablonları. |
 | `src/lib/seo.js` | `<head>` etiketleri, schema.org Restaurant, Menu, FAQPage ve BreadcrumbList nesneleri, sitemap, robots. |
-| `src/assets/` | Logo (açık ve koyu zemin sürümleri, SVG) ve sosyal paylaşım görseli `og.png`. Üretimde `assets/` altına kopyalanır. |
-| `src/build.js`, `src/dev.js`, `src/check.js` | Üretim, geliştirme sunucusu, kontrol. |
+| `src/assets/` | Logo (açık ve koyu zemin sürümleri, SVG), sosyal paylaşım görseli `og.png` ve masa kartına gömülen yazı tipleri (`fonts/`). Logo ve görsel üretimde `assets/` altına kopyalanır. |
+| `src/build.js`, `src/dev.js`, `src/check.js`, `src/pdf.js` | Üretim, geliştirme sunucusu, kontrol, masa kartı PDF çıktısı. |
 | Depo kökünde `index.html`, `menu/`, `7-23-restaurant/index.html`, `404.html`, `sitemap.xml`, `robots.txt`, `CNAME` | **Üretilen** dosyalar; elle düzenlemeyin, `npm run build` ile yenileyin. |
-| `masa-karti.html` | Hazır QR gömülü, A6 basılabilir masa kartı. Yazı tipleri gömülüdür. |
+| `masa-karti.html`, `masa-kartlari.html`, `masa-kartlari-a4.html` | **Üretilen** masa kartları: numarasız tek kart, 1'den 30'a numaralı kartlar (A6, her sayfada bir kart) ve aynı kartların A4 kâğıda 4'lü yerleşimi. QR ve yazı tipleri gömülüdür. |
 | `qr.html` | İstediğiniz adres için QR üretici. |
 | `qr/menu-qr.png`, `qr/menu-qr.svg` | `antalyagecedonercisi.com/menu/` adresinin QR kodu. Broşüre, tabelaya, sosyal medyaya. |
-| `qr/masa-karti.pdf`, `qr/masa-karti.png` | Masa kartının baskıya hazır hali (105 × 148 mm). |
+| `qr/masa-karti.pdf`, `qr/masa-kartlari.pdf`, `qr/masa-kartlari-a4.pdf` | Baskıya hazır PDF'ler: numarasız kart (1 sayfa), numaralı kartlar (A6, 30 sayfa), A4 4'lü yerleşim (8 sayfa). `qr/masa-karti.png` ve `qr/masa-karti-numarali.png` önizleme. |
+
+## Masa kartları
+
+Kartlar `npm run build` ile `menu.json` verisinden üretilir; masa sayısı `tables` alanındadır (şu an 30). Sayıyı değiştirip `npm run build` çalıştırınca numaralı kartlar ve A4 yerleşimi yeniden üretilir; `npm test` kart sayısını ve 1'den N'e numaralandırmayı denetler.
+
+Baskı:
+
+- **Matbaa:** `qr/masa-kartlari.pdf` (105 × 148 mm, her sayfada bir kart, kenar boşluğu yok). 300 g mat kuşe ya da bristol önerilir.
+- **Ofis yazıcısı:** `qr/masa-kartlari-a4.pdf`; her A4 sayfada dört kart, aralarında kesim çizgisi. Yazdırırken ölçeği **%100** seçin ("sayfaya sığdır" kapalı olsun), yoksa kartlar 105 × 148 mm olmaz.
+- Numarasız kart (`qr/masa-karti.pdf`) tezgâh, kapı ve paket poşetleri için.
+
+PDF'leri yeniden üretmek için Playwright gerekir: `npm i -D playwright && npx playwright install chromium`, sonra `npm run pdf`.
 
 ## SEO: neler yapıldı, neler sizde
 

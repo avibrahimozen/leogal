@@ -97,7 +97,7 @@ ${LANG_CSS}
   .feature .t { grid-column: 1; grid-row: 1; font-family: var(--display); font-size: 24px; line-height: 1; color: var(--koz); }
   .feature .d { grid-column: 1; grid-row: 2; color: var(--kul); font-size: 14px; }
   .feature .d small { display: block; color: var(--kul-koyu); font-size: 12px; margin-top: 2px; }
-  .feature .pr { grid-column: 2; grid-row: 1 / span 2; font-family: var(--display); font-size: 34px; line-height: 1; color: var(--pide); white-space: nowrap; }
+  .feature .pr { grid-column: 2; grid-row: 1 / span 2; font-weight: 700; font-size: 20px; line-height: 1; color: var(--pide); white-space: nowrap; font-variant-numeric: tabular-nums; }
 
   /* Kalori ve alerjen bilgisi */
   .notice { margin-top: 8px; padding: 14px 16px; border: 1px solid var(--is-2); border-radius: 8px; display: grid; gap: 8px; }

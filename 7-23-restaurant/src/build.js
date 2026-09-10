@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { renderMenu } from './templates/menu.js';
 import { renderSite } from './templates/site.js';
 import { renderNotFound } from './templates/notfound.js';
+import { renderCards, renderSheets } from './templates/card.js';
 import { sitemapXml, robotsTxt } from './lib/seo.js';
 import { STATIC_ASSETS, ASSETS_DIR } from './lib/assets.js';
 import { LANGS, localize } from './lib/i18n.js';
@@ -45,9 +46,18 @@ export async function render(data = null) {
   return out;
 }
 
+/** Baskı dosyaları (yol -> içerik): masa kartları. Proje klasörüne yazılır; siteye ve FTP paketine girmez. */
+export function renderPrint(data) {
+  const tables = Array.from({ length: data.tables }, (_, i) => i + 1);
+  return new Map([
+    ['masa-karti.html', renderCards(data, { tables: [null] })],
+    ['masa-kartlari.html', renderCards(data, { tables })],
+    ['masa-kartlari-a4.html', renderSheets(data, { tables })],
+  ]);
+}
+
 export async function build({ check = false } = {}) {
   const data = await loadData();
-  const files = await render(data);
   const stale = [];
   // Alan adı kapalıyken eski bir CNAME kalmış olmamalı.
   if (!data.site.domainActive) {
@@ -55,18 +65,21 @@ export async function build({ check = false } = {}) {
     if (check) { if (await readFile(cname, 'utf8').catch(() => null) !== null) stale.push('CNAME (silinmeli)'); }
     else await rm(cname, { force: true });
   }
-  for (const [rel, content] of files) {
-    const abs = join(OUT, rel);
-    const binary = Buffer.isBuffer(content);
-    if (check) {
-      const current = await readFile(abs, binary ? undefined : 'utf8').catch(() => null);
-      const same = binary ? current !== null && Buffer.compare(current, content) === 0 : current === content;
-      if (!same) stale.push(rel);
-      continue;
+  const targets = [[OUT, await render(data)], [ROOT, renderPrint(data)]];
+  for (const [dir, files] of targets) {
+    for (const [rel, content] of files) {
+      const abs = join(dir, rel);
+      const binary = Buffer.isBuffer(content);
+      if (check) {
+        const current = await readFile(abs, binary ? undefined : 'utf8').catch(() => null);
+        const same = binary ? current !== null && Buffer.compare(current, content) === 0 : current === content;
+        if (!same) stale.push(rel);
+        continue;
+      }
+      await mkdir(dirname(abs), { recursive: true });
+      await writeFile(abs, content);
+      console.log(`yazıldı  ${rel}  (${content.length.toLocaleString('tr-TR')} ${binary ? 'bayt' : 'karakter'})`);
     }
-    await mkdir(dirname(abs), { recursive: true });
-    await writeFile(abs, content);
-    console.log(`yazıldı  ${rel}  (${content.length.toLocaleString('tr-TR')} ${binary ? 'bayt' : 'karakter'})`);
   }
   if (check) {
     if (stale.length) {
