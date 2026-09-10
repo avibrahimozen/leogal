@@ -99,7 +99,7 @@
   "updated": "2026-09-10",
   "currency": "TRY",
   "tables": 30,
-  "tableCardStyle": "masa",
+  "tableCardStyle": "rakam",
   "gramSizes": [
     100,
     150,
