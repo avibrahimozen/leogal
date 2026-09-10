@@ -38,6 +38,12 @@
   .top .masa .n { font-size: 10.5mm; letter-spacing: .02em; font-variant-numeric: tabular-nums; }
   .mid { display: grid; align-content: center; justify-items: center; gap: 3mm; padding: 3mm 8mm; min-height: 0; }
   .card[data-table] .mid { padding-top: 10mm; }
+  /* "rakam" biçemi: rozette yalnızca büyük numara, "Masa" yazısı yok. */
+  .card[data-style="rakam"] .top .logo { width: 27mm; }
+  .card[data-style="rakam"] .masa { margin-bottom: -12mm; padding: 1.2mm 6mm 0.6mm; min-width: 24mm; justify-content: center; }
+  .card[data-style="rakam"] .masa .n { font-size: 15mm; }
+  .card[data-style="rakam"] .mid { padding-top: 13.5mm; gap: 2.5mm; }
+  .card[data-style="rakam"] .mid .qr { width: 40mm; height: 40mm; }
   .mid .t { font-family: var(--display); font-size: 7mm; line-height: 1; letter-spacing: .04em; }
   .mid .qr { width: 41mm; height: 41mm; display: block; }
   .bot { border-top: 1px dashed var(--cizgi); padding: 3.5mm 8mm 4mm; display: grid; gap: 1mm; }

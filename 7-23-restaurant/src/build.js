@@ -49,10 +49,11 @@ export async function render(data = null) {
 /** Baskı dosyaları (yol -> içerik): masa kartları. Proje klasörüne yazılır; siteye ve FTP paketine girmez. */
 export function renderPrint(data) {
   const tables = Array.from({ length: data.tables }, (_, i) => i + 1);
+  const style = data.tableCardStyle ?? 'masa'; // 'masa': rozette "Masa 12" | 'rakam': yalnızca büyük "12"
   return new Map([
     ['masa-karti.html', renderCards(data, { tables: [null] })],
-    ['masa-kartlari.html', renderCards(data, { tables })],
-    ['masa-kartlari-a4.html', renderSheets(data, { tables })],
+    ['masa-kartlari.html', renderCards(data, { tables, style })],
+    ['masa-kartlari-a4.html', renderSheets(data, { tables, style })],
   ]);
 }
 

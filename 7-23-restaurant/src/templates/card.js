@@ -82,6 +82,12 @@ const CARD_CSS = `
   .top .masa .n { font-size: 10.5mm; letter-spacing: .02em; font-variant-numeric: tabular-nums; }
   .mid { display: grid; align-content: center; justify-items: center; gap: 3mm; padding: 3mm 8mm; min-height: 0; }
   .card[data-table] .mid { padding-top: 10mm; }
+  /* "rakam" biçemi: rozette yalnızca büyük numara, "Masa" yazısı yok. */
+  .card[data-style="rakam"] .top .logo { width: 27mm; }
+  .card[data-style="rakam"] .masa { margin-bottom: -12mm; padding: 1.2mm 6mm 0.6mm; min-width: 24mm; justify-content: center; }
+  .card[data-style="rakam"] .masa .n { font-size: 15mm; }
+  .card[data-style="rakam"] .mid { padding-top: 13.5mm; gap: 2.5mm; }
+  .card[data-style="rakam"] .mid .qr { width: 40mm; height: 40mm; }
   .mid .t { font-family: var(--display); font-size: 7mm; line-height: 1; letter-spacing: .04em; }
   .mid .qr { width: 41mm; height: 41mm; display: block; }
   .bot { border-top: 1px dashed var(--cizgi); padding: 3.5mm 8mm 4mm; display: grid; gap: 1mm; }
@@ -96,12 +102,16 @@ function slogan(text) {
   return `${esc(a)} <b>${esc(b)}</b>`.trim();
 }
 
-/** Tek kart. table: 1..N masa numarası ya da null (numarasız kart). */
-export function card(data, { table = null } = {}) {
+/**
+ * Tek kart. table: 1..N masa numarası ya da null (numarasız kart).
+ * style: 'masa' (rozette "Masa 12") | 'rakam' (rozette yalnızca büyük "12").
+ */
+export function card(data, { table = null, style = 'masa' } = {}) {
   const b = data.business;
   const masa = table == null ? '' : `
-    <div class="masa" aria-label="${T.table} ${table}"><span class="k">${T.table}</span><span class="n">${table}</span></div>`;
-  return `<div class="card"${table == null ? '' : ` data-table="${table}"`}>
+    <div class="masa" aria-label="${T.table} ${table}">${style === 'rakam' ? '' : `<span class="k">${T.table}</span>`}<span class="n">${table}</span></div>`;
+  const attrs = table == null ? '' : ` data-table="${table}"${style === 'masa' ? '' : ` data-style="${style}"`}`;
+  return `<div class="card"${attrs}>
   <div class="top">
     ${logo('dark', { label: `${b.name} logosu` })}
     <p class="slogan">${slogan(b.slogan)}</p>${masa}
@@ -167,17 +177,17 @@ const A4_CSS = `
 `;
 
 /** A6 belge: verilen masa numaralarının her biri için bir sayfa ([null] = numarasız tek kart). */
-export function renderCards(data, { tables }) {
+export function renderCards(data, { tables, style = 'masa' }) {
   const title = tables.length === 1 && tables[0] == null ? `${T.title} · ${data.business.name}` : `${T.title}ları 1–${tables.length} · ${data.business.name}`;
-  const body = tables.map((t) => `<section class="page">\n${card(data, { table: t })}\n</section>`).join('\n');
+  const body = tables.map((t) => `<section class="page">\n${card(data, { table: t, style })}\n</section>`).join('\n');
   return doc({ title, css: A6_CSS, body });
 }
 
 /** A4 belge: aynı kartlar sayfa başına dört tane. */
-export function renderSheets(data, { tables }) {
+export function renderSheets(data, { tables, style = 'masa' }) {
   const sheets = [];
   for (let i = 0; i < tables.length; i += 4) {
-    const cards = tables.slice(i, i + 4).map((t) => card(data, { table: t })).join('\n');
+    const cards = tables.slice(i, i + 4).map((t) => card(data, { table: t, style })).join('\n');
     sheets.push(`<section class="sheet">\n${cards}\n<div class="cut v"></div><div class="cut h"></div>\n</section>`);
   }
   return doc({ title: `${T.title}ları A4 · ${data.business.name}`, css: A4_CSS, body: sheets.join('\n') });

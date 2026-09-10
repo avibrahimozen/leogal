@@ -136,7 +136,7 @@ Her üründe üç alan vardır:
 
 ## Masa kartları
 
-Kartlar `npm run build` ile `menu.json` verisinden üretilir; masa sayısı `tables` alanındadır (şu an 30). Sayıyı değiştirip `npm run build` çalıştırınca numaralı kartlar ve A4 yerleşimi yeniden üretilir; `npm test` kart sayısını ve 1'den N'e numaralandırmayı denetler.
+Kartlar `npm run build` ile `menu.json` verisinden üretilir; masa sayısı `tables` alanındadır (şu an 30). Sayıyı değiştirip `npm run build` çalıştırınca numaralı kartlar ve A4 yerleşimi yeniden üretilir; `npm test` kart sayısını ve 1'den N'e numaralandırmayı denetler. Rozet biçemi `tableCardStyle` alanındadır: `"masa"` rozette "MASA 12" yazar, `"rakam"` yalnızca büyük "12" gösterir.
 
 Baskı:
 

@@ -136,6 +136,7 @@ if (!robots.includes('Sitemap: ' + data.site.baseUrl + 'sitemap.xml')) fail('rob
 
 // 6. Masa kartları: numarasız kart, 1..N numaralı kartlar, A4 yerleşimi
 if (!(Number.isInteger(data.tables) && data.tables > 0)) fail('menu.json: "tables" pozitif tam sayı olmalı');
+if (!['masa', 'rakam', undefined].includes(data.tableCardStyle)) fail(`menu.json: "tableCardStyle" "masa" ya da "rakam" olmalı, "${data.tableCardStyle}" değil`);
 const cardFiles = { 'masa-karti.html': 1, 'masa-kartlari.html': data.tables, 'masa-kartlari-a4.html': data.tables };
 for (const [file, count] of Object.entries(cardFiles)) {
   const html = await readFile(join(ROOT, file), 'utf8').catch(() => '');
