@@ -4,7 +4,7 @@ import { logo } from '../lib/assets.js';
 import { links } from '../lib/links.js';
 import * as icon from '../lib/icons.js';
 import { fmt } from '../lib/i18n.js';
-import { rel, langSwitcher, LANG_CSS } from '../lib/ui.js';
+import { rel, langSwitcher, madeBy, LANG_CSS, MADE_CSS } from '../lib/ui.js';
 
 const CSS = `
   :root {
@@ -29,7 +29,7 @@ const CSS = `
   .btn.ghost { background: transparent; color: var(--koz); }
   @media (max-width: 520px) { .btn { white-space: normal; text-align: center; max-width: 100%; } }
   .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-${LANG_CSS}
+${LANG_CSS}${MADE_CSS}
   /* ---------- Üst çubuk ---------- */
   .top { position: sticky; top: 0; z-index: 10; background: rgba(20,18,16,.9); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid var(--is-2); }
   .top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 14px; height: 64px; min-width: 0; }
@@ -134,6 +134,7 @@ ${LANG_CSS}
   footer { padding: 34px 0 40px; color: var(--kul); font-size: 15px; }
   footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px 24px; }
   footer a { color: var(--kul); }
+  footer .made { flex-basis: 100%; padding-top: 4px; border-top: 1px solid var(--is-2); }
 
   /* Mobil sabit sipariş çubuğu */
   .bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; display: none; grid-template-columns: 1fr 1fr; background: var(--koz); box-shadow: 0 -8px 24px rgba(0,0,0,.45); padding-bottom: env(safe-area-inset-bottom, 0px); }
@@ -394,6 +395,7 @@ ${b.faq.map((f) => `        <details>
     <span>© ${esc(b.name)} · ${esc(b.address.district)}, ${esc(b.address.city)}</span>
     ${langSwitcher(data, 'site', path)}
     <span><a href="${esc(menuHref)}">${esc(L.qrMenu)}</a> · <a href="${esc(l.tel)}">${esc(b.phoneDisplay)}</a></span>
+    ${madeBy(data)}
   </div>
 </footer>
 

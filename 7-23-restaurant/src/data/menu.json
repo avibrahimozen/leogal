@@ -96,6 +96,10 @@
       "gece açık dönerci"
     ]
   },
+  "studio": {
+    "name": "L30.tech Labs",
+    "url": "https://l30.tech"
+  },
   "updated": "2026-09-10",
   "currency": "TRY",
   "tables": 30,

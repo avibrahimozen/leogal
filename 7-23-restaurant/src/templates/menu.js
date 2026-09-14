@@ -4,7 +4,7 @@ import { links } from '../lib/links.js';
 import * as icon from '../lib/icons.js';
 import { logo } from '../lib/assets.js';
 import { fmt } from '../lib/i18n.js';
-import { rel, langSwitcher, LANG_CSS } from '../lib/ui.js';
+import { rel, langSwitcher, madeBy, LANG_CSS, MADE_CSS } from '../lib/ui.js';
 
 const CSS = `
   :root {
@@ -35,7 +35,7 @@ const CSS = `
   a:focus-visible, button:focus-visible { outline: 2px solid var(--koz); outline-offset: 3px; }
   .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 18px; }
   .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-${LANG_CSS}
+${LANG_CSS}${MADE_CSS}
   /* ---------- Üst kısım ---------- */
   .hero {
     position: relative; padding: 16px 0 22px;
@@ -263,6 +263,7 @@ ${b.perks.map((p) => `      <li>${esc(p)}</li>`).join('\n')}
       <a href="${esc(l.map)}" target="_blank" rel="noopener">${esc(L.openMap)}</a> · <a href="${esc(siteHref)}">${esc(L.website)}</a>
     </address>
     <p class="fine">${esc(L.priceNote)}</p>
+    ${madeBy(data)}
   </div>
 </footer>
 

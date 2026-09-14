@@ -9,6 +9,7 @@ const errors = [];
 const fail = (m) => errors.push(m);
 
 const data = await loadData();
+if (!data.studio?.name || !data.studio?.url) { console.error('menu.json: "studio" (name, url) eksik'); process.exit(1); }
 
 // 1. Veri tutarlılığı
 const ids = new Set();
@@ -90,6 +91,8 @@ for (const page of pages) {
     ['<h1', 'h1 başlığı'],
     [data.business.phoneDisplay, 'telefon numarası'],
     ['class="lang"', 'dil değiştirici'],
+    [`<a href="${data.studio.url}"`, 'yapımcı bağlantısı'],
+    [data.studio.name, 'yapımcı adı'],
   ];
   for (const [needle, label] of must) if (!html.includes(needle)) fail(`${page.rel}: ${label} eksik`);
   for (const lang of LANGS) if (!html.includes(`hreflang="${lang.code}"`)) fail(`${page.rel}: hreflang ${lang.code} eksik`);
