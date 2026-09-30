@@ -15,15 +15,15 @@ export default function WelcomeScreen({ navigation }: Props) {
         <Text style={styles.logo}>
           ulak<Text style={{ color: colors.primary }}>.</Text>
         </Text>
-        <Text style={styles.tagline}>Kıbrıs ve Türkiye'nin taksi ağı</Text>
+        <Text style={styles.tagline}>Kıbrıs ve Türkiye'nin ulak ağı</Text>
         <Text style={styles.subtitle}>
-          Tek dokunuşla en yakın taksiyi çağır, sürücünü canlı takip et, yolculuğunu güvenle tamamla. Üyelik
+          Tek dokunuşla en yakın ulağı çağır, sürücünü canlı takip et, yolculuğunu güvenle tamamla. Üyelik
           yolcu ve sürücü için ücretsiz.
         </Text>
       </View>
       <View style={styles.actions}>
         <Button
-          title="Yakındaki Taksileri Gör"
+          title="Yakındaki Ulakları Gör"
           backgroundColor="#FFFFFF"
           textColor={colors.orange}
           onPress={() => navigation.navigate('GuestMap')}
@@ -46,7 +46,7 @@ export default function WelcomeScreen({ navigation }: Props) {
         />
         <View style={{ height: spacing(3) }} />
         <Button
-          title="Taksici misin? Ulak'a katıl"
+          title="Ulak mısın? Ulak'a katıl"
           variant="outline"
           textColor={colors.orange}
           borderColor={colors.orange}

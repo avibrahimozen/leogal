@@ -1,5 +1,5 @@
 /**
- * Demo verisi: yönetici + iki yolcu + iki taksici.
+ * Demo verisi: yönetici + iki yolcu + iki ulak.
  *   Yolcu 1 / Sürücü 1: dolu geçmiş ve komisyon borcu
  *   Yolcu 2 / Sürücü 2: temiz hesaplar (ikinci telefon için)
  *   + 12 sahte yolcu (+9055500001xx): son 2 haftaya yayılmış yolculuk geçmişiyle
@@ -95,7 +95,7 @@ function seedCompletedRide(passengerId: number, driverId: number, ride: SeedRide
   return rideId;
 }
 
-// ---- Hesaplar: yönetici + iki yolcu + iki taksici ----
+// ---- Hesaplar: yönetici + iki yolcu + iki ulak ----
 upsertUser(config.adminPhone, 'Ulak Yönetici', 'admin', bcrypt.hashSync(config.adminPassword, 10));
 const passenger = upsertUser('+905550000001', 'Demo Yolcu', 'passenger');
 const driver = upsertUser('+905550000002', 'Demo Sürücü', 'driver');

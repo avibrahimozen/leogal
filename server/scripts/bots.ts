@@ -1,5 +1,5 @@
 /**
- * Sahte taksi simülatörü.
+ * Sahte ulak simülatörü.
  *
  * Gerçek sürücü hesaplarıyla sunucuya bağlanan botlar: çevrimiçi olur, gerçek
  * yolları izleyerek dolaşır (OSRM rotası; servis yoksa düz çizgi), gelen çağrıyı
@@ -11,7 +11,7 @@
  *            ULAK_BOT_SPEED_KMH=60                ULAK_BOT_CENTER=35.19,33.36 (opsiyonel)
  *            ULAK_ROUTING=none                    (yol rotalamayı kapat: düz çizgi)
  *
- * Botlar, uygulamada "yakındaki taksiler" sorgusu yapan yolcunun konumunu (talep
+ * Botlar, uygulamada "yakındaki ulaklar" sorgusu yapan yolcunun konumunu (talep
  * ipucu) izler ve boştaysa onun çevresine taşınır — KKTC dışından test ederken de
  * eşleşme olur. Taşınırken en yakın yola oturtulurlar (denize düşmezler).
  */
@@ -108,7 +108,7 @@ function ensureAccounts(): BotSpec[] {
     const city = CITIES[i % CITIES.length]!;
     const spec: BotSpec = {
       phone: `+9055500002${String(i + 1).padStart(2, '0')}`,
-      name: `Taksi Bot ${i + 1}`,
+      name: `Ulak Bot ${i + 1}`,
       plate: `TB ${101 + i}`,
       model: MODELS[i % MODELS.length]!,
       city: city.name,
@@ -236,7 +236,7 @@ class Bot {
     const res = await api('POST', `/rides/${offer.rideId}/accept`, undefined, this.token);
     this.consideringOffer = false;
     if (!res.ok) {
-      log(`↩️  ${this.label}: çağrı #${offer.rideId} başka taksiye gitti`);
+      log(`↩️  ${this.label}: çağrı #${offer.rideId} başka ulağa gitti`);
       return;
     }
     this.ride = { id: offer.rideId, pickup: offer.pickup, drop: offer.drop, stops: offer.stops ?? [], fare: offer.estFare };
@@ -345,7 +345,7 @@ async function followDemand(bots: Bot[], adminToken: string): Promise<void> {
   const far = bots.filter((b) => b.state === 'idle' && haversineKm(b.pos.lat, b.pos.lng, hint.lat, hint.lng) > 8);
   if (far.length === 0) return;
   await Promise.all(far.map((b) => b.relocate(hint)));
-  log(`📡 Talep algılandı (${hint.lat.toFixed(4)}, ${hint.lng.toFixed(4)}): ${far.length} boş taksi yolcunun çevresine taşındı`);
+  log(`📡 Talep algılandı (${hint.lat.toFixed(4)}, ${hint.lng.toFixed(4)}): ${far.length} boş ulak yolcunun çevresine taşındı`);
 }
 
 // ---- Başlat ----
@@ -358,7 +358,7 @@ if (!health?.ok) {
 const specs = ensureAccounts();
 const bots = specs.map((s) => new Bot(s));
 console.log(
-  `🚕 ${bots.length} sahte taksi hazırlanıyor (${API}, hız ${SPEED_KMH} km/sa, rota: ${config.routing.enabled ? 'OSRM yolları' : 'düz çizgi'})${FIXED_CENTER ? ' — sabit merkez' : ' — yolcuyu takip eder'}\n`,
+  `🚕 ${bots.length} sahte ulak hazırlanıyor (${API}, hız ${SPEED_KMH} km/sa, rota: ${config.routing.enabled ? 'OSRM yolları' : 'düz çizgi'})${FIXED_CENTER ? ' — sabit merkez' : ' — yolcuyu takip eder'}\n`,
 );
 for (const bot of bots) {
   await bot.start();
@@ -385,7 +385,7 @@ if (!FIXED_CENTER && admin.ok) {
   setInterval(() => void followDemand(bots, admin.data.token).catch(() => {}), 8000);
 }
 
-console.log('\nBotlar çalışıyor. Uygulamada yolcu olarak taksi çağır; Ctrl+C ile durdur.\n');
+console.log('\nBotlar çalışıyor. Uygulamada yolcu olarak ulak çağır; Ctrl+C ile durdur.\n');
 
 process.on('SIGINT', async () => {
   console.log('\n⏹  Botlar çevrimdışına alınıyor...');

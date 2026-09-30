@@ -45,7 +45,7 @@ function simplifyPath(points: LatLng[], max: number): LatLng[] {
 }
 
 /**
- * Haritadaki taksi: emoji yerine gerçek araç görseli, yönüne göre döner ve yeni konuma
+ * Haritadaki ulak: emoji yerine gerçek araç görseli, yönüne göre döner ve yeni konuma
  * Uber gibi kayarak gider. `path` verilirse yol tarifinin köşelerinden geçer.
  *
  * Kaydırma yerel `animateMarkerToCoordinate` ile yapılır (iOS/Android, yeni mimari dahil).

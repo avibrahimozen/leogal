@@ -41,7 +41,7 @@ function PassengerNavigator() {
       <PassengerTabs.Screen
         name="PassengerHome"
         component={PassengerHomeScreen}
-        options={{ title: 'Taksi Çağır', tabBarIcon: tabIcon('car') }}
+        options={{ title: 'Ulak Çağır', tabBarIcon: tabIcon('car') }}
       />
       <PassengerTabs.Screen
         name="History"
@@ -107,7 +107,7 @@ export default function RootNavigator() {
           }}
         >
           <AuthStack.Screen name="Welcome" component={WelcomeScreen} options={{ headerShown: false }} />
-          <AuthStack.Screen name="GuestMap" component={GuestMapScreen} options={{ title: 'Yakındaki Taksiler' }} />
+          <AuthStack.Screen name="GuestMap" component={GuestMapScreen} options={{ title: 'Yakındaki Ulaklar' }} />
           <AuthStack.Screen name="Login" component={LoginScreen} options={{ title: 'Giriş Yap' }} />
           <AuthStack.Screen name="Register" component={RegisterScreen} options={{ title: 'Kaydol' }} />
           <AuthStack.Screen

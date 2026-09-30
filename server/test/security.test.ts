@@ -279,7 +279,7 @@ describe('OTP isteği IP sınırı (POST /api/auth/otp/request)', () => {
 });
 
 /* ------------------------------------------------------------------ */
-describe('yakındaki taksiler IP sınırı (GET /api/public/nearby-drivers)', () => {
+describe('yakındaki ulaklar IP sınırı (GET /api/public/nearby-drivers)', () => {
   beforeEach(() => resetRateLimits());
 
   it('dakikada sınır kadar sorgu geçer, sonrası 429', async () => {

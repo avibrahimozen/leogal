@@ -4,7 +4,7 @@ import { createApp } from '../src/app.js';
 import { createDb } from '../src/db.js';
 import { config } from '../src/config.js';
 
-// Üyeliksiz "yakındaki taksiler" ucu: yalnızca onaylı + çevrimiçi + taze konumlu sürücüler,
+// Üyeliksiz "yakındaki ulaklar" ucu: yalnızca onaylı + çevrimiçi + taze konumlu sürücüler,
 // kimlik bilgisi olmadan ve yuvarlanmış konumla döner.
 const db = createDb(':memory:');
 const { app } = createApp(db);
@@ -41,7 +41,7 @@ beforeAll(async () => {
   await request(app).post(`/api/admin/drivers/${approved.id}/approve`).set('Authorization', `Bearer ${adminToken}`);
 });
 
-describe('yakındaki taksiler (üyeliksiz)', () => {
+describe('yakındaki ulaklar (üyeliksiz)', () => {
   it('kimse çevrimiçi değilken boş döner', async () => {
     const res = await request(app).get(`/api/public/nearby-drivers?lat=${LEFKOSA.lat}&lng=${LEFKOSA.lng}`);
     expect(res.status).toBe(200);

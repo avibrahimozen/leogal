@@ -90,7 +90,7 @@ export type LatLng = { lat: number; lng: number };
 
 /** Üyeliksiz harita için anonim sürücü konumu (~100 m hassasiyet). */
 export interface NearbyDriver {
-  /** Sunucunun ürettiği anonim ama kalıcı kimlik: yenilemeler arasında aynı taksiyi eşleyip kaydırarak taşımak için */
+  /** Sunucunun ürettiği anonim ama kalıcı kimlik: yenilemeler arasında aynı ulağı eşleyip kaydırarak taşımak için */
   id?: string;
   lat: number;
   lng: number;

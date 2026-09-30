@@ -50,7 +50,7 @@ async function fetchJson(url: string): Promise<unknown> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), config.routing.timeoutMs);
   try {
-    const res = await fetch(url, { signal: controller.signal, headers: { 'User-Agent': 'Ulak/0.1 (taksi uygulaması)' } });
+    const res = await fetch(url, { signal: controller.signal, headers: { 'User-Agent': 'Ulak/0.1 (ulak uygulaması)' } });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return await res.json();
   } finally {
@@ -95,7 +95,7 @@ export async function routeVia(points: readonly LatLng[]): Promise<RouteResult> 
   }
 }
 
-/** Noktayı en yakın yola oturtur (sahte taksilerin denize/tarlaya düşmemesi için). Hata olursa noktayı aynen döner. */
+/** Noktayı en yakın yola oturtur (sahte ulakların denize/tarlaya düşmemesi için). Hata olursa noktayı aynen döner. */
 export async function snapToRoad(point: LatLng): Promise<LatLng> {
   if (!config.routing.enabled) return point;
   const url = `${config.routing.osrmBaseUrl}/nearest/v1/driving/${point.lng},${point.lat}?number=1`;

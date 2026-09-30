@@ -20,7 +20,7 @@ type Props = NativeStackScreenProps<AuthStackParamList, 'GuestMap'>;
 
 const REFRESH_MS = 10_000;
 
-/** Üyelik gerektirmeyen harita: çevredeki çevrimiçi taksileri gösterir. */
+/** Üyelik gerektirmeyen harita: çevredeki çevrimiçi ulakları gösterir. */
 export default function GuestMapScreen({ navigation }: Props) {
   const mapRef = useRef<MapHandle>(null);
   const [center, setCenter] = useState(KKTC_CENTER);
@@ -102,7 +102,7 @@ export default function GuestMapScreen({ navigation }: Props) {
           ) : (
             <>
               <Text style={styles.count}>
-                {!loaded ? 'Taksiler aranıyor...' : drivers.length === 0 ? 'Şu an yakında çevrimiçi taksi yok' : `Yakında ${drivers.length} taksi çevrimiçi`}
+                {!loaded ? 'Ulaklar aranıyor...' : drivers.length === 0 ? 'Şu an yakında çevrimiçi ulak yok' : `Yakında ${drivers.length} ulak çevrimiçi`}
               </Text>
               {nearest && (
                 <Text style={styles.meta}>
@@ -112,7 +112,7 @@ export default function GuestMapScreen({ navigation }: Props) {
             </>
           )}
           <View style={{ height: spacing(4) }} />
-          <Button title="Taksi Çağırmak İçin Giriş Yap" onPress={() => navigation.navigate('Login')} />
+          <Button title="Ulak Çağırmak İçin Giriş Yap" onPress={() => navigation.navigate('Login')} />
           <View style={{ height: spacing(2) }} />
           <Button title="Hesap Oluştur" variant="outline" onPress={() => navigation.navigate('Register')} />
         </Card>

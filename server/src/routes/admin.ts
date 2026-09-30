@@ -160,7 +160,7 @@ export function adminRoutes(db: Db, hub: Hub): Router {
     res.json({ ok: true });
   });
 
-  /** Son yolcu konum sorgusu (sahte taksi simülatörü botları buraya taşır). */
+  /** Son yolcu konum sorgusu (sahte ulak simülatörü botları buraya taşır). */
   router.get('/demand-hint', (_req, res) => {
     res.json({ hint: getDemandHint() });
   });

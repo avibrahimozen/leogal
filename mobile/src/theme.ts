@@ -1,4 +1,4 @@
-/** Ulak marka renkleri: gece lacivert zemin üzerine taksi sarısı vurgu. */
+/** Ulak marka renkleri: gece lacivert zemin üzerine ulak sarısı vurgu. */
 export const colors = {
   primary: '#FFC400',
   primaryDark: '#E6B000',

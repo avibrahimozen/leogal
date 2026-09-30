@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Ulak - KKTC taksi çağırma platformu API sunucusu",
+  "description": "Ulak - KKTC ulak çağırma platformu API sunucusu",
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "start": "node dist/index.js",

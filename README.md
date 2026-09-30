@@ -1,16 +1,16 @@
-# 🚕 Ulak — Kıbrıs ve Türkiye'nin Taksi Ağı
+# 🚕 Ulak — Kıbrıs ve Türkiye'nin Ulak Ağı
 
-Ulak, Kuzey Kıbrıs ve Türkiye için Uber tarzı bir taksi çağırma platformudur.
-Taksiciler platforma kaydolur, yönetici onayından geçer ve tamamlanan her yolculuktan
+Ulak, Kuzey Kıbrıs ve Türkiye için Uber tarzı bir ulak çağırma platformudur.
+Ulaklar platforma kaydolur, yönetici onayından geçer ve tamamlanan her yolculuktan
 küçük bir **komisyon** karşılığında müşteri alır. Yolcular tek dokunuşla en yakın
-taksiyi çağırır, sürücüsünü haritada canlı takip eder.
+ulağı çağırır, sürücüsünü haritada canlı takip eder.
 
 ## Nasıl çalışır?
 
-1. **Taksici kaydolur** — araç plakası, model ve ruhsat bilgileriyle başvurur; hesap `onay bekliyor` durumuna düşer.
+1. **Ulak kaydolur** — araç plakası, model ve ruhsat bilgileriyle başvurur; hesap `onay bekliyor` durumuna düşer.
 2. **Yönetici onaylar** — admin API üzerinden başvuru incelenir ve onaylanır.
 3. **Sürücü çevrimiçi olur** — uygulama konumunu ve gidiş yönünü birkaç saniyede bir platforma bildirir.
-4. **Yolcu taksi çağırır** — hedefini seçer, tahmini ücreti görür, çağrı oluşturur.
+4. **Yolcu ulak çağırır** — hedefini seçer, tahmini ücreti görür, çağrı oluşturur.
 5. **Eşleştirme** — çağrı, alış noktasına en yakın 8 müsait sürücüye anlık teklif olarak gider; **ilk kabul eden kazanır**.
 6. **Yolculuk** — sürücü yolda → kapıda → yolculuk → tamamlandı akışı; yolcu sürücüyü canlı izler
    (kırmızı araç gerçek yol üzerinde ilerler, kamera Uber gibi yaklaştıkça takip eder). **Yolcu da sürücü de
@@ -95,7 +95,7 @@ telefon başına saatte en çok 5 kod, 5 hatalı denemede kod geçersizleşir.
 ## Güvenlik ve dayanıklılık
 
 - Hız sınırları: giriş (telefon başına 10 / IP başına 30, 15 dk), OTP isteği (IP başına
-  20/saat), yakındaki taksiler (IP başına 120/dk) — `server/src/lib/rateLimit.ts`,
+  20/saat), yakındaki ulaklar (IP başına 120/dk) — `server/src/lib/rateLimit.ts`,
   değerler `config.ts` içinde.
 - Güvenlik başlıkları (nosniff, frame-deny, CSP) ve 100 KB JSON gövde sınırı; bozuk
   JSON 400, büyük gövde 413, beklenmeyen hata 500 — hepsi JSON döner.
@@ -149,8 +149,8 @@ uygulama "Sunucuya ulaşılamıyor (http://...)" hatasında denediği adresi gö
 
 ### Üyeliksiz kullanım
 
-Karşılama ekranındaki **"Yakındaki Taksileri Gör"** giriş yapmadan haritada
-çevrimiçi taksileri gösterir (`GET /api/public/nearby-drivers`). Sürücü konumları
+Karşılama ekranındaki **"Yakındaki Ulakları Gör"** giriş yapmadan haritada
+çevrimiçi ulakları gösterir (`GET /api/public/nearby-drivers`). Sürücü konumları
 ~100 m hassasiyete yuvarlanır; isim, plaka ve telefon paylaşılmaz. Aynı bilgi
 giriş yapmış yolcunun ana ekranında da görünür.
 
@@ -224,7 +224,7 @@ Web'e özgü davranışlar:
 | `POST /api/auth/register` | Yolcu kaydı |
 | `POST /api/auth/register-driver` | Sürücü başvurusu (araç bilgileriyle) |
 | `POST /api/auth/login` | Giriş (telefon + şifre → JWT) |
-| `GET /api/public/nearby-drivers?lat=&lng=` | Yakındaki çevrimiçi taksiler (girişsiz, anonim) |
+| `GET /api/public/nearby-drivers?lat=&lng=` | Yakındaki çevrimiçi ulaklar (girişsiz, anonim) |
 | `POST /api/rides/estimate` | Ücret tahmini (girişsiz kullanılabilir) |
 | `POST /api/rides` | Çağrı oluştur (`stops`: en fazla 5 ara durak) → en yakın sürücülere teklif yayınlanır |
 | `PUT /api/rides/:id/stops` | Yolcu durak listesini günceller (beklerken veya yolculukta); ücret yeniden hesaplanır |
@@ -261,7 +261,7 @@ Gerçek zamanlı olaylar (Socket.IO): `ride:offer`, `ride:offer_closed`, `ride:u
 ## Harita: gerçek yol rotası, kırmızı araç, takip kamerası
 
 - **Yol rotası:** yolculuk çizgisi ve sürücü→yolcu yolu OSRM'den (OpenStreetMap) gerçek yol
-  geometrisiyle çizilir; taksiler denizin/tarlanın üstünden gitmez. Sunucu `GET /api/public/route`
+  geometrisiyle çizilir; ulaklar denizin/tarlanın üstünden gitmez. Sunucu `GET /api/public/route`
   ile vekillik eder ve rotaları 10 dk önbellekler. OSRM'e ulaşılamazsa düz çizgiye düşülür
   (`source: 'straight'`), uygulama çalışmaya devam eder.
 - **Kırmızı araç:** emoji yerine üstten görünüm araç görseli (`mobile/assets/car-red*.png`);
@@ -275,7 +275,7 @@ Gerçek zamanlı olaylar (Socket.IO): `ride:offer`, `ride:offer_closed`, `ride:u
   birlikte çerçeveler; araç yaklaştıkça yakınlaşır. Haritayı elle kaydırınca takip durur,
   **"Sürücüyü takip et"** ile yeniden başlar. Sürücü uygulamasında da aynı takip vardır.
 - **Süre tahmini:** ücret tahmininde ve çağrı kartında OSRM süresi gösterilir (`durationMin`).
-- Sahte taksiler (`npm run bots`) yola oturur ve OSRM rotasını yön bilgisiyle izler.
+- Sahte ulaklar (`npm run bots`) yola oturur ve OSRM rotasını yön bilgisiyle izler.
 - Telefon sunucuya, sunucu OSRM'e bağlanır: sunucunun çalıştığı bilgisayarın internete çıkışı
   yeterlidir. `router.project-osrm.org` bir demo sunucusudur; üretimde `ULAK_OSRM_URL` ile kendi
   OSRM'ini kullan.
@@ -309,10 +309,10 @@ npm run seed
 
 Numarayı `05550000001`, `0555 000 00 01` veya `+905550000001` gibi yazabilirsiniz — sunucu
 hepsini aynı hesaba eşler. Script tekrar çalıştırılabilir (kayıtları çoğaltmaz). Çağrı akışını denemek için:
-sürücü hesabıyla girip **çevrimiçi ol**, ikinci cihazda yolcu hesabıyla **taksi çağır** —
+sürücü hesabıyla girip **çevrimiçi ol**, ikinci cihazda yolcu hesabıyla **ulak çağır** —
 teklif sürücünün ekranına düşer.
 
-## Sahte taksiler — tek telefonla tam akış (`npm run bots`)
+## Sahte ulaklar — tek telefonla tam akış (`npm run bots`)
 
 İkinci telefon olmadan yolcu akışını uçtan uca denemek için sahte sürücü botları:
 
@@ -321,8 +321,8 @@ cd server
 npm run bots          # sunucu açıkken, ayrı bir terminalde
 ```
 
-Botlar (`Taksi Bot 1..6`, plakalar `TB 101…`) gerçek sürücü hesaplarıyla bağlanır,
-çevrimiçi olur ve haritada dolaşır. Yolcu olarak taksi çağırdığında en yakın bot
+Botlar (`Ulak Bot 1..6`, plakalar `TB 101…`) gerçek sürücü hesaplarıyla bağlanır,
+çevrimiçi olur ve haritada dolaşır. Yolcu olarak ulak çağırdığında en yakın bot
 2–5 saniye içinde çağrıyı **kabul eder**, alış noktasına sürer (canlı konum yolcuya
 akar), yolculuğu başlatıp tamamlar ve yolcuyu puanlar — komisyon deftere işlenir.
 

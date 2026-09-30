@@ -83,7 +83,7 @@ describe('sürücü yönü (heading)', () => {
     await request(app).post('/api/driver/status').set('Authorization', `Bearer ${driverToken}`).send({ online: true });
   });
 
-  it('REST konumla gelen yön, yakındaki taksilerde görünür', async () => {
+  it('REST konumla gelen yön, yakındaki ulaklarda görünür', async () => {
     const loc = await request(app)
       .post('/api/driver/location')
       .set('Authorization', `Bearer ${driverToken}`)
@@ -113,7 +113,7 @@ describe('sürücü yönü (heading)', () => {
   });
 });
 
-describe('tahmin tarifesi ve anonim taksi kimliği', () => {
+describe('tahmin tarifesi ve anonim ulak kimliği', () => {
   it('tahmin yanıtı tarife (açılış / km / asgari) ve mesafe kaynağını taşır', async () => {
     const res = await request(app)
       .post('/api/rides/estimate')
@@ -126,7 +126,7 @@ describe('tahmin tarifesi ve anonim taksi kimliği', () => {
     expect(res.body.fare).toBe(Math.max(150, expected));
   });
 
-  it('yakındaki taksiler yenilemeler arasında sabit, anonim bir kimlik taşır', async () => {
+  it('yakındaki ulaklar yenilemeler arasında sabit, anonim bir kimlik taşır', async () => {
     const adminToken = await loginAdmin(app);
     const driver = await readyDriver(app, adminToken, 'Kimlik Şoför', 'GM 777', 35.19, 33.36);
     const first = await request(app).get('/api/public/nearby-drivers?lat=35.19&lng=33.36');

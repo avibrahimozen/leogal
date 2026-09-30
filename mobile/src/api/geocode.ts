@@ -23,7 +23,7 @@ import type { Place } from '../data/places';
 const NOMINATIM_BASE = 'https://nominatim.openstreetmap.org';
 const MIN_INTERVAL_MS = 1000;
 const REQUEST_TIMEOUT_MS = 8000;
-const USER_AGENT = 'UlakTaksi/0.1 (KKTC ve Turkiye taksi uygulamasi; gelistirme surumu)';
+const USER_AGENT = 'Ulak/0.1 (KKTC ve Turkiye ulak uygulamasi; gelistirme surumu)';
 
 /** Arama sonucu: Place + kullanıcıya gösterilecek kısa açıklama ("Kadıköy, İstanbul"). */
 export interface GeocodeResult extends Place {

@@ -128,7 +128,7 @@
 | `ULAK_RL_LOGIN_PHONE` | `10` | Giriş: telefon başına / 15 dk |
 | `ULAK_RL_LOGIN_IP` | `30` | Giriş: IP başına / 15 dk (yerel bot koşularında `ULAK_BOTS` yüksekse artırın) |
 | `ULAK_RL_OTP_IP` | `20` | OTP isteği: IP başına / saat |
-| `ULAK_RL_NEARBY_IP` | `120` | Yakındaki taksiler: IP başına / dk |
+| `ULAK_RL_NEARBY_IP` | `120` | Yakındaki ulaklar: IP başına / dk |
 
 Üretim kontrol listesi: `NODE_ENV=production`, `JWT_SECRET` (≥32 rastgele karakter), `ULAK_ADMIN_PASSWORD`, `SMS_PROVIDER=twilio` + `TWILIO_*`, TLS sonlandıran vekil + `TRUST_PROXY=1`.
 

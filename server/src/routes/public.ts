@@ -15,8 +15,8 @@ const nearbySchema = z.object({
 });
 
 /**
- * Son 'yakındaki taksiler' sorgusunun konumu — talep ipucu.
- * Sahte taksi simülatörü (npm run bots) bunu okuyup botları yolcunun çevresine taşır.
+ * Son 'yakındaki ulaklar' sorgusunun konumu — talep ipucu.
+ * Sahte ulak simülatörü (npm run bots) bunu okuyup botları yolcunun çevresine taşır.
  */
 let lastDemand: { lat: number; lng: number; at: string } | null = null;
 export function getDemandHint() {
@@ -29,7 +29,7 @@ function blur(coord: number): number {
 }
 
 /**
- * Üyelik gerektirmeyen uçlar. Uygulamaya girmeden "yakınımda taksi var mı?"
+ * Üyelik gerektirmeyen uçlar. Uygulamaya girmeden "yakınımda ulak var mı?"
  * sorusuna cevap verir; kimlik bilgisi (isim, plaka, telefon) dönmez.
  */
 /** Sürücü kimliğini dışarı sızdırmadan, süreç boyunca sabit kalan kısa anonim kimlik. */
@@ -63,7 +63,7 @@ export function publicRoutes(db: Db): Router {
 
     const drivers = rows
       .map((r) => ({
-        // Kalıcı ama anonim kimlik: uygulama aynı taksiyi yenilemeler arasında eşleyip kaydırarak taşır
+        // Kalıcı ama anonim kimlik: uygulama aynı ulağı yenilemeler arasında eşleyip kaydırarak taşır
         id: anonId(r.user_id),
         lat: blur(r.lat),
         lng: blur(r.lng),

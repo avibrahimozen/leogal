@@ -133,7 +133,7 @@ export default function PassengerHomeScreen() {
   );
   useActiveRideSync(onSynced);
 
-  // Aktif çağrı yokken alış noktasının çevresindeki çevrimiçi taksileri göster
+  // Aktif çağrı yokken alış noktasının çevresindeki çevrimiçi ulakları göster
   const hasRide = ride !== null;
   useEffect(() => {
     if (hasRide) {
@@ -552,8 +552,8 @@ export default function PassengerHomeScreen() {
             {!destination && (
               <Text style={styles.nearbyText}>
                 {nearby.length === 0
-                  ? 'Yakında çevrimiçi taksi yok'
-                  : `Yakında ${nearby.length} taksi çevrimiçi · en yakını ~${nearby[0]?.distanceKm} km`}
+                  ? 'Yakında çevrimiçi ulak yok'
+                  : `Yakında ${nearby.length} ulak çevrimiçi · en yakını ~${nearby[0]?.distanceKm} km`}
               </Text>
             )}
 
@@ -635,7 +635,7 @@ export default function PassengerHomeScreen() {
                     {estimate.tariff.minFare} TL
                   </Text>
                 )}
-                <Button title="Taksi Çağır" onPress={requestRide} loading={busy} disabled={!estimate} />
+                <Button title="Ulak Çağır" onPress={requestRide} loading={busy} disabled={!estimate} />
               </>
             )}
           </Card>
