@@ -124,6 +124,23 @@ yönetici hesabıyla giriş yapın. Panelden yapabilecekleriniz:
 Uygulama **tek kod tabanından iOS, Android ve web** için derlenir (Expo / React
 Native). Üç platformun paketlemesi de doğrulanmıştır; web sürümü için aşağıdaki bölüme bakın.
 
+### Mac'te tek tıkla: `Ulak-Baslat.command`
+
+Depo kökündeki **`Ulak-Baslat.command`** dosyasına çift tıklayın (ya da bir kez
+`./Ulak-Baslat.command` çalıştırın — kendini Masaüstü'ne kopyalar). Betik:
+
+1. Node 22.5+ ve Xcode/iOS Simülatör'ü denetler, proje klasörünü bulur
+   (bulamazsa `~/leogal` içine klonlamayı önerir),
+2. eksikse `npm install` yapar ve `npm run seed` ile demo verisini hazırlar,
+3. üç Terminal penceresi açar: **API** (`npm run dev`, :4000), **sahte ulaklar**
+   (`npm run bots`, API hazır olunca) ve **Expo** (`npx expo start --ios`, iOS
+   Simülatör'de Expo Go).
+
+Zaten çalışan API / bot / Metro varsa onları atlar; `ULAK_SIM="iPhone 16 Pro"`
+ile belirli bir simülatörü, `ULAK_BOTS=10` ile bot sayısını seçebilirsiniz.
+Her şeyi kapatmak için **`Ulak-Durdur.command`**. İlk çalıştırmada macOS
+Terminal'e "Terminal'i denetlemek istiyor" izni sorarsa **İzin Ver** deyin.
+
 ### Geliştirme (Expo Go ile)
 
 Uygulama **Expo SDK 57** üzerindedir — mağazadaki güncel Expo Go ile açılır.
